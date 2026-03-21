@@ -10,6 +10,7 @@
     <Folder Include="Dtos\" />
     <Folder Include="Features\Auth\" />
     <Folder Include="Features\Cart\" />
+    <Folder Include="Features\Notification\" />
     <Folder Include="Features\Wishlist\" />
     <Folder Include="Features\Order\" />
     <Folder Include="Features\Products\" />
