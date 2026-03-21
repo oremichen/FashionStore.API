@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="FashionStore.API/FashionStore.API.csproj" />
+  <Project Path="FashionStore.Application/FashionStore.Application.csproj" />
+  <Project Path="FashionStore.Domain/FashionStore.Domain.csproj" />
+  <Project Path="FashionStore.Shared/FashionStore.Shared.csproj" />
+</Solution>
