@@ -1,12 +1,12 @@
-﻿using FashionStore.Domain.Constants;
-using Microsoft.AspNetCore.Http;
+﻿using FashionStore.Shared.Common;
+using FashionStore.Shared.Constants;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FashionStore.API.Controllers
 {
     public class BaseApiController : ControllerBase
     {
-        protected IActionResult ProcessResponse(ResponseInfo response)
+        protected IActionResult ProcessResponse(ResponseResult response)
         {
             var httpStatusCode = MapToHttpStatusCode(response.StatusCode);
 
@@ -21,7 +21,7 @@ namespace FashionStore.API.Controllers
             };
         }
 
-        protected IActionResult ProcessResponse<T>(ResponseInfo<T> response)
+        protected IActionResult ProcessResponse<T>(ResponseResult<T> response)
         {
             var httpStatusCode = MapToHttpStatusCode(response.StatusCode);
 
