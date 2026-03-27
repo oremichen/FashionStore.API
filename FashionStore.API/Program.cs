@@ -212,9 +212,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(options =>
     {
         options.SwaggerEndpoint("/swagger/v1/swagger.json", "FashionStore API v1");
-        options.RoutePrefix = string.Empty; // Swagger at app root: https://localhost:PORT/
-        options.DisplayRequestDuration();
-        options.EnableDeepLinking();
+        options.RoutePrefix = "swagger";
     });
 }
 
