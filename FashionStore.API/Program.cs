@@ -1,7 +1,6 @@
 using System.Text;
-using FashionStore.Application.Features.Auth;
+using FashionStore.API.Middleware;
 using FashionStore.Domain.Entities;
-using FashionStore.API;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -9,8 +8,14 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using FashionStore.Infrastructure.Data;
 using FashionStore.Infrastructure.Seed;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog((context, services, configuration) => configuration
+    .ReadFrom.Configuration(context.Configuration)
+    .ReadFrom.Services(services)
+    .Enrich.FromLogContext());
 
 builder.Services.AddControllers();
 
@@ -209,6 +214,8 @@ builder.Services.AddAuthentication(options =>
 
 var app = builder.Build();
 
+app.UseSerilogRequestLogging();
+
 using (var scope = app.Services.CreateScope())
 {
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
@@ -226,6 +233,7 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+app.UseMiddleware<GlobalErrorMiddleware>();
 app.UseHttpsRedirection();
 app.UseAuthentication(); // ← must come before UseAuthorization
 app.UseAuthorization();
