@@ -1,0 +1,11 @@
+﻿using FashionStore.Application.Dtos.Request;
+using FashionStore.Application.Dtos.Response;
+using FashionStore.Shared.Common;
+
+namespace FashionStore.Application.Abstractions.Auth
+{
+    public interface IAuthService
+    {
+        Task<ResponseResult<LoginResponse>> Login(LoginRequest login);
+    }
+}

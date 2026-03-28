@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace FashionStore.Application.Dtos
+namespace FashionStore.Application.Dtos.Request
 {
     public class LoginRequest
     {

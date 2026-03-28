@@ -1,4 +1,5 @@
 using System.Text;
+using FashionStore.Application.Features.Auth;
 using FashionStore.Domain.Entities;
 using FashionStore.API;
 using Microsoft.AspNetCore.Authentication.JwtBearer;

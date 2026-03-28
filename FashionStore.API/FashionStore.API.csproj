@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FashionStore.Infrastructure\FashionStore.Infrastructure.csproj" />
+    <ProjectReference Include="..\FashionStore.Application\FashionStore.Application.csproj" />
   </ItemGroup>
 
 </Project>

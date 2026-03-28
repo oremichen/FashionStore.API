@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using FashionStore.Application.Dtos.Request;
+using FashionStore.Application.Features.Auth;
+using Microsoft.AspNetCore.Mvc;
 
 namespace FashionStore.API.Controllers
 {
@@ -6,10 +8,18 @@ namespace FashionStore.API.Controllers
     [ApiController]
     public class AuthController : BaseApiController
     {
-        [HttpGet("login")]
-        public async Task<IActionResult> Login()
+        private readonly AuthService _authService;
+
+        public AuthController(AuthService authService)
         {
-            return Ok("This endpoint is accessible only to Admins.");
+            _authService = authService;
+        }
+
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] LoginRequest login)
+        {
+            var response = await _authService.Login(login);
+            return ProcessResponse(response);
         }
 
         [HttpGet("Register")]
