@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using FashionStore.Infrastructure.Data;
+using FashionStore.Infrastructure.Seed;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -129,12 +130,12 @@ builder.Services.AddAuthentication(options =>
                     var roles = await userManager.GetRolesAsync(user);
 
                     var claims = new List<System.Security.Claims.Claim>
-            {
-                new(System.Security.Claims.ClaimTypes.NameIdentifier, user.Id),
-                new(System.Security.Claims.ClaimTypes.Email, user.Email!),
-                new(System.Security.Claims.ClaimTypes.GivenName, user.FirstName ?? string.Empty),
-                new(System.Security.Claims.ClaimTypes.Surname, user.LastName ?? string.Empty),
-            };
+                    {
+                        new(System.Security.Claims.ClaimTypes.NameIdentifier, user.Id),
+                        new(System.Security.Claims.ClaimTypes.Email, user.Email!),
+                        new(System.Security.Claims.ClaimTypes.GivenName, user.FirstName ?? string.Empty),
+                        new(System.Security.Claims.ClaimTypes.Surname, user.LastName ?? string.Empty),
+                    };
 
                     // Add each role as a separate claim
                     claims.AddRange(roles.Select(role =>
@@ -206,6 +207,13 @@ builder.Services.AddAuthentication(options =>
 #endregion
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
+    var context = scope.ServiceProvider.GetRequiredService<FashionStoreDbContext>();
+    await Seed.SeedData(context, roleManager, app.Configuration);
+}
 
 if (app.Environment.IsDevelopment())
 {

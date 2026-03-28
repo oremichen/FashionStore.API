@@ -7,13 +7,17 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Dtos\" />
-    <Folder Include="Features\Auth\" />
+    <Folder Include="Abstractions\Auth\" />
     <Folder Include="Features\Cart\" />
     <Folder Include="Features\Notification\" />
     <Folder Include="Features\Wishlist\" />
     <Folder Include="Features\Order\" />
     <Folder Include="Features\Products\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FashionStore.Domain\FashionStore.Domain.csproj" />
+    <ProjectReference Include="..\FashionStore.Shared\FashionStore.Shared.csproj" />
   </ItemGroup>
 
 </Project>
