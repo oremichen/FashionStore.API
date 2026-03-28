@@ -32,7 +32,7 @@ namespace FashionStore.Application.Features.Auth
                 new(ClaimTypes.Email, user.Email ?? string.Empty),
                 new(ClaimTypes.GivenName, user.FirstName ?? string.Empty),
                 new(ClaimTypes.Surname, user.LastName ?? string.Empty),
-                new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+                new(JwtRegisteredClaimNames.Jti, user.Id)
             };
 
             claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));

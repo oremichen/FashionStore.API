@@ -5,19 +5,18 @@ using FashionStore.Domain.Entities;
 using FashionStore.Shared.Common;
 using FashionStore.Shared.Constants;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Configuration;
 
 namespace FashionStore.Application.Features.Auth
 {
     public class AuthService : IAuthService
     {
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly IConfiguration _configuration;
+        private readonly ITokenService _tokenService;
 
-        public AuthService(UserManager<ApplicationUser> userManager, IConfiguration configuration)
+        public AuthService(UserManager<ApplicationUser> userManager, ITokenService tokenService)
         {
             _userManager = userManager;
-            _configuration = configuration;
+            _tokenService = tokenService;
         }
 
         public async Task<ResponseResult<LoginResponse>> Login(LoginRequest login)
@@ -48,7 +47,7 @@ namespace FashionStore.Application.Features.Auth
 
             var roles = await _userManager.GetRolesAsync(user);
             var tokenExpiry = DateTimeOffset.UtcNow.AddHours(1);
-            var token = GenerateJwtToken(user, roles, tokenExpiry);
+            var token = _tokenService.GenerateJwtToken(user, roles, tokenExpiry);
 
             user.LastLoginDate = DateTimeOffset.UtcNow;
             await _userManager.UpdateAsync(user);
