@@ -1,11 +1,12 @@
 using System.Text;
 using FashionStore.Domain.Entities;
-using FashionStore.Infrastructure.Data;
+using FashionStore.API;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using FashionStore.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
