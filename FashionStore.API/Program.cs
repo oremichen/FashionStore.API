@@ -9,8 +9,11 @@ using Microsoft.OpenApi.Models;
 using FashionStore.Infrastructure.Data;
 using FashionStore.Infrastructure.Seed;
 using Serilog;
+using FashionStore.Application;
 
 var builder = WebApplication.CreateBuilder(args);
+const string corsPolicyName = "FrontendCors";
+var allowedCorsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 
 builder.Host.UseSerilog((context, services, configuration) => configuration
     .ReadFrom.Configuration(context.Configuration)
@@ -18,6 +21,15 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
     .Enrich.FromLogContext());
 
 builder.Services.AddControllers();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(corsPolicyName, policy =>
+    {
+        policy.WithOrigins(allowedCorsOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 
 #region Swagger
 builder.Services.AddEndpointsApiExplorer();
@@ -212,6 +224,9 @@ builder.Services.AddAuthentication(options =>
 });
 #endregion
 
+builder.Services.AddApplicationServices();
+//builder.Services.AddInfrastructureServices();
+
 var app = builder.Build();
 
 app.UseSerilogRequestLogging();
@@ -233,9 +248,10 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseMiddleware<GlobalErrorMiddleware>();
-app.UseHttpsRedirection();
-app.UseAuthentication(); // ← must come before UseAuthorization
-app.UseAuthorization();
+app.UseMiddleware<GlobalErrorMiddleware>(); 
+//app.UseHttpsRedirection();                 
+app.UseCors(corsPolicyName);               
+app.UseAuthentication();                   
+app.UseAuthorization();                    
 app.MapControllers();
 app.Run();

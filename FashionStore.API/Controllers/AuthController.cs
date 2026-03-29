@@ -1,7 +1,9 @@
+using FashionStore.Application.Abstractions.Auth;
 using FashionStore.Application.Dtos.Request;
 using FashionStore.Application.Dtos.Response;
 using FashionStore.Application.Features.Auth;
 using FashionStore.Shared.Common;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FashionStore.API.Controllers
@@ -10,15 +12,16 @@ namespace FashionStore.API.Controllers
     [ApiController]
     public class AuthController : BaseApiController
     {
-        private readonly AuthService _authService;
+        private readonly IAuthService _authService;
 
-        public AuthController(AuthService authService)
+        public AuthController(IAuthService authService)
         {
             _authService = authService;
         }
 
         [HttpPost("login")]
         [Produces("application/json")]
+        [AllowAnonymous]
         [ProducesResponseType(typeof(ResponseResult<LoginResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ResponseResult<LoginResponse>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ResponseResult<LoginResponse>), StatusCodes.Status403Forbidden)]
