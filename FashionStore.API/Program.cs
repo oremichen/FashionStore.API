@@ -1,15 +1,35 @@
 using System.Text;
+using FashionStore.API.Middleware;
 using FashionStore.Domain.Entities;
-using FashionStore.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using FashionStore.Infrastructure.Data;
+using FashionStore.Infrastructure.Seed;
+using Serilog;
+using FashionStore.Application;
 
 var builder = WebApplication.CreateBuilder(args);
+const string corsPolicyName = "FrontendCors";
+var allowedCorsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+
+builder.Host.UseSerilog((context, services, configuration) => configuration
+    .ReadFrom.Configuration(context.Configuration)
+    .ReadFrom.Services(services)
+    .Enrich.FromLogContext());
 
 builder.Services.AddControllers();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(corsPolicyName, policy =>
+    {
+        policy.WithOrigins(allowedCorsOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 
 #region Swagger
 builder.Services.AddEndpointsApiExplorer();
@@ -128,12 +148,12 @@ builder.Services.AddAuthentication(options =>
                     var roles = await userManager.GetRolesAsync(user);
 
                     var claims = new List<System.Security.Claims.Claim>
-            {
-                new(System.Security.Claims.ClaimTypes.NameIdentifier, user.Id),
-                new(System.Security.Claims.ClaimTypes.Email, user.Email!),
-                new(System.Security.Claims.ClaimTypes.GivenName, user.FirstName ?? string.Empty),
-                new(System.Security.Claims.ClaimTypes.Surname, user.LastName ?? string.Empty),
-            };
+                    {
+                        new(System.Security.Claims.ClaimTypes.NameIdentifier, user.Id),
+                        new(System.Security.Claims.ClaimTypes.Email, user.Email!),
+                        new(System.Security.Claims.ClaimTypes.GivenName, user.FirstName ?? string.Empty),
+                        new(System.Security.Claims.ClaimTypes.Surname, user.LastName ?? string.Empty),
+                    };
 
                     // Add each role as a separate claim
                     claims.AddRange(roles.Select(role =>
@@ -204,7 +224,19 @@ builder.Services.AddAuthentication(options =>
 });
 #endregion
 
+builder.Services.AddApplicationServices();
+//builder.Services.AddInfrastructureServices();
+
 var app = builder.Build();
+
+app.UseSerilogRequestLogging();
+
+using (var scope = app.Services.CreateScope())
+{
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
+    var context = scope.ServiceProvider.GetRequiredService<FashionStoreDbContext>();
+    await Seed.SeedData(context, roleManager, app.Configuration);
+}
 
 if (app.Environment.IsDevelopment())
 {
@@ -216,8 +248,10 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseHttpsRedirection();
-app.UseAuthentication(); // ← must come before UseAuthorization
-app.UseAuthorization();
+app.UseMiddleware<GlobalErrorMiddleware>(); 
+//app.UseHttpsRedirection();                 
+app.UseCors(corsPolicyName);               
+app.UseAuthentication();                   
+app.UseAuthorization();                    
 app.MapControllers();
 app.Run();

@@ -44,9 +44,9 @@ namespace FashionStore.Domain.Entities
 
         // ── Navigation Properties ──────────────────────────────────
        // public List<UserLog> UserLogs { get; set; } = [];
-        public List<Address> Addresses { get; set; } = [];
-        public List<Order> Orders { get; set; } = [];
-        public List<Wishlist> Wishlist { get; set; } = [];
-        public List<Cart> Cart { get; set; } = [];
+        public ICollection<Address> Addresses { get; set; } = [];
+      //  public ICollection<Order> Orders { get; set; } = [];
+       // public ICollection<Wishlist> Wishlist { get; set; } = [];
+     //   public ICollection<Cart> Cart { get; set; } = [];
     }
 }
