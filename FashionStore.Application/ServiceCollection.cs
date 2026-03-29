@@ -1,6 +1,4 @@
-using FashionStore.Application.Abstractions.Notification;
 using FashionStore.Application.Messages.NotificationQueue;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace FashionStore.Application
 {

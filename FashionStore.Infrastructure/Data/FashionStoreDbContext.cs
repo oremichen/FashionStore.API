@@ -10,6 +10,7 @@ namespace FashionStore.Infrastructure.Data
         }
 
         public DbSet<Address> Addresses { get; set; }
+        public DbSet<FailedEmailNotification> FailedEmailNotifications { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

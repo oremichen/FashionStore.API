@@ -8,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using FashionStore.Infrastructure.Data;
 using FashionStore.Infrastructure.Seed;
+using FashionStore.Infrastructure;
 using Serilog;
 using FashionStore.Application;
 
@@ -96,7 +97,7 @@ builder.Services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
 .AddDefaultTokenProviders();
 
 builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
-    options.TokenLifespan = TimeSpan.FromMinutes(20));
+    options.TokenLifespan = TimeSpan.FromDays(1));
 #endregion
 
 #region JWT Authentication
@@ -225,7 +226,7 @@ builder.Services.AddAuthentication(options =>
 #endregion
 
 builder.Services.AddApplicationServices();
-//builder.Services.AddInfrastructureServices();
+builder.Services.AddInfrastructureServices();
 
 var app = builder.Build();
 

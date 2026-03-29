@@ -1,11 +1,5 @@
 using System.Net;
 using System.Net.Mail;
-using FashionStore.Application.Abstractions.Notification;
-using FashionStore.Domain.Entities;
-using FashionStore.Shared.Common;
-using FashionStore.Shared.Constants;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 
 namespace FashionStore.Application.Features.Notification
 {

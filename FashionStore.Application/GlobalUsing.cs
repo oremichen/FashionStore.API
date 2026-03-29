@@ -8,3 +8,6 @@ global using Microsoft.AspNetCore.Identity;
 global using Microsoft.Extensions.Logging;
 global using Microsoft.Extensions.DependencyInjection;
 global using Microsoft.Extensions.Hosting;
+global using Microsoft.Extensions.Configuration;
+global using FashionStore.Domain.Enums;
+

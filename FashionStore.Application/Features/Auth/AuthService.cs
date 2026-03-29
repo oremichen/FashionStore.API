@@ -1,6 +1,5 @@
 using FashionStore.Application.Abstractions.Auth;
-using FashionStore.Domain.Enums;
-using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace FashionStore.Application.Features.Auth
 {
@@ -103,6 +102,8 @@ namespace FashionStore.Application.Features.Auth
             var existingUser = await _userManager.FindByEmailAsync(request.Email);
             if (existingUser != null)
             {
+                // TODO: Hanlde SSO scenarios for google and facebook where user may already exist,
+                // return message to user to login with SSO instead of registering again
                 _logger.LogError("Registration rejected for email {Email}: user already exists.", request.Email);
                 return response.Fail("A user with this email already exists.", ResponseCodes.DUPLICATE_RECORD);
             }
@@ -114,8 +115,8 @@ namespace FashionStore.Application.Features.Auth
                 UserName = request.Email,
                 Email = request.Email,
                 EmailConfirmed = false,
-                EmailVerified = true,
-                UserStatus = "Active",
+                EmailVerified = false,
+                UserStatus = "PendingConfirmation",
                 IsDeactivated = false,
                 IsDeleted = false,
                 CreatedAt = DateTimeOffset.UtcNow
@@ -163,13 +164,22 @@ namespace FashionStore.Application.Features.Auth
                     errors);
             }
 
-            var loginUrl = _configuration["Frontend:LoginUrl"] ?? "http://localhost:4200/login";
+            var confirmationBaseUrl = _configuration["Frontend:ConfirmationPageUrl"] ?? "http://localhost:4200/confirm-email";
+            var confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            var confirmationUrl = QueryHelpers.AddQueryString(
+                confirmationBaseUrl,
+                new Dictionary<string, string?>
+                {
+                    ["email"] = user.Email,
+                    ["token"] = confirmationToken
+                });
+
             var emailBody = await _emailTemplateRenderer.RenderAsync(
                 EmailNotificationTypeEnum.Registration,
                 new Dictionary<string, string>
                 {
                     ["username"] = $"{user.FirstName} {user.LastName}".Trim(),
-                    ["confirmUrl"] = loginUrl,
+                    ["confirmUrl"] = confirmationUrl,
                     ["year"] = DateTime.UtcNow.Year.ToString()
                 });
 
@@ -181,11 +191,11 @@ namespace FashionStore.Application.Features.Auth
             });
 
             _logger.LogInformation(
-                "Registration successful for user {UserId} with email {Email}. Welcome email queued.",
+                "Registration successful for user {UserId} with email {Email}. Confirmation email queued.",
                 user.Id,
                 user.Email);
 
-            return response.Success("Registration successful. A welcome email has been queued for delivery.");
+            return response.Success("Registration successful. A confirmation email has been queued for delivery.");
         }
     }
 }
