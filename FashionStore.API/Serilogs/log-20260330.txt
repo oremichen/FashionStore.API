@@ -297,3 +297,104 @@ System.Net.Mail.SmtpException: Failure sending mail.
 01:35:38.517 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Email send requested. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". Recipient count: 1.
 01:35:38.562 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "POST" "/api/Auth/login" responded 403 in 730.6355 ms
 01:35:38.584 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Sending email through host "smtp.gmail.com" on port 587 for recipient "oremichenjesumeichen@gmail.com".
+01:41:21.722 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/index.html" responded 200 in 230.5246 ms
+01:41:21.900 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/v1/swagger.json" responded 200 in 26.6361 ms
+01:41:31.803 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "OPTIONS" "/api/Auth/login" responded 204 in 9.5630 ms
+01:41:32.116 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Login attempt received for email "oremichenjesumeichen@gmail.com".
+01:41:32.495 +01:00 [Error] [FashionStore.Application.Features.Auth.AuthService] Login user "442e04f9-6702-4611-8f17-b92c5688ea35" with email "oremichenjesumeichen@gmail.com": email not confirmed.
+01:41:32.577 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "POST" "/api/Auth/login" responded 403 in 764.2601 ms
+01:41:33.298 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Email send requested. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". Recipient count: 1.
+01:41:40.590 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Sending email through host "smtp.gmail.com" on port 465 for recipient "oremichenjesumeichen@gmail.com".
+01:41:51.310 +01:00 [Error] [FashionStore.Application.Features.Notification.EmailNotificationService] SMTP protocol error occurred while sending email. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com".
+MailKit.Net.Smtp.SmtpProtocolException: The SMTP server has unexpectedly disconnected.
+   at MailKit.Net.Smtp.SmtpStream.ReadAheadAsync(CancellationToken cancellationToken)
+   at MailKit.Net.Smtp.SmtpStream.ReadResponseAsync(CancellationToken cancellationToken)
+   at MailKit.Net.Smtp.SmtpClient.PostConnectAsync(Stream stream, String host, Int32 port, SecureSocketOptions options, Boolean starttls, CancellationToken cancellationToken)
+   at MailKit.Net.Smtp.SmtpClient.ConnectAsync(String host, Int32 port, SecureSocketOptions options, CancellationToken cancellationToken)
+   at FashionStore.Application.Features.Notification.EmailNotificationService.SendEmailAsync(EmailNotification notification) in C:\Users\oremi\source\repos\My projects\E-commerce\API\FashionStore\FashionStore.Application\Features\Notification\EmailNotificationService.cs:line 53
+01:41:51.744 +01:00 [Warning] [FashionStore.Application.Messages.NotificationQueue.EmailNotificationProcessorService] Notification delivery failed on attempt 1 of 3. Subject: "Welcome to FashionStore". Error: "Error sending email.".
+01:41:56.751 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Email send requested. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". Recipient count: 1.
+01:42:11.025 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Sending email through host "smtp.gmail.com" on port 465 for recipient "oremichenjesumeichen@gmail.com".
+01:45:16.712 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/index.html" responded 200 in 153.6582 ms
+01:45:16.840 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/v1/swagger.json" responded 200 in 16.4494 ms
+01:45:57.544 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "OPTIONS" "/api/Auth/register" responded 204 in 6.6898 ms
+01:46:00.321 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Registration attempt received for email "michen.jesumichen@fcmb.com".
+01:46:01.335 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Registration successful for user "c89b76a3-f4e0-4b09-84f3-9dbf4ec312a6" with email "michen.jesumichen@fcmb.com". Confirmation email queued.
+01:46:01.366 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "POST" "/api/Auth/register" responded 200 in 3813.4275 ms
+01:46:02.379 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Email send requested. Subject: "Welcome to FashionStore". First recipient: "michen.jesumichen@fcmb.com". Recipient count: 1.
+01:46:02.469 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Sending email through host "smtp.gmail.com" on port 465 for recipient "michen.jesumichen@fcmb.com".
+01:46:04.798 +01:00 [Error] [FashionStore.Application.Features.Notification.EmailNotificationService] Unexpected error occurred while sending email. Subject: "Welcome to FashionStore". First recipient: "michen.jesumichen@fcmb.com".
+MailKit.Security.AuthenticationException: 535: 5.7.8 Username and Password not accepted. For more information, go to
+5.7.8  https://support.google.com/mail/?p=BadCredentials 5b1f17b1804b1-48725eaedbesm69108935e9.5 - gsmtp
+ ---> MailKit.Net.Smtp.SmtpCommandException: 5.7.8 Username and Password not accepted. For more information, go to
+5.7.8  https://support.google.com/mail/?p=BadCredentials 5b1f17b1804b1-48725eaedbesm69108935e9.5 - gsmtp
+   --- End of inner exception stack trace ---
+   at MailKit.Net.Smtp.SmtpClient.AuthenticateAsync(Encoding encoding, ICredentials credentials, CancellationToken cancellationToken)
+   at FashionStore.Application.Features.Notification.EmailNotificationService.SendEmailAsync(EmailNotification notification) in C:\Users\oremi\source\repos\My projects\E-commerce\API\FashionStore\FashionStore.Application\Features\Notification\EmailNotificationService.cs:line 60
+01:46:04.846 +01:00 [Warning] [FashionStore.Application.Messages.NotificationQueue.EmailNotificationProcessorService] Notification delivery failed on attempt 1 of 3. Subject: "Welcome to FashionStore". Error: "An unexpected error occurred while sending email.".
+01:46:09.854 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Email send requested. Subject: "Welcome to FashionStore". First recipient: "michen.jesumichen@fcmb.com". Recipient count: 1.
+01:46:09.862 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Sending email through host "smtp.gmail.com" on port 465 for recipient "michen.jesumichen@fcmb.com".
+01:46:11.715 +01:00 [Error] [FashionStore.Application.Features.Notification.EmailNotificationService] Unexpected error occurred while sending email. Subject: "Welcome to FashionStore". First recipient: "michen.jesumichen@fcmb.com".
+MailKit.Security.AuthenticationException: 535: 5.7.8 Username and Password not accepted. For more information, go to
+5.7.8  https://support.google.com/mail/?p=BadCredentials 5b1f17b1804b1-48722c6b495sm469414655e9.2 - gsmtp
+ ---> MailKit.Net.Smtp.SmtpCommandException: 5.7.8 Username and Password not accepted. For more information, go to
+5.7.8  https://support.google.com/mail/?p=BadCredentials 5b1f17b1804b1-48722c6b495sm469414655e9.2 - gsmtp
+   --- End of inner exception stack trace ---
+   at MailKit.Net.Smtp.SmtpClient.AuthenticateAsync(Encoding encoding, ICredentials credentials, CancellationToken cancellationToken)
+   at FashionStore.Application.Features.Notification.EmailNotificationService.SendEmailAsync(EmailNotification notification) in C:\Users\oremi\source\repos\My projects\E-commerce\API\FashionStore\FashionStore.Application\Features\Notification\EmailNotificationService.cs:line 60
+01:46:11.726 +01:00 [Warning] [FashionStore.Application.Messages.NotificationQueue.EmailNotificationProcessorService] Notification delivery failed on attempt 2 of 3. Subject: "Welcome to FashionStore". Error: "An unexpected error occurred while sending email.".
+01:46:16.736 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Email send requested. Subject: "Welcome to FashionStore". First recipient: "michen.jesumichen@fcmb.com". Recipient count: 1.
+01:46:16.750 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Sending email through host "smtp.gmail.com" on port 465 for recipient "michen.jesumichen@fcmb.com".
+01:46:18.528 +01:00 [Error] [FashionStore.Application.Features.Notification.EmailNotificationService] Unexpected error occurred while sending email. Subject: "Welcome to FashionStore". First recipient: "michen.jesumichen@fcmb.com".
+MailKit.Security.AuthenticationException: 535: 5.7.8 Username and Password not accepted. For more information, go to
+5.7.8  https://support.google.com/mail/?p=BadCredentials 5b1f17b1804b1-4873062ec9bsm141267525e9.7 - gsmtp
+ ---> MailKit.Net.Smtp.SmtpCommandException: 5.7.8 Username and Password not accepted. For more information, go to
+5.7.8  https://support.google.com/mail/?p=BadCredentials 5b1f17b1804b1-4873062ec9bsm141267525e9.7 - gsmtp
+   --- End of inner exception stack trace ---
+   at MailKit.Net.Smtp.SmtpClient.AuthenticateAsync(Encoding encoding, ICredentials credentials, CancellationToken cancellationToken)
+   at FashionStore.Application.Features.Notification.EmailNotificationService.SendEmailAsync(EmailNotification notification) in C:\Users\oremi\source\repos\My projects\E-commerce\API\FashionStore\FashionStore.Application\Features\Notification\EmailNotificationService.cs:line 60
+01:46:18.540 +01:00 [Warning] [FashionStore.Application.Messages.NotificationQueue.EmailNotificationProcessorService] Notification delivery failed on attempt 3 of 3. Subject: "Welcome to FashionStore". Error: "An unexpected error occurred while sending email.".
+01:46:18.681 +01:00 [Error] [FashionStore.Application.Messages.NotificationQueue.EmailNotificationProcessorService] Notification was persisted as failed after 3 attempts. Subject: "Welcome to FashionStore". Error: "An unexpected error occurred while sending email.".
+01:51:57.205 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/index.html" responded 200 in 130.0611 ms
+01:51:57.381 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/v1/swagger.json" responded 200 in 27.9265 ms
+01:52:34.120 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "OPTIONS" "/api/Auth/register" responded 204 in 7.2373 ms
+01:52:36.779 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Registration attempt received for email "michen.jesumichen@fcmb.com".
+01:52:38.082 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Registration successful for user "7d7d0154-1fde-437e-b600-3fa65d818d7d" with email "michen.jesumichen@fcmb.com". Confirmation email queued.
+01:52:44.527 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Email send requested. Subject: "Welcome to FashionStore". First recipient: "michen.jesumichen@fcmb.com". Recipient count: 1.
+01:52:46.006 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "POST" "/api/Auth/register" responded 200 in 11876.0535 ms
+01:52:51.301 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Sending email through host "smtp.gmail.com" on port 465 for recipient "michen.jesumichen@fcmb.com".
+01:53:59.301 +01:00 [Error] [FashionStore.Application.Features.Notification.EmailNotificationService] Unexpected error occurred while sending email. Subject: "Welcome to FashionStore". First recipient: "michen.jesumichen@fcmb.com".
+MailKit.Security.AuthenticationException: 535: 5.7.8 Username and Password not accepted. For more information, go to
+5.7.8  https://support.google.com/mail/?p=BadCredentials ffacd0b85a97d-43cf2570b18sm17637658f8f.31 - gsmtp
+ ---> MailKit.Net.Smtp.SmtpCommandException: 5.7.8 Username and Password not accepted. For more information, go to
+5.7.8  https://support.google.com/mail/?p=BadCredentials ffacd0b85a97d-43cf2570b18sm17637658f8f.31 - gsmtp
+   --- End of inner exception stack trace ---
+   at MailKit.Net.Smtp.SmtpClient.AuthenticateAsync(Encoding encoding, ICredentials credentials, CancellationToken cancellationToken)
+   at FashionStore.Application.Features.Notification.EmailNotificationService.SendEmailAsync(EmailNotification notification) in C:\Users\oremi\source\repos\My projects\E-commerce\API\FashionStore\FashionStore.Application\Features\Notification\EmailNotificationService.cs:line 60
+02:02:09.145 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/index.html" responded 200 in 1246.9649 ms
+02:02:09.288 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/v1/swagger.json" responded 200 in 24.8311 ms
+02:02:43.472 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "OPTIONS" "/api/Auth/login" responded 204 in 5.3678 ms
+02:02:43.669 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Login attempt received for email "michen.jesumichen@fcmb.com".
+02:02:44.083 +01:00 [Error] [FashionStore.Application.Features.Auth.AuthService] Login user "7d7d0154-1fde-437e-b600-3fa65d818d7d" with email "michen.jesumichen@fcmb.com": email not confirmed.
+02:02:44.192 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "POST" "/api/Auth/login" responded 403 in 711.2816 ms
+02:02:47.630 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Email send requested. Subject: "Welcome to FashionStore". First recipient: "michen.jesumichen@fcmb.com". Recipient count: 1.
+02:02:47.774 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Sending email through host "smtp.gmail.com" on port 465 for recipient "michen.jesumichen@fcmb.com".
+02:02:49.854 +01:00 [Error] [FashionStore.Application.Features.Notification.EmailNotificationService] Unexpected error occurred while sending email. Subject: "Welcome to FashionStore". First recipient: "michen.jesumichen@fcmb.com".
+MailKit.Security.AuthenticationException: 535: 5.7.8 Username and Password not accepted. For more information, go to
+5.7.8  https://support.google.com/mail/?p=BadCredentials ffacd0b85a97d-43cf2471ee2sm13658868f8f.29 - gsmtp
+ ---> MailKit.Net.Smtp.SmtpCommandException: 5.7.8 Username and Password not accepted. For more information, go to
+5.7.8  https://support.google.com/mail/?p=BadCredentials ffacd0b85a97d-43cf2471ee2sm13658868f8f.29 - gsmtp
+   --- End of inner exception stack trace ---
+   at MailKit.Net.Smtp.SmtpClient.AuthenticateAsync(Encoding encoding, ICredentials credentials, CancellationToken cancellationToken)
+   at FashionStore.Application.Features.Notification.EmailNotificationService.SendEmailAsync(EmailNotification notification) in C:\Users\oremi\source\repos\My projects\E-commerce\API\FashionStore\FashionStore.Application\Features\Notification\EmailNotificationService.cs:line 60
+02:02:49.884 +01:00 [Warning] [FashionStore.Application.Messages.NotificationQueue.EmailNotificationProcessorService] Notification delivery failed on attempt 1 of 3. Subject: "Welcome to FashionStore". Error: "An unexpected error occurred while sending email.".
+02:17:01.722 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/index.html" responded 200 in 204.4764 ms
+02:17:01.888 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/v1/swagger.json" responded 200 in 20.3971 ms
+02:17:47.626 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "OPTIONS" "/api/Auth/login" responded 204 in 7.5020 ms
+02:17:47.909 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Login attempt received for email "michen.jesumichen@fcmb.com".
+02:17:48.359 +01:00 [Error] [FashionStore.Application.Features.Auth.AuthService] Login user "7d7d0154-1fde-437e-b600-3fa65d818d7d" with email "michen.jesumichen@fcmb.com": email not confirmed.
+02:17:54.155 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Email send requested. Subject: "Welcome to FashionStore". First recipient: "michen.jesumichen@fcmb.com". Recipient count: 1.
+02:17:56.763 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "POST" "/api/Auth/login" responded 403 in 9128.1565 ms
+02:18:05.449 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Sending email through host "smtp.gmail.com" on port 465 for recipient "michen.jesumichen@fcmb.com".
+02:18:31.197 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Email sent successfully. Subject: "Welcome to FashionStore". First recipient: "michen.jesumichen@fcmb.com".
+02:18:31.220 +01:00 [Information] [FashionStore.Application.Messages.NotificationQueue.EmailNotificationProcessorService] Processed notification successfully on attempt 1. Subject: "Welcome to FashionStore".

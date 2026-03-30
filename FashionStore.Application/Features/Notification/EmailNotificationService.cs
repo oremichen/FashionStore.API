@@ -1,5 +1,6 @@
-using System.Net;
-using System.Net.Mail;
+using MailKit.Net.Smtp;
+using MailKit.Security;
+using MimeKit;
 
 namespace FashionStore.Application.Features.Notification
 {
@@ -32,16 +33,35 @@ namespace FashionStore.Application.Features.Notification
 
             try
             {
-                using var smtpClient = BuildSmtpClient();
-                using var message = BuildMailMessage(notification);
+                using var smtpClient = new SmtpClient();
+                var host = _configuration["MailSettings:SmtpHost"]
+                    ?? throw new InvalidOperationException("MailSettings:SmtpHost is not configured.");
+                var port = _configuration.GetValue<int?>("MailSettings:Port")
+                    ?? throw new InvalidOperationException("MailSettings:Port is not configured.");
+                var username = _configuration["MailSettings:Username"];
+                var password = _configuration["MailSettings:Password"];
+                var enableSsl = _configuration.GetValue("MailSettings:EnableSsl", true);
+
+                var message = BuildMimeMessage(notification);
 
                 _logger.LogInformation(
                     "Sending email through host {Host} on port {Port} for recipient {Recipient}.",
-                    smtpClient.Host,
-                    smtpClient.Port,
+                    host,
+                    port,
                     notification.To[0]);
 
-                await smtpClient.SendMailAsync(message);
+                await smtpClient.ConnectAsync(
+                    host,
+                    port,
+                    SecureSocketOptions.SslOnConnect);
+
+                if (!string.IsNullOrWhiteSpace(username) && !string.IsNullOrWhiteSpace(password))
+                {
+                    await smtpClient.AuthenticateAsync(username, password);
+                }
+
+                await smtpClient.SendAsync(message);
+                await smtpClient.DisconnectAsync(true);
 
                 _logger.LogInformation(
                     "Email sent successfully. Subject: {Subject}. First recipient: {Recipient}.",
@@ -50,14 +70,24 @@ namespace FashionStore.Application.Features.Notification
 
                 return response.Success("Email sent successfully.");
             }
-            catch (SmtpException exception)
+            catch (SmtpCommandException exception)
             {
                 _logger.LogError(
                     exception,
-                    "Failed to send email. Subject: {Subject}. First recipient: {Recipient}. SMTP status: {StatusCode}.",
+                    "Failed to send email. Subject: {Subject}. First recipient: {Recipient}. SMTP status code: {StatusCode}.",
                     notification.Subject,
                     notification.To[0],
                     exception.StatusCode);
+
+                return response.Fail("Error sending email.", ResponseCodes.SERVICE_UNAVAILABLE);
+            }
+            catch (SmtpProtocolException exception)
+            {
+                _logger.LogError(
+                    exception,
+                    "SMTP protocol error occurred while sending email. Subject: {Subject}. First recipient: {Recipient}.",
+                    notification.Subject,
+                    notification.To[0]);
 
                 return response.Fail("Error sending email.", ResponseCodes.SERVICE_UNAVAILABLE);
             }
@@ -73,30 +103,7 @@ namespace FashionStore.Application.Features.Notification
             }
         }
 
-        private SmtpClient BuildSmtpClient()
-        {
-            var host = _configuration["MailSettings:SmtpHost"]
-                ?? throw new InvalidOperationException("MailSettings:SmtpHost is not configured.");
-            var port = _configuration.GetValue<int?>("MailSettings:Port")
-                ?? throw new InvalidOperationException("MailSettings:Port is not configured.");
-            var username = _configuration["MailSettings:Username"];
-            var password = _configuration["MailSettings:Password"];
-            var enableSsl = _configuration.GetValue("MailSettings:EnableSsl", true);
-
-            var smtpClient = new SmtpClient(host, port)
-            {
-                EnableSsl = enableSsl
-            };
-
-            if (!string.IsNullOrWhiteSpace(username) && !string.IsNullOrWhiteSpace(password))
-            {
-                smtpClient.Credentials = new NetworkCredential(username, password);
-            }
-
-            return smtpClient;
-        }
-
-        private MailMessage BuildMailMessage(EmailNotification notification)
+        private MimeMessage BuildMimeMessage(EmailNotification notification)
         {
             var fromAddress = notification.From;
             if (string.IsNullOrWhiteSpace(fromAddress))
@@ -105,17 +112,17 @@ namespace FashionStore.Application.Features.Notification
                     ?? throw new InvalidOperationException("MailSettings:DefaultFromAddress is not configured.");
             }
 
-            var message = new MailMessage
-            {
-                From = new MailAddress(fromAddress),
-                Subject = notification.Subject,
-                Body = notification.Body,
-                IsBodyHtml = true
-            };
-
+            var message = new MimeMessage();
+            message.From.Add(MailboxAddress.Parse(fromAddress));
             AddAddresses(message.To, notification.To);
-            AddAddresses(message.CC, notification.Cc);
+            AddAddresses(message.Cc, notification.Cc);
             AddAddresses(message.Bcc, notification.Bcc);
+            message.Subject = notification.Subject;
+
+            var bodyBuilder = new BodyBuilder
+            {
+                HtmlBody = notification.Body
+            };
 
             if (notification.Attchements != null)
             {
@@ -126,9 +133,7 @@ namespace FashionStore.Application.Features.Notification
                         continue;
                     }
 
-                    var stream = new MemoryStream(attachment.Attachmentfile);
-                    var mailAttachment = new System.Net.Mail.Attachment(stream, attachment.FileName);
-                    message.Attachments.Add(mailAttachment);
+                    bodyBuilder.Attachments.Add(attachment.FileName, attachment.Attachmentfile);
                 }
 
                 _logger.LogInformation(
@@ -137,10 +142,11 @@ namespace FashionStore.Application.Features.Notification
                     notification.To[0]);
             }
 
+            message.Body = bodyBuilder.ToMessageBody();
             return message;
         }
 
-        private static void AddAddresses(MailAddressCollection targetCollection, List<string>? addresses)
+        private static void AddAddresses(InternetAddressList targetCollection, List<string>? addresses)
         {
             if (addresses == null || addresses.Count == 0)
             {
@@ -149,7 +155,7 @@ namespace FashionStore.Application.Features.Notification
 
             foreach (var address in addresses.Where(address => !string.IsNullOrWhiteSpace(address)))
             {
-                targetCollection.Add(new MailAddress(address));
+                targetCollection.Add(MailboxAddress.Parse(address));
             }
         }
     }
