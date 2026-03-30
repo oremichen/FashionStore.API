@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using FashionStore.Application.Messages.NotificationQueue;
 
 namespace FashionStore.Application
 {
@@ -8,6 +8,13 @@ namespace FashionStore.Application
         {
             services.AddScoped<Abstractions.Auth.IAuthService, Features.Auth.AuthService>();
             services.AddScoped<Abstractions.Auth.ITokenService, Features.Auth.TokenService>();
+            services.AddScoped<IEmailNotificationService, Features.Notification.EmailNotificationService>();
+            services.AddScoped<IEmailTemplateRenderer, Features.Notification.EmailTemplateRenderer>();
+
+            services.AddSingleton<EmailNotificationQueueService>();
+            services.AddSingleton<IEmailNotificationQueueService>(sp => sp.GetRequiredService<EmailNotificationQueueService>());
+            services.AddHostedService<EmailNotificationProcessorService>();
+
             return services;
         }
     }

@@ -21,7 +21,6 @@ namespace FashionStore.API.Controllers
 
         [HttpPost("login")]
         [Produces("application/json")]
-        [AllowAnonymous]
         [ProducesResponseType(typeof(ResponseResult<LoginResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ResponseResult<LoginResponse>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ResponseResult<LoginResponse>), StatusCodes.Status403Forbidden)]
@@ -33,10 +32,17 @@ namespace FashionStore.API.Controllers
             return ProcessResponse(response);
         }
 
-        [HttpGet("Register")]
-        public async Task<IActionResult> Register()
+        [HttpPost("register")]
+        [Produces("application/json")]
+        [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status409Conflict)]
+        [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
+        [EndpointSummary("Register user")]
+        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
-            return Ok("This endpoint is accessible only to Admins.");
+            var response = await _authService.Register(request);
+            return ProcessResponse(response);
         }
     }
 }

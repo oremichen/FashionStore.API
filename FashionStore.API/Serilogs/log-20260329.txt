@@ -131,3 +131,4 @@ System.InvalidOperationException: Unable to resolve service for type 'FashionSto
 19:15:56.668 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Login attempt received for email "oremichenjesumeichen@gmail.com".
 19:15:56.679 +01:00 [Error] [FashionStore.Application.Features.Auth.AuthService] Login failed for email "oremichenjesumeichen@gmail.com": user was not found.
 19:15:56.683 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "POST" "/api/Auth/login" responded 400 in 34.9956 ms
+21:05:56.408 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/RegisterTemplate.html" responded 404 in 71.3631 ms
