@@ -1,0 +1,299 @@
+00:35:16.354 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/index.html" responded 200 in 278.7620 ms
+00:35:16.718 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/v1/swagger.json" responded 200 in 51.9266 ms
+00:36:25.771 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "OPTIONS" "/api/Auth/register" responded 204 in 4.9160 ms
+00:36:40.464 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Registration attempt received for email "oremichenjesumeichen@gmail.com".
+00:38:53.368 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Registration successful for user "442e04f9-6702-4611-8f17-b92c5688ea35" with email "oremichenjesumeichen@gmail.com". Confirmation email queued.
+00:39:24.920 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Email send requested. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". Recipient count: 1.
+00:39:26.955 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "POST" "/api/Auth/register" responded 200 in 181173.4926 ms
+00:39:29.511 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Sending email through host "smtp.gmail.com" on port 587 for recipient "oremichenjesumeichen@gmail.com".
+00:41:34.544 +01:00 [Error] [FashionStore.Application.Features.Notification.EmailNotificationService] Failed to send email. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". SMTP status: MustIssueStartTlsFirst.
+System.Net.Mail.SmtpException: The SMTP server requires a secure connection or the client was not authenticated. The server response was: 5.7.0 Authentication Required. For more information, go to
+   at System.Net.Mail.MailCommand.CheckResponse(SmtpStatusCode statusCode, String response)
+   at System.Net.Mail.MailCommand.<SendAsync>g__SendAndCheck|0_0[TIOAdapter](SmtpConnection conn, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpTransport.SendMailAsync[TIOAdapter](MailAddress sender, MailAddressCollection recipients, String deliveryNotify, Boolean allowUnicode, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpClient.SendAsyncInternal[TIOAdapter](MailMessage message, Boolean invokeSendCompleted, Object userToken, Boolean forceWrapExceptions, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpClient.<SendMailAsync>g__WaitAndRethrowIfNeeded|75_0(Task`1 task)
+   at FashionStore.Application.Features.Notification.EmailNotificationService.SendEmailAsync(EmailNotification notification) in C:\Users\oremi\source\repos\My projects\E-commerce\API\FashionStore\FashionStore.Application\Features\Notification\EmailNotificationService.cs:line 44
+00:41:45.202 +01:00 [Warning] [FashionStore.Application.Messages.NotificationQueue.EmailNotificationProcessorService] Notification delivery failed on attempt 1 of 3. Subject: "Welcome to FashionStore". Error: "Error sending email.".
+00:42:11.057 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Email send requested. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". Recipient count: 1.
+00:42:11.062 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Sending email through host "smtp.gmail.com" on port 587 for recipient "oremichenjesumeichen@gmail.com".
+00:42:20.410 +01:00 [Error] [FashionStore.Application.Features.Notification.EmailNotificationService] Failed to send email. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". SMTP status: MustIssueStartTlsFirst.
+System.Net.Mail.SmtpException: The SMTP server requires a secure connection or the client was not authenticated. The server response was: 5.7.0 Authentication Required. For more information, go to
+   at System.Net.Mail.MailCommand.CheckResponse(SmtpStatusCode statusCode, String response)
+   at System.Net.Mail.MailCommand.<SendAsync>g__SendAndCheck|0_0[TIOAdapter](SmtpConnection conn, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpTransport.SendMailAsync[TIOAdapter](MailAddress sender, MailAddressCollection recipients, String deliveryNotify, Boolean allowUnicode, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpClient.SendAsyncInternal[TIOAdapter](MailMessage message, Boolean invokeSendCompleted, Object userToken, Boolean forceWrapExceptions, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpClient.<SendMailAsync>g__WaitAndRethrowIfNeeded|75_0(Task`1 task)
+   at FashionStore.Application.Features.Notification.EmailNotificationService.SendEmailAsync(EmailNotification notification) in C:\Users\oremi\source\repos\My projects\E-commerce\API\FashionStore\FashionStore.Application\Features\Notification\EmailNotificationService.cs:line 44
+00:42:20.421 +01:00 [Warning] [FashionStore.Application.Messages.NotificationQueue.EmailNotificationProcessorService] Notification delivery failed on attempt 2 of 3. Subject: "Welcome to FashionStore". Error: "Error sending email.".
+00:42:31.382 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Email send requested. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". Recipient count: 1.
+00:42:31.386 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Sending email through host "smtp.gmail.com" on port 587 for recipient "oremichenjesumeichen@gmail.com".
+00:42:33.093 +01:00 [Error] [FashionStore.Application.Features.Notification.EmailNotificationService] Failed to send email. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". SMTP status: MustIssueStartTlsFirst.
+System.Net.Mail.SmtpException: The SMTP server requires a secure connection or the client was not authenticated. The server response was: 5.7.0 Authentication Required. For more information, go to
+   at System.Net.Mail.MailCommand.CheckResponse(SmtpStatusCode statusCode, String response)
+   at System.Net.Mail.MailCommand.<SendAsync>g__SendAndCheck|0_0[TIOAdapter](SmtpConnection conn, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpTransport.SendMailAsync[TIOAdapter](MailAddress sender, MailAddressCollection recipients, String deliveryNotify, Boolean allowUnicode, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpClient.SendAsyncInternal[TIOAdapter](MailMessage message, Boolean invokeSendCompleted, Object userToken, Boolean forceWrapExceptions, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpClient.<SendMailAsync>g__WaitAndRethrowIfNeeded|75_0(Task`1 task)
+   at FashionStore.Application.Features.Notification.EmailNotificationService.SendEmailAsync(EmailNotification notification) in C:\Users\oremi\source\repos\My projects\E-commerce\API\FashionStore\FashionStore.Application\Features\Notification\EmailNotificationService.cs:line 44
+00:42:33.108 +01:00 [Warning] [FashionStore.Application.Messages.NotificationQueue.EmailNotificationProcessorService] Notification delivery failed on attempt 3 of 3. Subject: "Welcome to FashionStore". Error: "Error sending email.".
+00:42:33.298 +01:00 [Error] [Microsoft.EntityFrameworkCore.Database.Command] Failed executing DbCommand ("18"ms) [Parameters=["@p0='?' (DbType = Guid), @p1='?' (Size = 4000), @p2='?' (Size = -1), @p3='?' (Size = 4000), @p4='?' (DbType = DateTimeOffset), @p5='?' (DbType = DateTimeOffset), @p6='?' (Size = 4000), @p7='?' (Size = 4000), @p8='?' (DbType = Int32), @p9='?' (Size = 4000), @p10='?' (Size = 4000), @p11='?' (Size = 4000)"], CommandType='Text', CommandTimeout='30']"
+""SET IMPLICIT_TRANSACTIONS OFF;
+SET NOCOUNT ON;
+INSERT INTO [FailedEmailNotifications] ([Id], [BccRecipients], [Body], [CcRecipients], [CreatedAt], [FailedAt], [From], [LastError], [RetryCount], [Status], [Subject], [ToRecipients])
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11);"
+00:42:33.346 +01:00 [Error] [Microsoft.EntityFrameworkCore.Update] An exception occurred in the database while saving changes for context type '"FashionStore.Infrastructure.Data.FashionStoreDbContext"'."
+""Microsoft.EntityFrameworkCore.DbUpdateException: An error occurred while saving the entity changes. See the inner exception for details.
+ ---> Microsoft.Data.SqlClient.SqlException (0x80131904): Invalid object name 'FailedEmailNotifications'.
+   at Microsoft.Data.SqlClient.SqlCommand.<>c.<ExecuteDbDataReaderAsync>b__195_0(Task`1 result)
+   at System.Threading.Tasks.ContinuationResultTaskFromResultTask`2.InnerInvoke()
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& currentTaskSlot, Thread threadPoolThread)
+--- End of stack trace from previous location ---
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+ClientConnectionId:00605bc5-b714-45f1-bd94-33798969c27a
+Error Number:208,State:1,Class:16
+   --- End of inner exception stack trace ---
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.SqlServer.Update.Internal.SqlServerModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalDatabase.SaveChangesAsync(IList`1 entries, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(IList`1 entriesToSave, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(StateManager stateManager, Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.<>c__DisplayClass30_0`2.<<ExecuteAsync>b__0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteImplementationAsync[TState,TResult](Func`4 operation, Func`4 verifySucceeded, TState state, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteImplementationAsync[TState,TResult](Func`4 operation, Func`4 verifySucceeded, TState state, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)"
+Microsoft.EntityFrameworkCore.DbUpdateException: An error occurred while saving the entity changes. See the inner exception for details.
+ ---> Microsoft.Data.SqlClient.SqlException (0x80131904): Invalid object name 'FailedEmailNotifications'.
+   at Microsoft.Data.SqlClient.SqlCommand.<>c.<ExecuteDbDataReaderAsync>b__195_0(Task`1 result)
+   at System.Threading.Tasks.ContinuationResultTaskFromResultTask`2.InnerInvoke()
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& currentTaskSlot, Thread threadPoolThread)
+--- End of stack trace from previous location ---
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+ClientConnectionId:00605bc5-b714-45f1-bd94-33798969c27a
+Error Number:208,State:1,Class:16
+   --- End of inner exception stack trace ---
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.SqlServer.Update.Internal.SqlServerModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalDatabase.SaveChangesAsync(IList`1 entries, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(IList`1 entriesToSave, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(StateManager stateManager, Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.<>c__DisplayClass30_0`2.<<ExecuteAsync>b__0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteImplementationAsync[TState,TResult](Func`4 operation, Func`4 verifySucceeded, TState state, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteImplementationAsync[TState,TResult](Func`4 operation, Func`4 verifySucceeded, TState state, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+01:12:37.014 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/index.html" responded 200 in 241.7206 ms
+01:12:37.266 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/v1/swagger.json" responded 200 in 37.4170 ms
+01:14:13.322 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "OPTIONS" "/api/Auth/login" responded 204 in 7.4597 ms
+01:14:13.672 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Login attempt received for email "oremichenjesumeichen@gmail.com".
+01:14:14.163 +01:00 [Error] [FashionStore.Application.Features.Auth.AuthService] Login user "442e04f9-6702-4611-8f17-b92c5688ea35" with email "oremichenjesumeichen@gmail.com": email not confirmed.
+01:14:23.394 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Email send requested. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". Recipient count: 1.
+01:14:23.418 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "POST" "/api/Auth/login" responded 403 in 10080.5263 ms
+01:14:23.445 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Sending email through host "smtp.gmail.com" on port 587 for recipient "oremichenjesumeichen@gmail.com".
+01:14:25.257 +01:00 [Error] [FashionStore.Application.Features.Notification.EmailNotificationService] Failed to send email. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". SMTP status: MustIssueStartTlsFirst.
+System.Net.Mail.SmtpException: The SMTP server requires a secure connection or the client was not authenticated. The server response was: 5.7.0 Authentication Required. For more information, go to
+   at System.Net.Mail.MailCommand.CheckResponse(SmtpStatusCode statusCode, String response)
+   at System.Net.Mail.MailCommand.<SendAsync>g__SendAndCheck|0_0[TIOAdapter](SmtpConnection conn, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpTransport.SendMailAsync[TIOAdapter](MailAddress sender, MailAddressCollection recipients, String deliveryNotify, Boolean allowUnicode, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpClient.SendAsyncInternal[TIOAdapter](MailMessage message, Boolean invokeSendCompleted, Object userToken, Boolean forceWrapExceptions, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpClient.<SendMailAsync>g__WaitAndRethrowIfNeeded|75_0(Task`1 task)
+   at FashionStore.Application.Features.Notification.EmailNotificationService.SendEmailAsync(EmailNotification notification) in C:\Users\oremi\source\repos\My projects\E-commerce\API\FashionStore\FashionStore.Application\Features\Notification\EmailNotificationService.cs:line 44
+01:14:25.301 +01:00 [Warning] [FashionStore.Application.Messages.NotificationQueue.EmailNotificationProcessorService] Notification delivery failed on attempt 1 of 3. Subject: "Welcome to FashionStore". Error: "Error sending email.".
+01:14:51.785 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Email send requested. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". Recipient count: 1.
+01:14:51.793 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Sending email through host "smtp.gmail.com" on port 587 for recipient "oremichenjesumeichen@gmail.com".
+01:14:53.579 +01:00 [Error] [FashionStore.Application.Features.Notification.EmailNotificationService] Failed to send email. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". SMTP status: MustIssueStartTlsFirst.
+System.Net.Mail.SmtpException: The SMTP server requires a secure connection or the client was not authenticated. The server response was: 5.7.0 Authentication Required. For more information, go to
+   at System.Net.Mail.MailCommand.CheckResponse(SmtpStatusCode statusCode, String response)
+   at System.Net.Mail.MailCommand.<SendAsync>g__SendAndCheck|0_0[TIOAdapter](SmtpConnection conn, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpTransport.SendMailAsync[TIOAdapter](MailAddress sender, MailAddressCollection recipients, String deliveryNotify, Boolean allowUnicode, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpClient.SendAsyncInternal[TIOAdapter](MailMessage message, Boolean invokeSendCompleted, Object userToken, Boolean forceWrapExceptions, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpClient.<SendMailAsync>g__WaitAndRethrowIfNeeded|75_0(Task`1 task)
+   at FashionStore.Application.Features.Notification.EmailNotificationService.SendEmailAsync(EmailNotification notification) in C:\Users\oremi\source\repos\My projects\E-commerce\API\FashionStore\FashionStore.Application\Features\Notification\EmailNotificationService.cs:line 44
+01:14:53.586 +01:00 [Warning] [FashionStore.Application.Messages.NotificationQueue.EmailNotificationProcessorService] Notification delivery failed on attempt 2 of 3. Subject: "Welcome to FashionStore". Error: "Error sending email.".
+01:14:58.595 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Email send requested. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". Recipient count: 1.
+01:14:58.601 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Sending email through host "smtp.gmail.com" on port 587 for recipient "oremichenjesumeichen@gmail.com".
+01:15:00.454 +01:00 [Error] [FashionStore.Application.Features.Notification.EmailNotificationService] Failed to send email. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". SMTP status: MustIssueStartTlsFirst.
+System.Net.Mail.SmtpException: The SMTP server requires a secure connection or the client was not authenticated. The server response was: 5.7.0 Authentication Required. For more information, go to
+   at System.Net.Mail.MailCommand.CheckResponse(SmtpStatusCode statusCode, String response)
+   at System.Net.Mail.MailCommand.<SendAsync>g__SendAndCheck|0_0[TIOAdapter](SmtpConnection conn, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpTransport.SendMailAsync[TIOAdapter](MailAddress sender, MailAddressCollection recipients, String deliveryNotify, Boolean allowUnicode, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpClient.SendAsyncInternal[TIOAdapter](MailMessage message, Boolean invokeSendCompleted, Object userToken, Boolean forceWrapExceptions, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpClient.<SendMailAsync>g__WaitAndRethrowIfNeeded|75_0(Task`1 task)
+   at FashionStore.Application.Features.Notification.EmailNotificationService.SendEmailAsync(EmailNotification notification) in C:\Users\oremi\source\repos\My projects\E-commerce\API\FashionStore\FashionStore.Application\Features\Notification\EmailNotificationService.cs:line 44
+01:15:00.461 +01:00 [Warning] [FashionStore.Application.Messages.NotificationQueue.EmailNotificationProcessorService] Notification delivery failed on attempt 3 of 3. Subject: "Welcome to FashionStore". Error: "Error sending email.".
+01:15:00.849 +01:00 [Error] [FashionStore.Application.Messages.NotificationQueue.EmailNotificationProcessorService] Notification was persisted as failed after 3 attempts. Subject: "Welcome to FashionStore". Error: "Error sending email.".
+01:17:32.172 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "OPTIONS" "/api/Auth/login" responded 204 in 1.1864 ms
+01:17:32.186 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Login attempt received for email "oremichenjesumeichen@gmail.com".
+01:17:32.197 +01:00 [Error] [FashionStore.Application.Features.Auth.AuthService] Login user "442e04f9-6702-4611-8f17-b92c5688ea35" with email "oremichenjesumeichen@gmail.com": email not confirmed.
+01:17:32.204 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Email send requested. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". Recipient count: 1.
+01:17:32.205 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "POST" "/api/Auth/login" responded 403 in 26.8867 ms
+01:17:32.211 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Sending email through host "smtp.gmail.com" on port 587 for recipient "oremichenjesumeichen@gmail.com".
+01:17:34.098 +01:00 [Error] [FashionStore.Application.Features.Notification.EmailNotificationService] Failed to send email. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". SMTP status: MustIssueStartTlsFirst.
+System.Net.Mail.SmtpException: The SMTP server requires a secure connection or the client was not authenticated. The server response was: 5.7.0 Authentication Required. For more information, go to
+   at System.Net.Mail.MailCommand.CheckResponse(SmtpStatusCode statusCode, String response)
+   at System.Net.Mail.MailCommand.<SendAsync>g__SendAndCheck|0_0[TIOAdapter](SmtpConnection conn, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpTransport.SendMailAsync[TIOAdapter](MailAddress sender, MailAddressCollection recipients, String deliveryNotify, Boolean allowUnicode, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpClient.SendAsyncInternal[TIOAdapter](MailMessage message, Boolean invokeSendCompleted, Object userToken, Boolean forceWrapExceptions, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpClient.<SendMailAsync>g__WaitAndRethrowIfNeeded|75_0(Task`1 task)
+   at FashionStore.Application.Features.Notification.EmailNotificationService.SendEmailAsync(EmailNotification notification) in C:\Users\oremi\source\repos\My projects\E-commerce\API\FashionStore\FashionStore.Application\Features\Notification\EmailNotificationService.cs:line 44
+01:17:34.106 +01:00 [Warning] [FashionStore.Application.Messages.NotificationQueue.EmailNotificationProcessorService] Notification delivery failed on attempt 1 of 3. Subject: "Welcome to FashionStore". Error: "Error sending email.".
+01:17:39.111 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Email send requested. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". Recipient count: 1.
+01:17:39.125 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Sending email through host "smtp.gmail.com" on port 587 for recipient "oremichenjesumeichen@gmail.com".
+01:17:40.889 +01:00 [Error] [FashionStore.Application.Features.Notification.EmailNotificationService] Failed to send email. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". SMTP status: MustIssueStartTlsFirst.
+System.Net.Mail.SmtpException: The SMTP server requires a secure connection or the client was not authenticated. The server response was: 5.7.0 Authentication Required. For more information, go to
+   at System.Net.Mail.MailCommand.CheckResponse(SmtpStatusCode statusCode, String response)
+   at System.Net.Mail.MailCommand.<SendAsync>g__SendAndCheck|0_0[TIOAdapter](SmtpConnection conn, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpTransport.SendMailAsync[TIOAdapter](MailAddress sender, MailAddressCollection recipients, String deliveryNotify, Boolean allowUnicode, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpClient.SendAsyncInternal[TIOAdapter](MailMessage message, Boolean invokeSendCompleted, Object userToken, Boolean forceWrapExceptions, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpClient.<SendMailAsync>g__WaitAndRethrowIfNeeded|75_0(Task`1 task)
+   at FashionStore.Application.Features.Notification.EmailNotificationService.SendEmailAsync(EmailNotification notification) in C:\Users\oremi\source\repos\My projects\E-commerce\API\FashionStore\FashionStore.Application\Features\Notification\EmailNotificationService.cs:line 44
+01:17:40.895 +01:00 [Warning] [FashionStore.Application.Messages.NotificationQueue.EmailNotificationProcessorService] Notification delivery failed on attempt 2 of 3. Subject: "Welcome to FashionStore". Error: "Error sending email.".
+01:17:45.899 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Email send requested. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". Recipient count: 1.
+01:17:45.908 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Sending email through host "smtp.gmail.com" on port 587 for recipient "oremichenjesumeichen@gmail.com".
+01:17:47.634 +01:00 [Error] [FashionStore.Application.Features.Notification.EmailNotificationService] Failed to send email. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". SMTP status: MustIssueStartTlsFirst.
+System.Net.Mail.SmtpException: The SMTP server requires a secure connection or the client was not authenticated. The server response was: 5.7.0 Authentication Required. For more information, go to
+   at System.Net.Mail.MailCommand.CheckResponse(SmtpStatusCode statusCode, String response)
+   at System.Net.Mail.MailCommand.<SendAsync>g__SendAndCheck|0_0[TIOAdapter](SmtpConnection conn, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpTransport.SendMailAsync[TIOAdapter](MailAddress sender, MailAddressCollection recipients, String deliveryNotify, Boolean allowUnicode, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpClient.SendAsyncInternal[TIOAdapter](MailMessage message, Boolean invokeSendCompleted, Object userToken, Boolean forceWrapExceptions, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpClient.<SendMailAsync>g__WaitAndRethrowIfNeeded|75_0(Task`1 task)
+   at FashionStore.Application.Features.Notification.EmailNotificationService.SendEmailAsync(EmailNotification notification) in C:\Users\oremi\source\repos\My projects\E-commerce\API\FashionStore\FashionStore.Application\Features\Notification\EmailNotificationService.cs:line 44
+01:17:47.646 +01:00 [Warning] [FashionStore.Application.Messages.NotificationQueue.EmailNotificationProcessorService] Notification delivery failed on attempt 3 of 3. Subject: "Welcome to FashionStore". Error: "Error sending email.".
+01:17:47.668 +01:00 [Error] [FashionStore.Application.Messages.NotificationQueue.EmailNotificationProcessorService] Notification was persisted as failed after 3 attempts. Subject: "Welcome to FashionStore". Error: "Error sending email.".
+01:21:14.703 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "OPTIONS" "/api/Auth/login" responded 204 in 0.1574 ms
+01:21:14.762 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Login attempt received for email "oremichenjesumeichen@gmail.com".
+01:21:14.781 +01:00 [Error] [FashionStore.Application.Features.Auth.AuthService] Login user "442e04f9-6702-4611-8f17-b92c5688ea35" with email "oremichenjesumeichen@gmail.com": email not confirmed.
+01:21:14.787 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Email send requested. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". Recipient count: 1.
+01:21:14.788 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "POST" "/api/Auth/login" responded 403 in 50.8335 ms
+01:21:14.796 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Sending email through host "smtp.gmail.com" on port 587 for recipient "oremichenjesumeichen@gmail.com".
+01:21:16.657 +01:00 [Error] [FashionStore.Application.Features.Notification.EmailNotificationService] Failed to send email. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". SMTP status: MustIssueStartTlsFirst.
+System.Net.Mail.SmtpException: The SMTP server requires a secure connection or the client was not authenticated. The server response was: 5.7.0 Authentication Required. For more information, go to
+   at System.Net.Mail.MailCommand.CheckResponse(SmtpStatusCode statusCode, String response)
+   at System.Net.Mail.MailCommand.<SendAsync>g__SendAndCheck|0_0[TIOAdapter](SmtpConnection conn, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpTransport.SendMailAsync[TIOAdapter](MailAddress sender, MailAddressCollection recipients, String deliveryNotify, Boolean allowUnicode, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpClient.SendAsyncInternal[TIOAdapter](MailMessage message, Boolean invokeSendCompleted, Object userToken, Boolean forceWrapExceptions, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpClient.<SendMailAsync>g__WaitAndRethrowIfNeeded|75_0(Task`1 task)
+   at FashionStore.Application.Features.Notification.EmailNotificationService.SendEmailAsync(EmailNotification notification) in C:\Users\oremi\source\repos\My projects\E-commerce\API\FashionStore\FashionStore.Application\Features\Notification\EmailNotificationService.cs:line 44
+01:21:16.668 +01:00 [Warning] [FashionStore.Application.Messages.NotificationQueue.EmailNotificationProcessorService] Notification delivery failed on attempt 1 of 3. Subject: "Welcome to FashionStore". Error: "Error sending email.".
+01:21:21.676 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Email send requested. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". Recipient count: 1.
+01:21:21.693 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Sending email through host "smtp.gmail.com" on port 587 for recipient "oremichenjesumeichen@gmail.com".
+01:21:23.642 +01:00 [Error] [FashionStore.Application.Features.Notification.EmailNotificationService] Failed to send email. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". SMTP status: MustIssueStartTlsFirst.
+System.Net.Mail.SmtpException: The SMTP server requires a secure connection or the client was not authenticated. The server response was: 5.7.0 Authentication Required. For more information, go to
+   at System.Net.Mail.MailCommand.CheckResponse(SmtpStatusCode statusCode, String response)
+   at System.Net.Mail.MailCommand.<SendAsync>g__SendAndCheck|0_0[TIOAdapter](SmtpConnection conn, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpTransport.SendMailAsync[TIOAdapter](MailAddress sender, MailAddressCollection recipients, String deliveryNotify, Boolean allowUnicode, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpClient.SendAsyncInternal[TIOAdapter](MailMessage message, Boolean invokeSendCompleted, Object userToken, Boolean forceWrapExceptions, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpClient.<SendMailAsync>g__WaitAndRethrowIfNeeded|75_0(Task`1 task)
+   at FashionStore.Application.Features.Notification.EmailNotificationService.SendEmailAsync(EmailNotification notification) in C:\Users\oremi\source\repos\My projects\E-commerce\API\FashionStore\FashionStore.Application\Features\Notification\EmailNotificationService.cs:line 44
+01:21:23.654 +01:00 [Warning] [FashionStore.Application.Messages.NotificationQueue.EmailNotificationProcessorService] Notification delivery failed on attempt 2 of 3. Subject: "Welcome to FashionStore". Error: "Error sending email.".
+01:21:28.660 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Email send requested. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". Recipient count: 1.
+01:21:28.666 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Sending email through host "smtp.gmail.com" on port 587 for recipient "oremichenjesumeichen@gmail.com".
+01:21:30.658 +01:00 [Error] [FashionStore.Application.Features.Notification.EmailNotificationService] Failed to send email. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". SMTP status: MustIssueStartTlsFirst.
+System.Net.Mail.SmtpException: The SMTP server requires a secure connection or the client was not authenticated. The server response was: 5.7.0 Authentication Required. For more information, go to
+   at System.Net.Mail.MailCommand.CheckResponse(SmtpStatusCode statusCode, String response)
+   at System.Net.Mail.MailCommand.<SendAsync>g__SendAndCheck|0_0[TIOAdapter](SmtpConnection conn, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpTransport.SendMailAsync[TIOAdapter](MailAddress sender, MailAddressCollection recipients, String deliveryNotify, Boolean allowUnicode, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpClient.SendAsyncInternal[TIOAdapter](MailMessage message, Boolean invokeSendCompleted, Object userToken, Boolean forceWrapExceptions, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpClient.<SendMailAsync>g__WaitAndRethrowIfNeeded|75_0(Task`1 task)
+   at FashionStore.Application.Features.Notification.EmailNotificationService.SendEmailAsync(EmailNotification notification) in C:\Users\oremi\source\repos\My projects\E-commerce\API\FashionStore\FashionStore.Application\Features\Notification\EmailNotificationService.cs:line 44
+01:21:30.673 +01:00 [Warning] [FashionStore.Application.Messages.NotificationQueue.EmailNotificationProcessorService] Notification delivery failed on attempt 3 of 3. Subject: "Welcome to FashionStore". Error: "Error sending email.".
+01:21:30.688 +01:00 [Error] [FashionStore.Application.Messages.NotificationQueue.EmailNotificationProcessorService] Notification was persisted as failed after 3 attempts. Subject: "Welcome to FashionStore". Error: "Error sending email.".
+01:22:16.178 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/index.html" responded 200 in 220.1305 ms
+01:22:16.460 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/v1/swagger.json" responded 200 in 45.2692 ms
+01:22:33.176 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "OPTIONS" "/api/Auth/login" responded 204 in 5.3254 ms
+01:22:33.405 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Login attempt received for email "oremichenjesumeichen@gmail.com".
+01:22:33.802 +01:00 [Error] [FashionStore.Application.Features.Auth.AuthService] Login user "442e04f9-6702-4611-8f17-b92c5688ea35" with email "oremichenjesumeichen@gmail.com": email not confirmed.
+01:22:33.874 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Email send requested. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". Recipient count: 1.
+01:22:33.918 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "POST" "/api/Auth/login" responded 403 in 730.1078 ms
+01:22:33.946 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Sending email through host "smtp.gmail.com" on port 587 for recipient "oremichenjesumeichen@gmail.com".
+01:27:35.303 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/index.html" responded 200 in 342.0150 ms
+01:27:35.582 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/v1/swagger.json" responded 200 in 38.3801 ms
+01:31:18.198 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/index.html" responded 200 in 264.2427 ms
+01:31:18.480 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/v1/swagger.json" responded 200 in 46.5762 ms
+01:31:34.419 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "OPTIONS" "/api/Auth/login" responded 204 in 8.7601 ms
+01:31:34.677 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Login attempt received for email "oremichenjesumeichen@gmail.com".
+01:31:35.041 +01:00 [Error] [FashionStore.Application.Features.Auth.AuthService] Login user "442e04f9-6702-4611-8f17-b92c5688ea35" with email "oremichenjesumeichen@gmail.com": email not confirmed.
+01:31:35.148 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Email send requested. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". Recipient count: 1.
+01:31:35.180 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "POST" "/api/Auth/login" responded 403 in 751.2149 ms
+01:31:35.208 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Sending email through host "smtp.gmail.com" on port 465 for recipient "oremichenjesumeichen@gmail.com".
+01:32:20.557 +01:00 [Error] [FashionStore.Application.Features.Notification.EmailNotificationService] Failed to send email. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". SMTP status: GeneralFailure.
+System.Net.Mail.SmtpException: Failure sending mail.
+ ---> System.IO.IOException: Unable to read data from the transport connection: The connection was closed.
+   at System.Net.Mail.SmtpReplyReaderFactory.ReadLinesAsync[TIOAdapter](SmtpReplyReader caller, Boolean oneLine, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpReplyReaderFactory.ReadLineAsync[TIOAdapter](SmtpReplyReader caller, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpConnection.GetConnectionAsync[TIOAdapter](String host, Int32 port, CancellationToken cancellationToken)
+   at System.Net.Mail.SmtpClient.SendAsyncInternal[TIOAdapter](MailMessage message, Boolean invokeSendCompleted, Object userToken, Boolean forceWrapExceptions, CancellationToken cancellationToken)
+   --- End of inner exception stack trace ---
+   at System.Net.Mail.SmtpClient.SendAsyncInternal[TIOAdapter](MailMessage message, Boolean invokeSendCompleted, Object userToken, Boolean forceWrapExceptions, CancellationToken cancellationToken)
+   at System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1.AsyncStateMachineBox`1.ExecutionContextCallback(Object s)
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1.AsyncStateMachineBox`1.MoveNext(Thread threadPoolThread)
+   at System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1.AsyncStateMachineBox`1.MoveNext()
+   at System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(Action action, Boolean allowInlining)
+   at System.Threading.Tasks.Task.RunContinuations(Object continuationObject)
+   at System.Threading.Tasks.Task.FinishSlow(Boolean userDelegateExecute)
+   at System.Threading.Tasks.Task.TrySetException(Object exceptionObject)
+   at System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1.SetException(Exception exception, Task`1& taskField)
+   at System.Net.Mail.SmtpConnection.GetConnectionAsync[TIOAdapter](String host, Int32 port, CancellationToken cancellationToken)
+   at System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1.AsyncStateMachineBox`1.ExecutionContextCallback(Object s)
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1.AsyncStateMachineBox`1.MoveNext(Thread threadPoolThread)
+   at System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1.AsyncStateMachineBox`1.MoveNext()
+   at System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(Action action, Boolean allowInlining)
+   at System.Threading.Tasks.Task.RunContinuations(Object continuationObject)
+   at System.Threading.Tasks.Task.FinishSlow(Boolean userDelegateExecute)
+   at System.Threading.Tasks.Task.TrySetException(Object exceptionObject)
+   at System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1.SetException(Exception exception, Task`1& taskField)
+   at System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1.SetException(Exception exception)
+   at System.Net.Mail.SmtpReplyReaderFactory.ReadLineAsync[TIOAdapter](SmtpReplyReader caller, CancellationToken cancellationToken)
+   at System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1.AsyncStateMachineBox`1.ExecutionContextCallback(Object s)
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1.AsyncStateMachineBox`1.MoveNext(Thread threadPoolThread)
+   at System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1.AsyncStateMachineBox`1.MoveNext()
+   at System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(Action action, Boolean allowInlining)
+   at System.Threading.Tasks.Task.RunContinuations(Object continuationObject)
+   at System.Threading.Tasks.Task.FinishSlow(Boolean userDelegateExecute)
+   at System.Threading.Tasks.Task.TrySetException(Object exceptionObject)
+   at System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1.SetException(Exception exception, Task`1& taskField)
+   at System.Net.Mail.SmtpReplyReaderFactory.ReadLinesAsync[TIOAdapter](SmtpReplyReader caller, Boolean oneLine, CancellationToken cancellationToken)
+   at System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1.AsyncStateMachineBox`1.ExecutionContextCallback(Object s)
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1.AsyncStateMachineBox`1.MoveNext(Thread threadPoolThread)
+   at System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1.AsyncStateMachineBox`1.MoveNext()
+   at System.Threading.ThreadPool.<>c.<.cctor>b__57_0(Object state)
+   at System.Net.Sockets.SocketAsyncEventArgs.<>c.<.cctor>b__174_0(UInt32 errorCode, UInt32 numBytes, NativeOverlapped* nativeOverlapped)
+   at System.Threading.PortableThreadPool.IOCompletionPoller.Event.Invoke()
+   at System.Threading.ThreadPoolTypedWorkItemQueue.System.Threading.IThreadPoolWorkItem.Execute()
+   at System.Threading.ThreadPoolWorkQueue.Dispatch()
+   at System.Threading.PortableThreadPool.WorkerThread.WorkerThreadStart()
+   at System.Threading.Thread.StartCallback()
+--- End of stack trace from previous location ---
+   at System.Net.Mail.SmtpClient.<SendMailAsync>g__WaitAndRethrowIfNeeded|75_0(Task`1 task)
+   at FashionStore.Application.Features.Notification.EmailNotificationService.SendEmailAsync(EmailNotification notification) in C:\Users\oremi\source\repos\My projects\E-commerce\API\FashionStore\FashionStore.Application\Features\Notification\EmailNotificationService.cs:line 44
+01:35:23.809 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/index.html" responded 200 in 228.2683 ms
+01:35:24.038 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/v1/swagger.json" responded 200 in 38.9439 ms
+01:35:37.821 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "OPTIONS" "/api/Auth/login" responded 204 in 5.2476 ms
+01:35:38.044 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Login attempt received for email "oremichenjesumeichen@gmail.com".
+01:35:38.471 +01:00 [Error] [FashionStore.Application.Features.Auth.AuthService] Login user "442e04f9-6702-4611-8f17-b92c5688ea35" with email "oremichenjesumeichen@gmail.com": email not confirmed.
+01:35:38.517 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Email send requested. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". Recipient count: 1.
+01:35:38.562 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "POST" "/api/Auth/login" responded 403 in 730.6355 ms
+01:35:38.584 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Sending email through host "smtp.gmail.com" on port 587 for recipient "oremichenjesumeichen@gmail.com".

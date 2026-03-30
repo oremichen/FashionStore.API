@@ -20,7 +20,7 @@ namespace FashionStore.Application.Features.Notification
 
             if (notification.To == null || notification.To.Count == 0)
             {
-                _logger.LogWarning("Email request rejected because no recipient was provided.");
+                _logger.LogError("Email request rejected because no recipient was provided.");
                 return response.Fail("At least one recipient is required.", ResponseCodes.INVALID_ACTION);
             }
 

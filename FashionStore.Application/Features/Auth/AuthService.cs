@@ -37,34 +37,32 @@ namespace FashionStore.Application.Features.Auth
             var user = await _userManager.FindByEmailAsync(login.Email);
             if (user == null)
             {
-                _logger.LogWarning("Login failed for email {Email}: user was not found.", login.Email);
+                _logger.LogError("Login failed for email {Email}: user was not found.", login.Email);
                 return response.Fail("Invalid email or password.", ResponseCodes.INVALID_ACTION);
             }
 
             if (user.IsDeleted || user.IsDeactivated)
             {
-                _logger.LogWarning(
+                _logger.LogError(
                     "Login blocked for user {UserId} with email {Email}: account is inactive. Deleted: {IsDeleted}, Deactivated: {IsDeactivated}.",
                     user.Id,
                     user.Email,
                     user.IsDeleted,
                     user.IsDeactivated);
-                return response.Fail("This account is not active.", ResponseCodes.ACTION_NOT_PERMITTED);
+                return response.Fail("This account is not active.", ResponseCodes.REQUEST_IN_PROGRESS);
             }
 
             if (!user.EmailConfirmed)
             {
-                _logger.LogWarning(
-                    "Login blocked for user {UserId} with email {Email}: email not confirmed.",
-                    user.Id,
-                    user.Email);
-                return response.Fail("Email address has not been confirmed.", ResponseCodes.ACTION_NOT_PERMITTED);
+                _logger.LogError("Login user {UserId} with email {Email}: email not confirmed.", user.Id, user.Email);
+                await SendConfirmationMail(user);
+                return response.Fail("Email address has not been confirmed. A confirmation link has been sent to your email", ResponseCodes.ACTION_NOT_PERMITTED);
             }
 
             var passwordIsValid = await _userManager.CheckPasswordAsync(user, login.Password);
             if (!passwordIsValid)
             {
-                _logger.LogWarning(
+                _logger.LogError(
                     "Login failed for user {UserId} with email {Email}: invalid password.",
                     user.Id,
                     user.Email);
@@ -138,33 +136,75 @@ namespace FashionStore.Application.Features.Auth
                     errors);
             }
 
-            var roleResult = await _userManager.AddToRoleAsync(user, RoleEnums.User.ToString());
-            if (!roleResult.Succeeded)
+            try
             {
-                var errors = roleResult.Errors.Select(error => error.Description).ToArray();
-                var deleteResult = await _userManager.DeleteAsync(user);
-
-                _logger.LogError(
-                    "User {UserId} was created but assigning role failed. Errors: {Errors}. User cleanup succeeded: {CleanupSucceeded}.",
-                    user.Id,
-                    string.Join(" | ", errors),
-                    deleteResult.Succeeded);
-
-                if (!deleteResult.Succeeded)
+                var roleResult = await _userManager.AddToRoleAsync(user, RoleEnums.User.ToString());
+                if (!roleResult.Succeeded)
                 {
-                    _logger.LogError(
-                        "Failed to delete user {UserId} after role assignment failure. Cleanup errors: {CleanupErrors}.",
-                        user.Id,
-                        string.Join(" | ", deleteResult.Errors.Select(error => error.Description)));
+                    var errors = roleResult.Errors.Select(error => error.Description).ToArray();
+                    await ReverseUserCreationAsync(
+                        user,
+                        "role assignment failure",
+                        string.Join(" | ", errors));
+
+                    return response.Fail(
+                        "User created but failed to assign default role.",
+                        ResponseCodes.ACTION_FAILED,
+                        errors);
                 }
 
-                return response.Fail(
-                    "User created but failed to assign default role.",
-                    ResponseCodes.ACTION_FAILED,
-                    errors);
-            }
+                await SendConfirmationMail(user);
 
-            var confirmationBaseUrl = _configuration["Frontend:ConfirmationPageUrl"] ?? "http://localhost:4200/confirm-email";
+                _logger.LogInformation(
+                    "Registration successful for user {UserId} with email {Email}. Confirmation email queued.",
+                    user.Id,
+                    user.Email);
+
+                return response.Success("Registration successful. A confirmation email has been queued for delivery.");
+            }
+            catch (Exception exception)
+            {
+                await ReverseUserCreationAsync(
+                    user,
+                    "post-creation registration failure",
+                    exception.Message);
+
+                _logger.LogError(
+                    exception,
+                    "Registration failed after creating user {UserId} with email {Email}. User creation was reversed.",
+                    user.Id,
+                    user.Email);
+
+                return response.Fail(
+                    "Registration could not be completed. Please try again.",
+                    ResponseCodes.ACTION_FAILED);
+            }
+        }
+
+        private async Task ReverseUserCreationAsync(ApplicationUser user, string reason, string details)
+        {
+            var deleteResult = await _userManager.DeleteAsync(user);
+
+            _logger.LogError(
+                "Reversing user creation for user {UserId}. Reason: {Reason}. Details: {Details}. Cleanup succeeded: {CleanupSucceeded}.",
+                user.Id,
+                reason,
+                details,
+                deleteResult.Succeeded);
+
+            if (!deleteResult.Succeeded)
+            {
+                _logger.LogError(
+                    "Failed to delete user {UserId} while reversing registration. Cleanup errors: {CleanupErrors}.",
+                        user.Id,
+                        string.Join(" | ", deleteResult.Errors.Select(error => error.Description)));
+            }
+        }
+
+        private async Task SendConfirmationMail(ApplicationUser user)
+        {
+            var confirmationBaseUrl = _configuration["Frontend:ConfirmationPageUrl"] 
+                ?? throw new InvalidOperationException("No confirmation page link"); 
             var confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
             var confirmationUrl = QueryHelpers.AddQueryString(
                 confirmationBaseUrl,
@@ -189,13 +229,6 @@ namespace FashionStore.Application.Features.Auth
                 Subject = "Welcome to FashionStore",
                 Body = emailBody
             });
-
-            _logger.LogInformation(
-                "Registration successful for user {UserId} with email {Email}. Confirmation email queued.",
-                user.Id,
-                user.Email);
-
-            return response.Success("Registration successful. A confirmation email has been queued for delivery.");
         }
     }
 }

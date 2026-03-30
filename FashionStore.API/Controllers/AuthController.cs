@@ -21,7 +21,6 @@ namespace FashionStore.API.Controllers
 
         [HttpPost("login")]
         [Produces("application/json")]
-        [AllowAnonymous]
         [ProducesResponseType(typeof(ResponseResult<LoginResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ResponseResult<LoginResponse>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ResponseResult<LoginResponse>), StatusCodes.Status403Forbidden)]
@@ -35,13 +34,11 @@ namespace FashionStore.API.Controllers
 
         [HttpPost("register")]
         [Produces("application/json")]
-        [AllowAnonymous]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status409Conflict)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
         [EndpointSummary("Register user")]
-        [EndpointDescription("Creates a new user account, assigns the default User role, and queues a welcome email using the shared email template renderer.")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
             var response = await _authService.Register(request);

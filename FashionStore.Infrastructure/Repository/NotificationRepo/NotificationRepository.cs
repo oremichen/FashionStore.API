@@ -1,23 +1,25 @@
 using System.Text.Json;
-using FashionStore.Application.Abstractions.Notification;
-using FashionStore.Infrastructure.Data;
+using FashionStore.Shared.Constants;
+using Microsoft.Extensions.Configuration;
 
 namespace FashionStore.Infrastructure.Repository.NotificationRepo
 {
     public class NotificationRepository : INotificationRepository
     {
         private readonly FashionStoreDbContext _dbContext;
+        private readonly IConfiguration _configuration;
 
-        public NotificationRepository(FashionStoreDbContext dbContext)
+        public NotificationRepository(FashionStoreDbContext dbContext, IConfiguration configuration)
         {
             _dbContext = dbContext;
+            _configuration = configuration;
         }
 
         public async Task SaveFailedAsync(EmailNotification notification, int retryCount, string? lastError, CancellationToken cancellationToken)
         {
             _dbContext.FailedEmailNotifications.Add(new FailedEmailNotification
             {
-                From = notification.From,
+                From = _configuration["MailSettings:DefaultFromAddress"],
                 ToRecipients = JsonSerializer.Serialize(notification.To ?? []),
                 CcRecipients = notification.Cc == null ? null : JsonSerializer.Serialize(notification.Cc),
                 BccRecipients = notification.Bcc == null ? null : JsonSerializer.Serialize(notification.Bcc),
@@ -25,7 +27,7 @@ namespace FashionStore.Infrastructure.Repository.NotificationRepo
                 Body = notification.Body,
                 RetryCount = retryCount,
                 LastError = lastError,
-                Status = "Failed",
+                Status = FailedNotificationStatus.Failed,
                 FailedAt = DateTimeOffset.UtcNow
             });
 
