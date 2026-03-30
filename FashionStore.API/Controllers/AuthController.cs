@@ -1,9 +1,7 @@
 using FashionStore.Application.Abstractions.Auth;
 using FashionStore.Application.Dtos.Request;
 using FashionStore.Application.Dtos.Response;
-using FashionStore.Application.Features.Auth;
 using FashionStore.Shared.Common;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FashionStore.API.Controllers
