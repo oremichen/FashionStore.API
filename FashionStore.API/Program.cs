@@ -11,6 +11,7 @@ using FashionStore.Infrastructure.Seed;
 using FashionStore.Infrastructure;
 using Serilog;
 using FashionStore.Application;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 const string corsPolicyName = "FrontendCors";
@@ -73,11 +74,11 @@ builder.Services.AddSwaggerGen(options =>
 
 #region Identity & EF Core
 builder.Services.AddDbContext<FashionStoreDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
         options => options.EnableRetryOnFailure(
             maxRetryCount: 3,
             maxRetryDelay: TimeSpan.FromSeconds(30),
-            errorNumbersToAdd: null)));
+            errorCodesToAdd: null)));
 
 builder.Services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
 {
@@ -236,10 +237,28 @@ using (var scope = app.Services.CreateScope())
 {
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
     var context = scope.ServiceProvider.GetRequiredService<FashionStoreDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+    // Give Postgres a brief window to become ready, then create the schema for a fresh environment.
+    const int maxDatabaseAttempts = 10;
+    for (var attempt = 1; attempt <= maxDatabaseAttempts; attempt++)
+    {
+        try
+        {
+            await context.Database.EnsureCreatedAsync();
+            break;
+        }
+        catch (NpgsqlException ex) when (attempt < maxDatabaseAttempts)
+        {
+            logger.LogWarning(ex, "Database not ready yet. Retrying initialization in 5 seconds (attempt {Attempt}/{MaxAttempts}).", attempt, maxDatabaseAttempts);
+            await Task.Delay(TimeSpan.FromSeconds(5));
+        }
+    }
+
     await Seed.SeedData(context, roleManager, app.Configuration);
 }
 
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Docker"))
 {
     app.UseSwagger();
     app.UseSwaggerUI(options =>
