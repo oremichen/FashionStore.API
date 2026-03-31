@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: fashionstore-postgres
+    environment:
+      POSTGRES_DB: FashionStoreDb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "1234"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d FashionStoreDb"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  api:
+    container_name: fashionstore-api
+    build:
+      context: .
+      dockerfile: FashionStore.API/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Docker"
+      ASPNETCORE_URLS: "http://+:8080"
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=FashionStoreDb;Username=postgres;Password=1234;Include Error Detail=true"
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres-data:
