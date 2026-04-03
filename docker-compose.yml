@@ -2,10 +2,12 @@ services:
   postgres:
     image: postgres:17
     container_name: fashionstore-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_DB: FashionStoreDb
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: "1234"
+      PGDATA: /var/lib/postgresql/data/pgdata
     ports:
       - "5432:5432"
     volumes:
@@ -19,6 +21,7 @@ services:
 
   api:
     container_name: fashionstore-api
+    restart: unless-stopped
     build:
       context: .
       dockerfile: FashionStore.API/Dockerfile
