@@ -30,6 +30,7 @@ namespace FashionStore.Application.Features.Notification
             return templateType switch
             {
                 EmailNotificationTypeEnum.Registration => Path.Combine(_environment.WebRootPath, "EmailTemplates", "RegisterTemplate.html"),
+                EmailNotificationTypeEnum.Confirmation => Path.Combine(_environment.WebRootPath, "EmailTemplates", "ConfirmationTemplate.html"),
                 _ => throw new ArgumentException($"No email template is configured for {templateType}.", nameof(templateType))
             };
         }

@@ -1,4 +1,5 @@
 using FashionStore.Application.Abstractions.Auth;
+using System.Text;
 using Microsoft.AspNetCore.WebUtilities;
 
 namespace FashionStore.Application.Features.Auth
@@ -181,6 +182,86 @@ namespace FashionStore.Application.Features.Auth
             }
         }
 
+        public async Task<ResponseResult> ConfirmEmail(ConfirmEmailRequest request)
+        {
+            var response = new ResponseResult();
+
+            _logger.LogInformation("Email confirmation attempt received for email {Email}.", request.Email);
+
+            var user = await _userManager.FindByEmailAsync(request.Email);
+            if (user == null)
+            {
+                _logger.LogWarning("Email confirmation failed for email {Email}: user was not found.", request.Email);
+                return response.Fail("No user was found for", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
+            }
+
+            if (user.IsDeleted || user.IsDeactivated)
+            {
+                _logger.LogWarning(
+                    "Email confirmation blocked for user {UserId} with email {Email}: account is inactive. Deleted: {IsDeleted}, Deactivated: {IsDeactivated}.",
+                    user.Id,
+                    user.Email,
+                    user.IsDeleted,
+                    user.IsDeactivated);
+                return response.Fail("This account is not active.", ResponseCodes.ACTION_NOT_PERMITTED);
+            }
+
+            if (user.EmailConfirmed)
+            {
+                _logger.LogInformation("Email already confirmed for user {UserId} with email {Email}.", user.Id, user.Email);
+                return response.Success("Email address has already been confirmed.");
+            }
+
+            var confirmationToken = DecodeConfirmationToken(request.Token);
+            if (string.IsNullOrWhiteSpace(confirmationToken))
+            {
+                _logger.LogWarning("Email confirmation failed for user {UserId}: token was empty after normalization.", user.Id);
+                return response.Fail("A valid confirmation token is required.", ResponseCodes.INVALID_ACTION);
+            }
+
+            var confirmResult = await _userManager.ConfirmEmailAsync(user, confirmationToken);
+            if (!confirmResult.Succeeded)
+            {
+                var errors = confirmResult.Errors.Select(error => error.Description).ToArray();
+
+                _logger.LogWarning(
+                    "Email confirmation failed for user {UserId} with email {Email}. Errors: {Errors}.",
+                    user.Id,
+                    user.Email,
+                    string.Join(" | ", errors));
+
+                return response.Fail(
+                    "The confirmation token is invalid or has expired.",
+                    ResponseCodes.INVALID_ACTION,
+                    errors);
+            }
+
+            user.EmailVerified = true;
+            user.UserStatus = "Active";
+            user.UpdatedAt = DateTimeOffset.UtcNow;
+
+            var updateResult = await _userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+            {
+                var errors = updateResult.Errors.Select(error => error.Description).ToArray();
+
+                _logger.LogError(
+                    "Email confirmed for user {UserId}, but profile update failed. Errors: {Errors}.",
+                    user.Id,
+                    string.Join(" | ", errors));
+
+                return response.Fail(
+                    "Email was confirmed, but the account could not be fully updated.",
+                    ResponseCodes.ACTION_FAILED,
+                    errors);
+            }
+
+            await SendConfirmationSuccessMail(user);
+
+            _logger.LogInformation("Email confirmation successful for user {UserId} with email {Email}.", user.Id, user.Email);
+            return response.Success("Email confirmed successfully.");
+        }
+
         private async Task ReverseUserCreationAsync(ApplicationUser user, string reason, string details)
         {
             var deleteResult = await _userManager.DeleteAsync(user);
@@ -206,12 +287,13 @@ namespace FashionStore.Application.Features.Auth
             var confirmationBaseUrl = _configuration["Frontend:ConfirmationPageUrl"] 
                 ?? throw new InvalidOperationException("No confirmation page link"); 
             var confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(confirmationToken));
             var confirmationUrl = QueryHelpers.AddQueryString(
                 confirmationBaseUrl,
                 new Dictionary<string, string?>
                 {
                     ["email"] = user.Email,
-                    ["token"] = confirmationToken
+                    ["token"] = encodedToken
                 });
 
             var emailBody = await _emailTemplateRenderer.RenderAsync(
@@ -229,6 +311,48 @@ namespace FashionStore.Application.Features.Auth
                 Subject = "Welcome to FashionStore",
                 Body = emailBody
             });
+        }
+
+        private async Task SendConfirmationSuccessMail(ApplicationUser user)
+        {
+            var loginPageUrl = _configuration["Frontend:LoginPageUrl"]
+                ?? throw new InvalidOperationException("No login page link");
+
+            var emailBody = await _emailTemplateRenderer.RenderAsync(
+                EmailNotificationTypeEnum.Confirmation,
+                new Dictionary<string, string>
+                {
+                    ["username"] = $"{user.FirstName} {user.LastName}".Trim(),
+                    ["loginUrl"] = loginPageUrl,
+                    ["year"] = DateTime.UtcNow.Year.ToString()
+                });
+
+            _emailNotificationQueueService.Enqueue(new EmailNotification
+            {
+                To = new List<string> { user.Email! },
+                Subject = "Email confirmation successful",
+                Body = emailBody
+            });
+        }
+
+        private static string DecodeConfirmationToken(string token)
+        {
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return string.Empty;
+            }
+
+            var normalizedToken = token.Trim();
+
+            try
+            {
+                return Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(normalizedToken));
+            }
+            catch (FormatException)
+            {
+                // Support older links where the raw identity token was placed directly in the query string.
+                return normalizedToken.Replace(" ", "+");
+            }
         }
     }
 }
