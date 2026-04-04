@@ -4,6 +4,8 @@ global using FashionStore.Application.Abstractions.Notification;
 global using FashionStore.Infrastructure.Repository.NotificationRepo;
 global using Microsoft.Extensions.DependencyInjection;
 global using FashionStore.Infrastructure.Data;
+global using Microsoft.Extensions.Configuration;
+global using Microsoft.Extensions.Logging;
 
 
 

@@ -42,5 +42,19 @@ namespace FashionStore.API.Controllers
             var response = await _authService.Register(request);
             return ProcessResponse(response);
         }
+
+        [HttpPost("confirm-email")]
+        [Produces("application/json")]
+        [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
+        [EndpointSummary("Confirm user email")]
+        public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailRequest request)
+        {
+            var response = await _authService.ConfirmEmail(request);
+            return ProcessResponse(response);
+        }
     }
 }

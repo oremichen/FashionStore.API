@@ -3,6 +3,7 @@
     public enum EmailNotificationTypeEnum
     {
         Registration,
+        Confirmation,
         Checkout,
         FeedbackResponse,
     }
