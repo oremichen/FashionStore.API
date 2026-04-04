@@ -11,7 +11,6 @@ using FashionStore.Infrastructure.Seed;
 using FashionStore.Infrastructure;
 using Serilog;
 using FashionStore.Application;
-using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 const string corsPolicyName = "FrontendCors";
@@ -233,30 +232,8 @@ var app = builder.Build();
 
 app.UseSerilogRequestLogging();
 
-using (var scope = app.Services.CreateScope())
-{
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
-    var context = scope.ServiceProvider.GetRequiredService<FashionStoreDbContext>();
-    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-
-    // Give Postgres a brief window to become ready, then create the schema for a fresh environment.
-    const int maxDatabaseAttempts = 10;
-    for (var attempt = 1; attempt <= maxDatabaseAttempts; attempt++)
-    {
-        try
-        {
-            await context.Database.EnsureCreatedAsync();
-            break;
-        }
-        catch (NpgsqlException ex) when (attempt < maxDatabaseAttempts)
-        {
-            logger.LogWarning(ex, "Database not ready yet. Retrying initialization in 5 seconds (attempt {Attempt}/{MaxAttempts}).", attempt, maxDatabaseAttempts);
-            await Task.Delay(TimeSpan.FromSeconds(5));
-        }
-    }
-
-    await Seed.SeedData(context, roleManager, app.Configuration);
-}
+var startupLogger = app.Services.GetRequiredService<ILogger<Program>>();
+await DatabaseInitializer.InitializeAsync(app.Services, app.Configuration, startupLogger);
 
 if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Docker"))
 {

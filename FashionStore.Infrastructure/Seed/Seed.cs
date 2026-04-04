@@ -1,5 +1,4 @@
 ﻿using System.Data;
-using FashionStore.Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 
