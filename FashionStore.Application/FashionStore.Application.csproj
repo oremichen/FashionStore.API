@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <Folder Include="Features\Cart\" />
+    <Folder Include="Features\Users\" />
     <Folder Include="Features\Wishlist\" />
     <Folder Include="Features\Order\" />
     <Folder Include="Features\Products\" />
