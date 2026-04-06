@@ -31,6 +31,7 @@ namespace FashionStore.Application.Notification
             {
                 EmailNotificationTypeEnum.Registration => Path.Combine(_environment.WebRootPath, "EmailTemplates", "RegisterTemplate.html"),
                 EmailNotificationTypeEnum.Confirmation => Path.Combine(_environment.WebRootPath, "EmailTemplates", "ConfirmationTemplate.html"),
+                EmailNotificationTypeEnum.ForgotPassword => Path.Combine(_environment.WebRootPath, "EmailTemplates", "ForgotPasswordTemplate.html"),
                 _ => throw new ArgumentException($"No email template is configured for {templateType}.", nameof(templateType))
             };
         }
