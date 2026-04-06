@@ -53,7 +53,7 @@ namespace FashionStore.Application.Features.Notification
                 await smtpClient.ConnectAsync(
                     host,
                     port,
-                    SecureSocketOptions.SslOnConnect);
+                    SecureSocketOptions.StartTls);
 
                 if (!string.IsNullOrWhiteSpace(username) && !string.IsNullOrWhiteSpace(password))
                 {

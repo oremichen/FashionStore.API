@@ -342,7 +342,21 @@ namespace FashionStore.Application.Features.Auth
                 return string.Empty;
             }
 
-            var normalizedToken = token.Trim();
+            var normalizedToken = Uri.UnescapeDataString(token.Trim());
+
+            if (string.IsNullOrWhiteSpace(normalizedToken))
+            {
+                return string.Empty;
+            }
+
+            normalizedToken = normalizedToken.Replace(" ", "+");
+
+            // Raw ASP.NET Identity tokens commonly contain '+' '/' '=' after URL decoding.
+            // When those are present, the token is already in the format ConfirmEmailAsync expects.
+            if (normalizedToken.Contains('+') || normalizedToken.Contains('/') || normalizedToken.Contains('='))
+            {
+                return normalizedToken;
+            }
 
             try
             {

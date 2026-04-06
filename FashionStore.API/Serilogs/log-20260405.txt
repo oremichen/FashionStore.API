@@ -1,0 +1,327 @@
+20:12:57.089 +01:00 [Information] [Program] Applying 1 pending database migration(s): "20260331215056_InitialIdentitySetup"
+20:12:58.329 +01:00 [Error] [Microsoft.EntityFrameworkCore.Database.Command] Failed executing DbCommand ("23"ms) [Parameters=[""], CommandType='Text', CommandTimeout='30']"
+""CREATE TABLE \"AspNetRoles\" (
+    \"Id\" text NOT NULL,
+    \"Name\" character varying(256),
+    \"NormalizedName\" character varying(256),
+    \"ConcurrencyStamp\" text,
+    CONSTRAINT \"PK_AspNetRoles\" PRIMARY KEY (\"Id\")
+);"
+20:12:59.137 +01:00 [Warning] [Program] Migration encountered an existing-schema conflict. Attempting to align EF migration history before retrying.
+Npgsql.PostgresException (0x80004005): 42P07: relation "AspNetRoles" already exists
+   at Npgsql.Internal.NpgsqlConnector.ReadMessageLong(Boolean async, DataRowLoadingMode dataRowLoadingMode, Boolean readingNotifications, Boolean isReadingPrependedMessage)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteNonQuery(Boolean async, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteNonQueryAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteNonQueryAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteNonQueryAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.MigrationCommandExecutor.ExecuteAsync(IReadOnlyList`1 migrationCommands, IRelationalConnection connection, MigrationExecutionState executionState, Boolean beginTransaction, Boolean commitTransaction, Nullable`1 isolationLevel, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.MigrationCommandExecutor.ExecuteAsync(IReadOnlyList`1 migrationCommands, IRelationalConnection connection, MigrationExecutionState executionState, Boolean beginTransaction, Boolean commitTransaction, Nullable`1 isolationLevel, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.MigrationCommandExecutor.ExecuteNonQueryAsync(IReadOnlyList`1 migrationCommands, IRelationalConnection connection, MigrationExecutionState executionState, Boolean commitTransaction, Nullable`1 isolationLevel, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.MigrateImplementationAsync(DbContext context, String targetMigration, MigrationExecutionState state, Boolean useTransaction, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.MigrateImplementationAsync(DbContext context, String targetMigration, MigrationExecutionState state, Boolean useTransaction, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.<>c.<<MigrateAsync>b__22_1>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.<>c__DisplayClass30_0`2.<<ExecuteAsync>b__0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteImplementationAsync[TState,TResult](Func`4 operation, Func`4 verifySucceeded, TState state, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteImplementationAsync[TState,TResult](Func`4 operation, Func`4 verifySucceeded, TState state, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.MigrateAsync(String targetMigration, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.MigrateAsync(String targetMigration, CancellationToken cancellationToken)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Migrations.Internal.NpgsqlMigrator.MigrateAsync(String targetMigration, CancellationToken cancellationToken)
+   at FashionStore.Infrastructure.Seed.DatabaseInitializer.RunMigrationsAsync(FashionStoreDbContext context, ILogger logger, CancellationToken cancellationToken) in C:\Users\oremi\source\repos\My Projects\FashionStore.e-commerce\FashionStore.API\FashionStore\FashionStore.Infrastructure\Seed\DatabaseInitializer.cs:line 39
+  Exception data:
+    Severity: ERROR
+    SqlState: 42P07
+    MessageText: relation "AspNetRoles" already exists
+    File: heap.c
+    Line: 1160
+    Routine: heap_create_with_catalog
+20:12:59.415 +01:00 [Information] [Program] Migration history already contains other entries, so automatic alignment is being skipped.
+20:12:59.419 +01:00 [Information] [Program] Database migration history aligned successfully. Skipping reapplication of the initial migration.
+20:13:04.157 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger" responded 301 in 11.7905 ms
+20:13:04.404 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/index.html" responded 200 in 211.8856 ms
+20:13:04.487 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/swagger-ui.css" responded 200 in 109.9902 ms
+20:13:04.487 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/swagger-ui-standalone-preset.js" responded 200 in 109.3324 ms
+20:13:04.539 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/swagger-ui-bundle.js" responded 200 in 161.0219 ms
+20:13:05.073 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/v1/swagger.json" responded 200 in 60.0119 ms
+20:13:36.798 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Login attempt received for email "oremichenjesumeichen@gmail.com".
+20:13:37.069 +01:00 [Error] [FashionStore.Application.Features.Auth.AuthService] Login user "27671d2f-e11a-4426-aaae-d724455a1672" with email "oremichenjesumeichen@gmail.com": email not confirmed.
+20:13:37.162 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "POST" "/api/Auth/login" responded 403 in 597.3475 ms
+20:13:38.065 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Email send requested. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". Recipient count: 1.
+20:13:38.293 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Sending email through host "smtp.gmail.com" on port 465 for recipient "oremichenjesumeichen@gmail.com".
+20:13:38.348 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/index.html" responded 200 in 11.7616 ms
+20:13:38.635 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/favicon-32x32.png" responded 200 in 0.9397 ms
+20:13:38.654 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/v1/swagger.json" responded 200 in 38.0381 ms
+20:13:59.514 +01:00 [Error] [FashionStore.Application.Features.Notification.EmailNotificationService] Unexpected error occurred while sending email. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com".
+System.Net.Sockets.SocketException (10060): A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+   at System.Threading.Tasks.ValueTask.ValueTaskSourceAsTask.<>c.<.cctor>b__4_0(Object state)
+--- End of stack trace from previous location ---
+   at MailKit.Net.SocketUtils.SocketConnectState.OnEndConnect(IAsyncResult ar)
+--- End of stack trace from previous location ---
+   at MailKit.Net.SocketUtils.ConnectAsync(String host, Int32 port, IPEndPoint localEndPoint, CancellationToken cancellationToken)
+   at MailKit.Net.SocketUtils.ConnectAsync(String host, Int32 port, IPEndPoint localEndPoint, Int32 timeout, CancellationToken cancellationToken)
+   at MailKit.MailService.ConnectNetworkAsync(String host, Int32 port, CancellationToken cancellationToken)
+   at MailKit.Net.Smtp.SmtpClient.ConnectAsync(String host, Int32 port, SecureSocketOptions options, CancellationToken cancellationToken)
+   at FashionStore.Application.Features.Notification.EmailNotificationService.SendEmailAsync(EmailNotification notification) in C:\Users\oremi\source\repos\My Projects\FashionStore.e-commerce\FashionStore.API\FashionStore\FashionStore.Application\Features\Notification\EmailNotificationService.cs:line 53
+20:13:59.548 +01:00 [Warning] [FashionStore.Application.Messages.NotificationQueue.EmailNotificationProcessorService] Notification delivery failed on attempt 1 of 3. Subject: "Welcome to FashionStore". Error: "An unexpected error occurred while sending email.".
+20:14:04.554 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Email send requested. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". Recipient count: 1.
+20:14:04.558 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Sending email through host "smtp.gmail.com" on port 465 for recipient "oremichenjesumeichen@gmail.com".
+20:14:25.621 +01:00 [Error] [FashionStore.Application.Features.Notification.EmailNotificationService] Unexpected error occurred while sending email. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com".
+System.Net.Sockets.SocketException (10060): A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+   at System.Threading.Tasks.ValueTask.ValueTaskSourceAsTask.<>c.<.cctor>b__4_0(Object state)
+--- End of stack trace from previous location ---
+   at MailKit.Net.SocketUtils.SocketConnectState.OnEndConnect(IAsyncResult ar)
+--- End of stack trace from previous location ---
+   at MailKit.Net.SocketUtils.ConnectAsync(String host, Int32 port, IPEndPoint localEndPoint, CancellationToken cancellationToken)
+   at MailKit.Net.SocketUtils.ConnectAsync(String host, Int32 port, IPEndPoint localEndPoint, Int32 timeout, CancellationToken cancellationToken)
+   at MailKit.MailService.ConnectNetworkAsync(String host, Int32 port, CancellationToken cancellationToken)
+   at MailKit.Net.Smtp.SmtpClient.ConnectAsync(String host, Int32 port, SecureSocketOptions options, CancellationToken cancellationToken)
+   at FashionStore.Application.Features.Notification.EmailNotificationService.SendEmailAsync(EmailNotification notification) in C:\Users\oremi\source\repos\My Projects\FashionStore.e-commerce\FashionStore.API\FashionStore\FashionStore.Application\Features\Notification\EmailNotificationService.cs:line 53
+20:14:25.629 +01:00 [Warning] [FashionStore.Application.Messages.NotificationQueue.EmailNotificationProcessorService] Notification delivery failed on attempt 2 of 3. Subject: "Welcome to FashionStore". Error: "An unexpected error occurred while sending email.".
+20:14:30.638 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Email send requested. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". Recipient count: 1.
+20:14:30.644 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Sending email through host "smtp.gmail.com" on port 465 for recipient "oremichenjesumeichen@gmail.com".
+20:14:51.727 +01:00 [Error] [FashionStore.Application.Features.Notification.EmailNotificationService] Unexpected error occurred while sending email. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com".
+System.Net.Sockets.SocketException (10060): A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+   at System.Threading.Tasks.ValueTask.ValueTaskSourceAsTask.<>c.<.cctor>b__4_0(Object state)
+--- End of stack trace from previous location ---
+   at MailKit.Net.SocketUtils.SocketConnectState.OnEndConnect(IAsyncResult ar)
+--- End of stack trace from previous location ---
+   at MailKit.Net.SocketUtils.ConnectAsync(String host, Int32 port, IPEndPoint localEndPoint, CancellationToken cancellationToken)
+   at MailKit.Net.SocketUtils.ConnectAsync(String host, Int32 port, IPEndPoint localEndPoint, Int32 timeout, CancellationToken cancellationToken)
+   at MailKit.MailService.ConnectNetworkAsync(String host, Int32 port, CancellationToken cancellationToken)
+   at MailKit.Net.Smtp.SmtpClient.ConnectAsync(String host, Int32 port, SecureSocketOptions options, CancellationToken cancellationToken)
+   at FashionStore.Application.Features.Notification.EmailNotificationService.SendEmailAsync(EmailNotification notification) in C:\Users\oremi\source\repos\My Projects\FashionStore.e-commerce\FashionStore.API\FashionStore\FashionStore.Application\Features\Notification\EmailNotificationService.cs:line 53
+20:14:51.737 +01:00 [Warning] [FashionStore.Application.Messages.NotificationQueue.EmailNotificationProcessorService] Notification delivery failed on attempt 3 of 3. Subject: "Welcome to FashionStore". Error: "An unexpected error occurred while sending email.".
+20:14:52.094 +01:00 [Error] [FashionStore.Application.Messages.NotificationQueue.EmailNotificationProcessorService] Notification was persisted as failed after 3 attempts. Subject: "Welcome to FashionStore". Error: "An unexpected error occurred while sending email.".
+20:18:01.194 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Login attempt received for email "oremichenjesumeichen@gmail.com".
+20:18:01.279 +01:00 [Error] [FashionStore.Application.Features.Auth.AuthService] Login user "27671d2f-e11a-4426-aaae-d724455a1672" with email "oremichenjesumeichen@gmail.com": email not confirmed.
+20:18:01.284 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Email send requested. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". Recipient count: 1.
+20:18:01.285 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "POST" "/api/Auth/login" responded 403 in 119.9127 ms
+20:18:01.287 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Sending email through host "smtp.gmail.com" on port 465 for recipient "oremichenjesumeichen@gmail.com".
+20:18:22.379 +01:00 [Error] [FashionStore.Application.Features.Notification.EmailNotificationService] Unexpected error occurred while sending email. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com".
+System.Net.Sockets.SocketException (10060): A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+   at System.Threading.Tasks.ValueTask.ValueTaskSourceAsTask.<>c.<.cctor>b__4_0(Object state)
+--- End of stack trace from previous location ---
+   at MailKit.Net.SocketUtils.SocketConnectState.OnEndConnect(IAsyncResult ar)
+--- End of stack trace from previous location ---
+   at MailKit.Net.SocketUtils.ConnectAsync(String host, Int32 port, IPEndPoint localEndPoint, CancellationToken cancellationToken)
+   at MailKit.Net.SocketUtils.ConnectAsync(String host, Int32 port, IPEndPoint localEndPoint, Int32 timeout, CancellationToken cancellationToken)
+   at MailKit.MailService.ConnectNetworkAsync(String host, Int32 port, CancellationToken cancellationToken)
+   at MailKit.Net.Smtp.SmtpClient.ConnectAsync(String host, Int32 port, SecureSocketOptions options, CancellationToken cancellationToken)
+   at FashionStore.Application.Features.Notification.EmailNotificationService.SendEmailAsync(EmailNotification notification) in C:\Users\oremi\source\repos\My Projects\FashionStore.e-commerce\FashionStore.API\FashionStore\FashionStore.Application\Features\Notification\EmailNotificationService.cs:line 53
+20:18:22.387 +01:00 [Warning] [FashionStore.Application.Messages.NotificationQueue.EmailNotificationProcessorService] Notification delivery failed on attempt 1 of 3. Subject: "Welcome to FashionStore". Error: "An unexpected error occurred while sending email.".
+20:18:47.275 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Email send requested. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". Recipient count: 1.
+20:18:47.286 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Sending email through host "smtp.gmail.com" on port 465 for recipient "oremichenjesumeichen@gmail.com".
+20:31:43.167 +01:00 [Information] [Program] Applying 1 pending database migration(s): "20260331215056_InitialIdentitySetup"
+20:31:44.029 +01:00 [Error] [Microsoft.EntityFrameworkCore.Database.Command] Failed executing DbCommand ("12"ms) [Parameters=[""], CommandType='Text', CommandTimeout='30']"
+""CREATE TABLE \"AspNetRoles\" (
+    \"Id\" text NOT NULL,
+    \"Name\" character varying(256),
+    \"NormalizedName\" character varying(256),
+    \"ConcurrencyStamp\" text,
+    CONSTRAINT \"PK_AspNetRoles\" PRIMARY KEY (\"Id\")
+);"
+20:31:44.238 +01:00 [Warning] [Program] Migration encountered an existing-schema conflict. Attempting to align EF migration history before retrying.
+Npgsql.PostgresException (0x80004005): 42P07: relation "AspNetRoles" already exists
+   at Npgsql.Internal.NpgsqlConnector.ReadMessageLong(Boolean async, DataRowLoadingMode dataRowLoadingMode, Boolean readingNotifications, Boolean isReadingPrependedMessage)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteNonQuery(Boolean async, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteNonQueryAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteNonQueryAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteNonQueryAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.MigrationCommandExecutor.ExecuteAsync(IReadOnlyList`1 migrationCommands, IRelationalConnection connection, MigrationExecutionState executionState, Boolean beginTransaction, Boolean commitTransaction, Nullable`1 isolationLevel, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.MigrationCommandExecutor.ExecuteAsync(IReadOnlyList`1 migrationCommands, IRelationalConnection connection, MigrationExecutionState executionState, Boolean beginTransaction, Boolean commitTransaction, Nullable`1 isolationLevel, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.MigrationCommandExecutor.ExecuteNonQueryAsync(IReadOnlyList`1 migrationCommands, IRelationalConnection connection, MigrationExecutionState executionState, Boolean commitTransaction, Nullable`1 isolationLevel, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.MigrateImplementationAsync(DbContext context, String targetMigration, MigrationExecutionState state, Boolean useTransaction, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.MigrateImplementationAsync(DbContext context, String targetMigration, MigrationExecutionState state, Boolean useTransaction, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.<>c.<<MigrateAsync>b__22_1>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.<>c__DisplayClass30_0`2.<<ExecuteAsync>b__0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteImplementationAsync[TState,TResult](Func`4 operation, Func`4 verifySucceeded, TState state, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteImplementationAsync[TState,TResult](Func`4 operation, Func`4 verifySucceeded, TState state, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.MigrateAsync(String targetMigration, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.MigrateAsync(String targetMigration, CancellationToken cancellationToken)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Migrations.Internal.NpgsqlMigrator.MigrateAsync(String targetMigration, CancellationToken cancellationToken)
+   at FashionStore.Infrastructure.Seed.DatabaseInitializer.RunMigrationsAsync(FashionStoreDbContext context, ILogger logger, CancellationToken cancellationToken) in C:\Users\oremi\source\repos\My Projects\FashionStore.e-commerce\FashionStore.API\FashionStore\FashionStore.Infrastructure\Seed\DatabaseInitializer.cs:line 39
+  Exception data:
+    Severity: ERROR
+    SqlState: 42P07
+    MessageText: relation "AspNetRoles" already exists
+    File: heap.c
+    Line: 1160
+    Routine: heap_create_with_catalog
+20:31:44.345 +01:00 [Information] [Program] Migration history already contains other entries, so automatic alignment is being skipped.
+20:31:44.355 +01:00 [Information] [Program] Database migration history aligned successfully. Skipping reapplication of the initial migration.
+20:31:48.376 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/index.html" responded 200 in 201.4603 ms
+20:31:48.656 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/v1/swagger.json" responded 200 in 76.5423 ms
+20:33:14.626 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Login attempt received for email "oremichenjesumeichen@gmail.com".
+20:33:14.930 +01:00 [Error] [FashionStore.Application.Features.Auth.AuthService] Login user "27671d2f-e11a-4426-aaae-d724455a1672" with email "oremichenjesumeichen@gmail.com": email not confirmed.
+20:33:22.153 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Email send requested. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". Recipient count: 1.
+20:33:22.176 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "POST" "/api/Auth/login" responded 403 in 7763.4907 ms
+20:33:22.290 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Sending email through host "smtp.gmail.com" on port 465 for recipient "oremichenjesumeichen@gmail.com".
+20:33:43.417 +01:00 [Error] [FashionStore.Application.Features.Notification.EmailNotificationService] Unexpected error occurred while sending email. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com".
+System.Net.Sockets.SocketException (10060): A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+   at System.Threading.Tasks.ValueTask.ValueTaskSourceAsTask.<>c.<.cctor>b__4_0(Object state)
+--- End of stack trace from previous location ---
+   at MailKit.Net.SocketUtils.SocketConnectState.OnEndConnect(IAsyncResult ar)
+--- End of stack trace from previous location ---
+   at MailKit.Net.SocketUtils.ConnectAsync(String host, Int32 port, IPEndPoint localEndPoint, CancellationToken cancellationToken)
+   at MailKit.Net.SocketUtils.ConnectAsync(String host, Int32 port, IPEndPoint localEndPoint, Int32 timeout, CancellationToken cancellationToken)
+   at MailKit.MailService.ConnectNetworkAsync(String host, Int32 port, CancellationToken cancellationToken)
+   at MailKit.Net.Smtp.SmtpClient.ConnectAsync(String host, Int32 port, SecureSocketOptions options, CancellationToken cancellationToken)
+   at FashionStore.Application.Features.Notification.EmailNotificationService.SendEmailAsync(EmailNotification notification) in C:\Users\oremi\source\repos\My Projects\FashionStore.e-commerce\FashionStore.API\FashionStore\FashionStore.Application\Features\Notification\EmailNotificationService.cs:line 53
+20:33:43.426 +01:00 [Warning] [FashionStore.Application.Messages.NotificationQueue.EmailNotificationProcessorService] Notification delivery failed on attempt 1 of 3. Subject: "Welcome to FashionStore". Error: "An unexpected error occurred while sending email.".
+20:33:57.753 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Email send requested. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". Recipient count: 1.
+20:33:57.760 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Sending email through host "smtp.gmail.com" on port 465 for recipient "oremichenjesumeichen@gmail.com".
+20:45:21.662 +01:00 [Information] [Program] Applying 1 pending database migration(s): "20260331215056_InitialIdentitySetup"
+20:45:22.323 +01:00 [Error] [Microsoft.EntityFrameworkCore.Database.Command] Failed executing DbCommand ("10"ms) [Parameters=[""], CommandType='Text', CommandTimeout='30']"
+""CREATE TABLE \"AspNetRoles\" (
+    \"Id\" text NOT NULL,
+    \"Name\" character varying(256),
+    \"NormalizedName\" character varying(256),
+    \"ConcurrencyStamp\" text,
+    CONSTRAINT \"PK_AspNetRoles\" PRIMARY KEY (\"Id\")
+);"
+20:45:22.444 +01:00 [Warning] [Program] Migration encountered an existing-schema conflict. Attempting to align EF migration history before retrying.
+Npgsql.PostgresException (0x80004005): 42P07: relation "AspNetRoles" already exists
+   at Npgsql.Internal.NpgsqlConnector.ReadMessageLong(Boolean async, DataRowLoadingMode dataRowLoadingMode, Boolean readingNotifications, Boolean isReadingPrependedMessage)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteNonQuery(Boolean async, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteNonQueryAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteNonQueryAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteNonQueryAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.MigrationCommandExecutor.ExecuteAsync(IReadOnlyList`1 migrationCommands, IRelationalConnection connection, MigrationExecutionState executionState, Boolean beginTransaction, Boolean commitTransaction, Nullable`1 isolationLevel, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.MigrationCommandExecutor.ExecuteAsync(IReadOnlyList`1 migrationCommands, IRelationalConnection connection, MigrationExecutionState executionState, Boolean beginTransaction, Boolean commitTransaction, Nullable`1 isolationLevel, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.MigrationCommandExecutor.ExecuteNonQueryAsync(IReadOnlyList`1 migrationCommands, IRelationalConnection connection, MigrationExecutionState executionState, Boolean commitTransaction, Nullable`1 isolationLevel, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.MigrateImplementationAsync(DbContext context, String targetMigration, MigrationExecutionState state, Boolean useTransaction, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.MigrateImplementationAsync(DbContext context, String targetMigration, MigrationExecutionState state, Boolean useTransaction, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.<>c.<<MigrateAsync>b__22_1>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.<>c__DisplayClass30_0`2.<<ExecuteAsync>b__0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteImplementationAsync[TState,TResult](Func`4 operation, Func`4 verifySucceeded, TState state, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteImplementationAsync[TState,TResult](Func`4 operation, Func`4 verifySucceeded, TState state, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.MigrateAsync(String targetMigration, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.MigrateAsync(String targetMigration, CancellationToken cancellationToken)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Migrations.Internal.NpgsqlMigrator.MigrateAsync(String targetMigration, CancellationToken cancellationToken)
+   at FashionStore.Infrastructure.Seed.DatabaseInitializer.RunMigrationsAsync(FashionStoreDbContext context, ILogger logger, CancellationToken cancellationToken) in C:\Users\oremi\source\repos\My Projects\FashionStore.e-commerce\FashionStore.API\FashionStore\FashionStore.Infrastructure\Seed\DatabaseInitializer.cs:line 39
+  Exception data:
+    Severity: ERROR
+    SqlState: 42P07
+    MessageText: relation "AspNetRoles" already exists
+    File: heap.c
+    Line: 1160
+    Routine: heap_create_with_catalog
+20:45:22.495 +01:00 [Information] [Program] Migration history already contains other entries, so automatic alignment is being skipped.
+20:45:22.498 +01:00 [Information] [Program] Database migration history aligned successfully. Skipping reapplication of the initial migration.
+20:45:25.837 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/index.html" responded 200 in 208.9098 ms
+20:45:26.130 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/v1/swagger.json" responded 200 in 96.2593 ms
+20:46:00.509 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Login attempt received for email "oremichenjesumeichen@gmail.com".
+20:46:00.746 +01:00 [Error] [FashionStore.Application.Features.Auth.AuthService] Login user "27671d2f-e11a-4426-aaae-d724455a1672" with email "oremichenjesumeichen@gmail.com": email not confirmed.
+20:46:04.525 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Email send requested. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com". Recipient count: 1.
+20:46:04.545 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "POST" "/api/Auth/login" responded 403 in 4205.0802 ms
+20:46:04.633 +01:00 [Information] [FashionStore.Application.Features.Notification.EmailNotificationService] Sending email through host "smtp.gmail.com" on port 587 for recipient "oremichenjesumeichen@gmail.com".
+20:48:09.549 +01:00 [Error] [FashionStore.Application.Features.Notification.EmailNotificationService] Unexpected error occurred while sending email. Subject: "Welcome to FashionStore". First recipient: "oremichenjesumeichen@gmail.com".
+MailKit.Security.SslHandshakeException: An error occurred while attempting to establish an SSL or TLS connection.
+
+When connecting to an SMTP service, port 587 is typically reserved for plain-text connections. If
+you intended to connect to SMTP on the SSL port, try connecting to port 465 instead. Otherwise,
+if you intended to use STARTTLS, make sure to use the following code:
+
+client.Connect ("smtp.gmail.com", 587, SecureSocketOptions.StartTls);
+
+ ---> System.TimeoutException: Operation timed out after 120000 milliseconds
+ ---> System.Threading.Tasks.TaskCanceledException: A task was canceled.
+   at MailKit.Net.NetworkStream.ReadAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken)
+   --- End of inner exception stack trace ---
+   at MailKit.Net.NetworkStream.ReadAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken)
+   at System.Net.Security.SslStream.EnsureFullTlsFrameAsync[TIOAdapter](CancellationToken cancellationToken, Int32 estimatedSize)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at System.Net.Security.SslStream.ReceiveHandshakeFrameAsync[TIOAdapter](CancellationToken cancellationToken)
+   at System.Net.Security.SslStream.ForceAuthenticationAsync[TIOAdapter](Boolean receiveFirst, Byte[] reAuthenticationData, CancellationToken cancellationToken)
+   at System.Net.Security.SslStream.ProcessAuthenticationWithTelemetryAsync(Boolean isAsync, CancellationToken cancellationToken)
+   at MailKit.Net.Smtp.SmtpClient.SslHandshakeAsync(SslStream ssl, String host, CancellationToken cancellationToken)
+   at MailKit.Net.Smtp.SmtpClient.ConnectAsync(String host, Int32 port, SecureSocketOptions options, CancellationToken cancellationToken)
+   --- End of inner exception stack trace ---
+   at MailKit.Net.Smtp.SmtpClient.ConnectAsync(String host, Int32 port, SecureSocketOptions options, CancellationToken cancellationToken)
+   at FashionStore.Application.Features.Notification.EmailNotificationService.SendEmailAsync(EmailNotification notification) in C:\Users\oremi\source\repos\My Projects\FashionStore.e-commerce\FashionStore.API\FashionStore\FashionStore.Application\Features\Notification\EmailNotificationService.cs:line 53
+20:48:09.562 +01:00 [Warning] [FashionStore.Application.Messages.NotificationQueue.EmailNotificationProcessorService] Notification delivery failed on attempt 1 of 3. Subject: "Welcome to FashionStore". Error: "An unexpected error occurred while sending email.".
+20:49:57.170 +01:00 [Information] [Program] Applying 1 pending database migration(s): "20260331215056_InitialIdentitySetup"
+20:49:57.829 +01:00 [Error] [Microsoft.EntityFrameworkCore.Database.Command] Failed executing DbCommand ("9"ms) [Parameters=[""], CommandType='Text', CommandTimeout='30']"
+""CREATE TABLE \"AspNetRoles\" (
+    \"Id\" text NOT NULL,
+    \"Name\" character varying(256),
+    \"NormalizedName\" character varying(256),
+    \"ConcurrencyStamp\" text,
+    CONSTRAINT \"PK_AspNetRoles\" PRIMARY KEY (\"Id\")
+);"
+20:49:57.940 +01:00 [Warning] [Program] Migration encountered an existing-schema conflict. Attempting to align EF migration history before retrying.
+Npgsql.PostgresException (0x80004005): 42P07: relation "AspNetRoles" already exists
+   at Npgsql.Internal.NpgsqlConnector.ReadMessageLong(Boolean async, DataRowLoadingMode dataRowLoadingMode, Boolean readingNotifications, Boolean isReadingPrependedMessage)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteNonQuery(Boolean async, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteNonQueryAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteNonQueryAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteNonQueryAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.MigrationCommandExecutor.ExecuteAsync(IReadOnlyList`1 migrationCommands, IRelationalConnection connection, MigrationExecutionState executionState, Boolean beginTransaction, Boolean commitTransaction, Nullable`1 isolationLevel, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.MigrationCommandExecutor.ExecuteAsync(IReadOnlyList`1 migrationCommands, IRelationalConnection connection, MigrationExecutionState executionState, Boolean beginTransaction, Boolean commitTransaction, Nullable`1 isolationLevel, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.MigrationCommandExecutor.ExecuteNonQueryAsync(IReadOnlyList`1 migrationCommands, IRelationalConnection connection, MigrationExecutionState executionState, Boolean commitTransaction, Nullable`1 isolationLevel, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.MigrateImplementationAsync(DbContext context, String targetMigration, MigrationExecutionState state, Boolean useTransaction, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.MigrateImplementationAsync(DbContext context, String targetMigration, MigrationExecutionState state, Boolean useTransaction, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.<>c.<<MigrateAsync>b__22_1>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.<>c__DisplayClass30_0`2.<<ExecuteAsync>b__0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteImplementationAsync[TState,TResult](Func`4 operation, Func`4 verifySucceeded, TState state, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteImplementationAsync[TState,TResult](Func`4 operation, Func`4 verifySucceeded, TState state, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.MigrateAsync(String targetMigration, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.MigrateAsync(String targetMigration, CancellationToken cancellationToken)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Migrations.Internal.NpgsqlMigrator.MigrateAsync(String targetMigration, CancellationToken cancellationToken)
+   at FashionStore.Infrastructure.Seed.DatabaseInitializer.RunMigrationsAsync(FashionStoreDbContext context, ILogger logger, CancellationToken cancellationToken) in C:\Users\oremi\source\repos\My Projects\FashionStore.e-commerce\FashionStore.API\FashionStore\FashionStore.Infrastructure\Seed\DatabaseInitializer.cs:line 39
+  Exception data:
+    Severity: ERROR
+    SqlState: 42P07
+    MessageText: relation "AspNetRoles" already exists
+    File: heap.c
+    Line: 1160
+    Routine: heap_create_with_catalog
+20:49:58.002 +01:00 [Information] [Program] Migration history already contains other entries, so automatic alignment is being skipped.
+20:49:58.005 +01:00 [Information] [Program] Database migration history aligned successfully. Skipping reapplication of the initial migration.
+20:50:01.115 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/index.html" responded 200 in 188.8212 ms
+20:50:01.339 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/v1/swagger.json" responded 200 in 54.8846 ms

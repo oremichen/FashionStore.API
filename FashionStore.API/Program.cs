@@ -97,7 +97,7 @@ builder.Services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
 .AddDefaultTokenProviders();
 
 builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
-    options.TokenLifespan = TimeSpan.FromDays(1));
+    options.TokenLifespan = TimeSpan.FromDays(5));
 #endregion
 
 #region JWT Authentication
