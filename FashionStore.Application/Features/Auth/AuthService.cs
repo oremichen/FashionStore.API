@@ -262,6 +262,7 @@ namespace FashionStore.Application.Features.Auth
             return response.Success("Email confirmed successfully.");
         }
 
+        #region Helper Functions
         private async Task ReverseUserCreationAsync(ApplicationUser user, string reason, string details)
         {
             var deleteResult = await _userManager.DeleteAsync(user);
@@ -368,5 +369,7 @@ namespace FashionStore.Application.Features.Auth
                 return normalizedToken.Replace(" ", "+");
             }
         }
+
+        #endregion
     }
 }
