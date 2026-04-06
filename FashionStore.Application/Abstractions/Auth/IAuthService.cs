@@ -7,7 +7,9 @@ namespace FashionStore.Application.Abstractions.Auth
     public interface IAuthService
     {
         Task<ResponseResult<LoginResponse>> Login(LoginRequest login);
+        Task<ResponseResult> Logout(string username, string tokenId);
         Task<ResponseResult> Register(RegisterRequest request);
         Task<ResponseResult> ConfirmEmail(ConfirmEmailRequest request);
+        Task<ResponseResult> ResendConfirmationLink(ResendConfirmationLinkRequest request);
     }
 }

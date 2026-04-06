@@ -1,7 +1,7 @@
 using FashionStore.Domain.Enums;
 using Microsoft.AspNetCore.Hosting;
 
-namespace FashionStore.Application.Features.Notification
+namespace FashionStore.Application.Notification
 {
     public class EmailTemplateRenderer : IEmailTemplateRenderer
     {

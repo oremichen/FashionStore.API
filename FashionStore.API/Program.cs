@@ -11,6 +11,8 @@ using FashionStore.Infrastructure.Seed;
 using FashionStore.Infrastructure;
 using Serilog;
 using FashionStore.Application;
+using System.IdentityModel.Tokens.Jwt;
+using FashionStore.Shared.Constants;
 
 var builder = WebApplication.CreateBuilder(args);
 const string corsPolicyName = "FrontendCors";
@@ -138,6 +140,26 @@ builder.Services.AddAuthentication(options =>
 
                 if (user != null)
                 {
+                    var tokenId = context.Principal?.FindFirst(JwtRegisteredClaimNames.Jti)?.Value;
+                    if (string.IsNullOrWhiteSpace(tokenId))
+                    {
+                        logger.LogWarning("Token validation failed because the token id claim was missing for user {UserId}.", user.Id);
+                        context.Fail("Invalid token.");
+                        return;
+                    }
+
+                    var revokedToken = await userManager.GetAuthenticationTokenAsync(
+                        user,
+                        AuthTokenConstants.JwtLoginProvider,
+                        $"{AuthTokenConstants.RevokedTokenPrefix}{tokenId}");
+
+                    if (!string.IsNullOrWhiteSpace(revokedToken))
+                    {
+                        logger.LogWarning("Rejected revoked token {TokenId} for user {UserId}.", tokenId, user.Id);
+                        context.Fail("Token has been revoked.");
+                        return;
+                    }
+
                     if (user.IsDeactivated)
                     {
                         logger.LogWarning("Deactivated user {UserId} attempted access.", user.Id);
@@ -151,6 +173,7 @@ builder.Services.AddAuthentication(options =>
                     var claims = new List<System.Security.Claims.Claim>
                     {
                         new(System.Security.Claims.ClaimTypes.NameIdentifier, user.Id),
+                        new(System.Security.Claims.ClaimTypes.Name, user.UserName ?? user.Email ?? string.Empty),
                         new(System.Security.Claims.ClaimTypes.Email, user.Email!),
                         new(System.Security.Claims.ClaimTypes.GivenName, user.FirstName ?? string.Empty),
                         new(System.Security.Claims.ClaimTypes.Surname, user.LastName ?? string.Empty),

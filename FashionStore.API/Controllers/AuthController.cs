@@ -2,6 +2,9 @@ using FashionStore.Application.Abstractions.Auth;
 using FashionStore.Application.Dtos.Request;
 using FashionStore.Application.Dtos.Response;
 using FashionStore.Shared.Common;
+using Microsoft.AspNetCore.Authorization;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FashionStore.API.Controllers
@@ -30,6 +33,25 @@ namespace FashionStore.API.Controllers
             return ProcessResponse(response);
         }
 
+        [Authorize]
+        [HttpPost("logout")]
+        [Produces("application/json")]
+        [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
+        [EndpointSummary("Logout user")]
+        public async Task<IActionResult> Logout()
+        {
+            var username = User.FindFirst(ClaimTypes.Name)?.Value
+                ?? User.FindFirst(ClaimTypes.Email)?.Value
+                ?? string.Empty;
+            var tokenId = User.FindFirst(JwtRegisteredClaimNames.Jti)?.Value ?? string.Empty;
+
+            var response = await _authService.Logout(username, tokenId);
+            return ProcessResponse(response);
+        }
+
         [HttpPost("register")]
         [Produces("application/json")]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status200OK)]
@@ -54,6 +76,21 @@ namespace FashionStore.API.Controllers
         public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailRequest request)
         {
             var response = await _authService.ConfirmEmail(request);
+            return ProcessResponse(response);
+        }
+
+        [HttpPost("resend-confirmation-link")]
+        [Produces("application/json")]
+        [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status429TooManyRequests)]
+        [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
+        [EndpointSummary("Resend confirmation email")]
+        public async Task<IActionResult> ResendConfirmationLink([FromBody] ResendConfirmationLinkRequest request)
+        {
+            var response = await _authService.ResendConfirmationLink(request);
             return ProcessResponse(response);
         }
     }
