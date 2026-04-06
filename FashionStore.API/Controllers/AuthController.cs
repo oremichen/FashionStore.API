@@ -52,6 +52,20 @@ namespace FashionStore.API.Controllers
             return ProcessResponse(response);
         }
 
+        [HttpPost("forgot-password")]
+        [Produces("application/json")]
+        [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
+        [EndpointSummary("Generate temporary password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+        {
+            var response = await _authService.ForgotPassword(request);
+            return ProcessResponse(response);
+        }
+
         [HttpPost("register")]
         [Produces("application/json")]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status200OK)]

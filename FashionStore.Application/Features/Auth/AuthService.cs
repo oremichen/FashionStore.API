@@ -1,4 +1,5 @@
 using FashionStore.Application.Abstractions.Auth;
+using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.WebUtilities;
 
@@ -7,6 +8,7 @@ namespace FashionStore.Application.Features.Auth
     public class AuthService : IAuthService
     {
         private static readonly TimeSpan ConfirmationResendCooldown = TimeSpan.FromMinutes(1);
+        private const int TemporaryPasswordLength = 12;
 
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ITokenService _tokenService;
@@ -124,6 +126,86 @@ namespace FashionStore.Application.Features.Auth
 
             _logger.LogInformation("Logout successful for user {UserId} with username {Username}. Token {TokenId} was revoked.", user.Id, username, tokenId);
             return response.Success("Logout successful.");
+        }
+
+        public async Task<ResponseResult> ForgotPassword(ForgotPasswordRequest request)
+        {
+            var response = new ResponseResult();
+
+            _logger.LogInformation("Forgot password request received for email {Email}.", request.Email);
+
+            var user = await _userManager.FindByEmailAsync(request.Email);
+            if (user == null)
+            {
+                _logger.LogWarning("Forgot password failed for email {Email}: user was not found.", request.Email);
+                return response.Fail("No user was found for the supplied email address.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
+            }
+
+            if (user.IsDeleted || user.IsDeactivated)
+            {
+                _logger.LogWarning(
+                    "Forgot password blocked for user {UserId} with email {Email}: account is inactive. Deleted: {IsDeleted}, Deactivated: {IsDeactivated}.",
+                    user.Id,
+                    user.Email,
+                    user.IsDeleted,
+                    user.IsDeactivated);
+                return response.Fail("This account is not active.", ResponseCodes.ACTION_NOT_PERMITTED);
+            }
+
+            if (!user.EmailConfirmed)
+            {
+                await SendConfirmationMail(user);
+                _logger.LogWarning("Forgot password blocked for user {UserId} with email {Email}: email not confirmed.", user.Id, user.Email);
+                return response.Fail("Email address has not been confirmed. A confirmation link has been sent to your email.", ResponseCodes.ACTION_NOT_PERMITTED);
+            }
+
+            var temporaryPassword = GenerateTemporaryPassword();
+            var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var resetResult = await _userManager.ResetPasswordAsync(user, resetToken, temporaryPassword);
+
+            if (!resetResult.Succeeded)
+            {
+                var errors = resetResult.Errors.Select(error => error.Description).ToArray();
+
+                _logger.LogWarning(
+                    "Forgot password reset failed for user {UserId} with email {Email}. Errors: {Errors}.",
+                    user.Id,
+                    user.Email,
+                    string.Join(" | ", errors));
+
+                return response.Fail(
+                    "A temporary password could not be generated. Please try again.",
+                    ResponseCodes.ACTION_FAILED,
+                    errors);
+            }
+
+            user.IsPasswordChanged = false;
+            user.PasswordChangedAt = null;
+            user.UpdatedAt = DateTimeOffset.UtcNow;
+
+            var updateResult = await _userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+            {
+                var errors = updateResult.Errors.Select(error => error.Description).ToArray();
+
+                _logger.LogWarning(
+                    "Forgot password succeeded for user {UserId}, but profile update failed. Errors: {Errors}.",
+                    user.Id,
+                    string.Join(" | ", errors));
+
+                return response.Fail(
+                    "Temporary password was generated, but the account could not be fully updated.",
+                    ResponseCodes.ACTION_FAILED,
+                    errors);
+            }
+
+            await _userManager.ResetAccessFailedCountAsync(user);
+            await _userManager.SetLockoutEndDateAsync(user, null);
+
+            await SendForgotPasswordMail(user, temporaryPassword);
+
+            _logger.LogInformation("Temporary password generated successfully for user {UserId} with email {Email}.", user.Id, user.Email);
+            return response.Success("A temporary password has been sent to your email.");
         }
 
         public async Task<ResponseResult> Register(RegisterRequest request)
@@ -443,6 +525,31 @@ namespace FashionStore.Application.Features.Auth
             });
         }
 
+        private async Task SendForgotPasswordMail(ApplicationUser user, string temporaryPassword)
+        {
+            var appName = GetAppName();
+            var loginPageUrl = _configuration["Frontend:LoginPageUrl"]
+                ?? throw new InvalidOperationException("No login page link");
+
+            var emailBody = await _emailTemplateRenderer.RenderAsync(
+                EmailNotificationTypeEnum.ForgotPassword,
+                new Dictionary<string, string>
+                {
+                    ["appName"] = appName,
+                    ["username"] = $"{user.FirstName} {user.LastName}".Trim(),
+                    ["temporaryPassword"] = temporaryPassword,
+                    ["loginUrl"] = loginPageUrl,
+                    ["year"] = DateTime.UtcNow.Year.ToString()
+                });
+
+            _emailNotificationQueueService.Enqueue(new EmailNotification
+            {
+                To = new List<string> { user.Email! },
+                Subject = $"{appName} temporary password",
+                Body = emailBody
+            });
+        }
+
         private string GetAppName()
         {
             return _configuration["AppSettings:AppName"]
@@ -452,6 +559,46 @@ namespace FashionStore.Application.Features.Auth
         private static string BuildRevokedTokenName(string tokenId)
         {
             return $"{AuthTokenConstants.RevokedTokenPrefix}{tokenId}";
+        }
+
+        private static string GenerateTemporaryPassword()
+        {
+            const string uppercase = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+            const string lowercase = "abcdefghijkmnopqrstuvwxyz";
+            const string digits = "23456789";
+            const string special = "!@#$%^&*";
+            const string all = uppercase + lowercase + digits + special;
+
+            var passwordCharacters = new List<char>
+            {
+                GetRandomCharacter(uppercase),
+                GetRandomCharacter(lowercase),
+                GetRandomCharacter(digits),
+                GetRandomCharacter(special)
+            };
+
+            while (passwordCharacters.Count < TemporaryPasswordLength)
+            {
+                passwordCharacters.Add(GetRandomCharacter(all));
+            }
+
+            ShuffleCharacters(passwordCharacters);
+            return new string(passwordCharacters.ToArray());
+        }
+
+        private static char GetRandomCharacter(string characters)
+        {
+            var index = RandomNumberGenerator.GetInt32(characters.Length);
+            return characters[index];
+        }
+
+        private static void ShuffleCharacters(IList<char> characters)
+        {
+            for (var index = characters.Count - 1; index > 0; index--)
+            {
+                var swapIndex = RandomNumberGenerator.GetInt32(index + 1);
+                (characters[index], characters[swapIndex]) = (characters[swapIndex], characters[index]);
+            }
         }
 
         private static string DecodeConfirmationToken(string token)

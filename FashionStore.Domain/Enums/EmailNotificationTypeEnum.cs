@@ -4,6 +4,7 @@
     {
         Registration,
         Confirmation,
+        ForgotPassword,
         Checkout,
         FeedbackResponse,
     }
