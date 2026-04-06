@@ -115,3 +115,125 @@ Npgsql.PostgresException (0x80004005): 42P07: relation "AspNetRoles" already exi
 06:23:26.878 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Login attempt received for email "michen.jesumichen@fcmb.com".
 06:23:27.335 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Login successful for user "0d483ff1-8d4b-4310-90c7-e2008bebbf65" with email "michen.jesumichen@fcmb.com". Roles: "User". Token expires at 04/06/2026 06:23:27 +00:00.
 06:23:27.356 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "POST" "/api/Auth/login" responded 200 in 550.2726 ms
+08:32:42.848 +01:00 [Information] [Program] Applying 1 pending database migration(s): "20260331215056_InitialIdentitySetup"
+08:32:44.698 +01:00 [Error] [Microsoft.EntityFrameworkCore.Database.Command] Failed executing DbCommand ("36"ms) [Parameters=[""], CommandType='Text', CommandTimeout='30']"
+""CREATE TABLE \"AspNetRoles\" (
+    \"Id\" text NOT NULL,
+    \"Name\" character varying(256),
+    \"NormalizedName\" character varying(256),
+    \"ConcurrencyStamp\" text,
+    CONSTRAINT \"PK_AspNetRoles\" PRIMARY KEY (\"Id\")
+);"
+08:32:45.069 +01:00 [Warning] [Program] Migration encountered an existing-schema conflict. Attempting to align EF migration history before retrying.
+Npgsql.PostgresException (0x80004005): 42P07: relation "AspNetRoles" already exists
+   at Npgsql.Internal.NpgsqlConnector.ReadMessageLong(Boolean async, DataRowLoadingMode dataRowLoadingMode, Boolean readingNotifications, Boolean isReadingPrependedMessage)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteNonQuery(Boolean async, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteNonQueryAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteNonQueryAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteNonQueryAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.MigrationCommandExecutor.ExecuteAsync(IReadOnlyList`1 migrationCommands, IRelationalConnection connection, MigrationExecutionState executionState, Boolean beginTransaction, Boolean commitTransaction, Nullable`1 isolationLevel, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.MigrationCommandExecutor.ExecuteAsync(IReadOnlyList`1 migrationCommands, IRelationalConnection connection, MigrationExecutionState executionState, Boolean beginTransaction, Boolean commitTransaction, Nullable`1 isolationLevel, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.MigrationCommandExecutor.ExecuteNonQueryAsync(IReadOnlyList`1 migrationCommands, IRelationalConnection connection, MigrationExecutionState executionState, Boolean commitTransaction, Nullable`1 isolationLevel, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.MigrateImplementationAsync(DbContext context, String targetMigration, MigrationExecutionState state, Boolean useTransaction, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.MigrateImplementationAsync(DbContext context, String targetMigration, MigrationExecutionState state, Boolean useTransaction, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.<>c.<<MigrateAsync>b__22_1>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.<>c__DisplayClass30_0`2.<<ExecuteAsync>b__0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteImplementationAsync[TState,TResult](Func`4 operation, Func`4 verifySucceeded, TState state, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteImplementationAsync[TState,TResult](Func`4 operation, Func`4 verifySucceeded, TState state, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.MigrateAsync(String targetMigration, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.MigrateAsync(String targetMigration, CancellationToken cancellationToken)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Migrations.Internal.NpgsqlMigrator.MigrateAsync(String targetMigration, CancellationToken cancellationToken)
+   at FashionStore.Infrastructure.Seed.DatabaseInitializer.RunMigrationsAsync(FashionStoreDbContext context, ILogger logger, CancellationToken cancellationToken) in C:\Users\oremi\source\repos\My Projects\FashionStore.e-commerce\FashionStore.API\FashionStore\FashionStore.Infrastructure\Seed\DatabaseInitializer.cs:line 39
+  Exception data:
+    Severity: ERROR
+    SqlState: 42P07
+    MessageText: relation "AspNetRoles" already exists
+    File: heap.c
+    Line: 1160
+    Routine: heap_create_with_catalog
+08:32:45.241 +01:00 [Information] [Program] Migration history already contains other entries, so automatic alignment is being skipped.
+08:32:45.259 +01:00 [Information] [Program] Database migration history aligned successfully. Skipping reapplication of the initial migration.
+08:32:51.843 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/index.html" responded 200 in 379.2367 ms
+08:32:52.503 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/v1/swagger.json" responded 200 in 56.1010 ms
+08:37:55.015 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "OPTIONS" "/api/Auth/login" responded 204 in 7.9186 ms
+08:37:55.321 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Login attempt received for email "oremichenjesumeichen@gmail.com".
+08:37:56.701 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Login successful for user "27671d2f-e11a-4426-aaae-d724455a1672" with email "oremichenjesumeichen@gmail.com". Roles: "User". Token expires at 04/06/2026 08:37:56 +00:00.
+08:37:56.770 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "POST" "/api/Auth/login" responded 200 in 1736.0034 ms
+08:46:18.583 +01:00 [Information] [Program] Applying 1 pending database migration(s): "20260331215056_InitialIdentitySetup"
+08:46:19.652 +01:00 [Error] [Microsoft.EntityFrameworkCore.Database.Command] Failed executing DbCommand ("25"ms) [Parameters=[""], CommandType='Text', CommandTimeout='30']"
+""CREATE TABLE \"AspNetRoles\" (
+    \"Id\" text NOT NULL,
+    \"Name\" character varying(256),
+    \"NormalizedName\" character varying(256),
+    \"ConcurrencyStamp\" text,
+    CONSTRAINT \"PK_AspNetRoles\" PRIMARY KEY (\"Id\")
+);"
+08:46:20.249 +01:00 [Warning] [Program] Migration encountered an existing-schema conflict. Attempting to align EF migration history before retrying.
+Npgsql.PostgresException (0x80004005): 42P07: relation "AspNetRoles" already exists
+   at Npgsql.Internal.NpgsqlConnector.ReadMessageLong(Boolean async, DataRowLoadingMode dataRowLoadingMode, Boolean readingNotifications, Boolean isReadingPrependedMessage)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteNonQuery(Boolean async, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteNonQueryAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteNonQueryAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteNonQueryAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.MigrationCommandExecutor.ExecuteAsync(IReadOnlyList`1 migrationCommands, IRelationalConnection connection, MigrationExecutionState executionState, Boolean beginTransaction, Boolean commitTransaction, Nullable`1 isolationLevel, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.MigrationCommandExecutor.ExecuteAsync(IReadOnlyList`1 migrationCommands, IRelationalConnection connection, MigrationExecutionState executionState, Boolean beginTransaction, Boolean commitTransaction, Nullable`1 isolationLevel, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.MigrationCommandExecutor.ExecuteNonQueryAsync(IReadOnlyList`1 migrationCommands, IRelationalConnection connection, MigrationExecutionState executionState, Boolean commitTransaction, Nullable`1 isolationLevel, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.MigrateImplementationAsync(DbContext context, String targetMigration, MigrationExecutionState state, Boolean useTransaction, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.MigrateImplementationAsync(DbContext context, String targetMigration, MigrationExecutionState state, Boolean useTransaction, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.<>c.<<MigrateAsync>b__22_1>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.<>c__DisplayClass30_0`2.<<ExecuteAsync>b__0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteImplementationAsync[TState,TResult](Func`4 operation, Func`4 verifySucceeded, TState state, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteImplementationAsync[TState,TResult](Func`4 operation, Func`4 verifySucceeded, TState state, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.ExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.MigrateAsync(String targetMigration, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.MigrateAsync(String targetMigration, CancellationToken cancellationToken)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Migrations.Internal.NpgsqlMigrator.MigrateAsync(String targetMigration, CancellationToken cancellationToken)
+   at FashionStore.Infrastructure.Seed.DatabaseInitializer.RunMigrationsAsync(FashionStoreDbContext context, ILogger logger, CancellationToken cancellationToken) in C:\Users\oremi\source\repos\My Projects\FashionStore.e-commerce\FashionStore.API\FashionStore\FashionStore.Infrastructure\Seed\DatabaseInitializer.cs:line 39
+  Exception data:
+    Severity: ERROR
+    SqlState: 42P07
+    MessageText: relation "AspNetRoles" already exists
+    File: heap.c
+    Line: 1160
+    Routine: heap_create_with_catalog
+08:46:20.367 +01:00 [Information] [Program] Migration history already contains other entries, so automatic alignment is being skipped.
+08:46:20.370 +01:00 [Information] [Program] Database migration history aligned successfully. Skipping reapplication of the initial migration.
+08:46:25.675 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/index.html" responded 200 in 361.7895 ms
+08:46:25.993 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/v1/swagger.json" responded 200 in 79.0597 ms
+08:47:09.421 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "OPTIONS" "/api/Auth/login" responded 204 in 8.7922 ms
+08:47:09.704 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Login attempt received for email "oremichenjesumeichen@gmail.com".
+08:47:10.719 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Login successful for user "27671d2f-e11a-4426-aaae-d724455a1672" with email "oremichenjesumeichen@gmail.com". Roles: "User". Token expires at 04/06/2026 08:47:10 +00:00.
+08:47:10.760 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "POST" "/api/Auth/login" responded 200 in 1327.9309 ms
+08:51:38.926 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "OPTIONS" "/api/Auth/login" responded 204 in 1.1155 ms
+08:51:39.081 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Login attempt received for email "oremichenjesumeichen@gmail.com".
+08:51:39.630 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Login successful for user "27671d2f-e11a-4426-aaae-d724455a1672" with email "oremichenjesumeichen@gmail.com". Roles: "User". Token expires at 04/06/2026 08:51:39 +00:00.
+08:51:39.637 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "POST" "/api/Auth/login" responded 200 in 593.7520 ms
+08:52:44.471 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "OPTIONS" "/api/Auth/login" responded 204 in 0.2234 ms
+08:52:44.516 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Login attempt received for email "oremichenjesumeichen@gmail.com".
+08:52:44.685 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Login successful for user "27671d2f-e11a-4426-aaae-d724455a1672" with email "oremichenjesumeichen@gmail.com". Roles: "User". Token expires at 04/06/2026 08:52:44 +00:00.
+08:52:44.691 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "POST" "/api/Auth/login" responded 200 in 205.9370 ms
+08:54:47.819 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "OPTIONS" "/api/Auth/login" responded 204 in 0.1723 ms
+08:54:47.918 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Login attempt received for email "oremichenjesumeichen@gmail.com".
+08:54:48.226 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Login successful for user "27671d2f-e11a-4426-aaae-d724455a1672" with email "oremichenjesumeichen@gmail.com". Roles: "User". Token expires at 04/06/2026 08:54:48 +00:00.
+08:54:48.238 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "POST" "/api/Auth/login" responded 200 in 320.3782 ms
+08:57:19.345 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "OPTIONS" "/api/Auth/login" responded 204 in 0.3203 ms
+08:57:19.409 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Login attempt received for email "oremichenjesumeichen@gmail.com".
+08:57:19.815 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Login successful for user "27671d2f-e11a-4426-aaae-d724455a1672" with email "oremichenjesumeichen@gmail.com". Roles: "User". Token expires at 04/06/2026 08:57:19 +00:00.
+08:57:19.824 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "POST" "/api/Auth/login" responded 200 in 417.1012 ms

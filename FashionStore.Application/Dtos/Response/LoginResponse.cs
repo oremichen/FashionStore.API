@@ -7,5 +7,11 @@ namespace FashionStore.Application.Dtos.Response
         public DateTimeOffset ExpiresAtUtc { get; set; }
 
         public string TokenType { get; set; } = "Bearer";
+
+        public string UserFirstName { get; set; } = string.Empty;
+
+        public string UserName { get; set; } = string.Empty;
+
+        public List<string> UserRoles { get; set; } = [];
     }
 }
