@@ -262,6 +262,7 @@ namespace FashionStore.Application.Features.Auth
             return response.Success("Email confirmed successfully.");
         }
 
+        #region Helper Functions
         private async Task ReverseUserCreationAsync(ApplicationUser user, string reason, string details)
         {
             var deleteResult = await _userManager.DeleteAsync(user);
@@ -342,7 +343,21 @@ namespace FashionStore.Application.Features.Auth
                 return string.Empty;
             }
 
-            var normalizedToken = token.Trim();
+            var normalizedToken = Uri.UnescapeDataString(token.Trim());
+
+            if (string.IsNullOrWhiteSpace(normalizedToken))
+            {
+                return string.Empty;
+            }
+
+            normalizedToken = normalizedToken.Replace(" ", "+");
+
+            // Raw ASP.NET Identity tokens commonly contain '+' '/' '=' after URL decoding.
+            // When those are present, the token is already in the format ConfirmEmailAsync expects.
+            if (normalizedToken.Contains('+') || normalizedToken.Contains('/') || normalizedToken.Contains('='))
+            {
+                return normalizedToken;
+            }
 
             try
             {
@@ -354,5 +369,7 @@ namespace FashionStore.Application.Features.Auth
                 return normalizedToken.Replace(" ", "+");
             }
         }
+
+        #endregion
     }
 }
