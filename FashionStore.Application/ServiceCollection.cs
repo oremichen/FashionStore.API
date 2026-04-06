@@ -1,4 +1,7 @@
 using FashionStore.Application.Messages.NotificationQueue;
+using FashionStore.Application.Notification;
+using FashionStore.Application.Abstractions.Encryption;
+using FashionStore.Application.Utils.Encryption;
 
 namespace FashionStore.Application
 {
@@ -8,8 +11,9 @@ namespace FashionStore.Application
         {
             services.AddScoped<Abstractions.Auth.IAuthService, Features.Auth.AuthService>();
             services.AddScoped<Abstractions.Auth.ITokenService, Features.Auth.TokenService>();
-            services.AddScoped<IEmailNotificationService, Features.Notification.EmailNotificationService>();
-            services.AddScoped<IEmailTemplateRenderer, Features.Notification.EmailTemplateRenderer>();
+            services.AddScoped<IRsaEncryptionService, RsaEncryptionService>();
+            services.AddScoped<IEmailNotificationService, EmailNotificationService>();
+            services.AddScoped<IEmailTemplateRenderer, EmailTemplateRenderer>();
 
             services.AddSingleton<EmailNotificationQueueService>();
             services.AddSingleton<IEmailNotificationQueueService>(sp => sp.GetRequiredService<EmailNotificationQueueService>());

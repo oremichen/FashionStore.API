@@ -97,6 +97,35 @@ namespace FashionStore.Application.Features.Auth
             }, "Login successful.");
         }
 
+        public async Task<ResponseResult> Logout(string username, string tokenId)
+        {
+            var response = new ResponseResult();
+
+            _logger.LogInformation("Logout request received for username {Username}.", username);
+
+            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(tokenId))
+            {
+                _logger.LogWarning("Logout rejected because token claims were incomplete. Username: {Username}, TokenId: {TokenId}.", username, tokenId);
+                return response.Fail("The current token is invalid.", ResponseCodes.INVALID_TOKEN);
+            }
+
+            var user = await _userManager.FindByNameAsync(username);
+            if (user == null)
+            {
+                _logger.LogWarning("Logout failed for username {Username}: user was not found.", username);
+                return response.Fail("No user was found for the current token.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
+            }
+
+            await _userManager.SetAuthenticationTokenAsync(
+                user,
+                AuthTokenConstants.JwtLoginProvider,
+                BuildRevokedTokenName(tokenId),
+                DateTimeOffset.UtcNow.ToString("O"));
+
+            _logger.LogInformation("Logout successful for user {UserId} with username {Username}. Token {TokenId} was revoked.", user.Id, username, tokenId);
+            return response.Success("Logout successful.");
+        }
+
         public async Task<ResponseResult> Register(RegisterRequest request)
         {
             var response = new ResponseResult();
@@ -418,6 +447,11 @@ namespace FashionStore.Application.Features.Auth
         {
             return _configuration["AppSettings:AppName"]
                 ?? throw new InvalidOperationException("No application name configured");
+        }
+
+        private static string BuildRevokedTokenName(string tokenId)
+        {
+            return $"{AuthTokenConstants.RevokedTokenPrefix}{tokenId}";
         }
 
         private static string DecodeConfirmationToken(string token)

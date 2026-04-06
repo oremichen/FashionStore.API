@@ -2,7 +2,7 @@ using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
 
-namespace FashionStore.Application.Features.Notification
+namespace FashionStore.Application.Notification
 {
     public class EmailNotificationService : IEmailNotificationService
     {

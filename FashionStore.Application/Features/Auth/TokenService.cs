@@ -29,10 +29,11 @@ namespace FashionStore.Application.Features.Auth
             var claims = new List<Claim>
             {
                 new(ClaimTypes.NameIdentifier, user.Id),
+                new(ClaimTypes.Name, user.UserName ?? user.Email ?? string.Empty),
                 new(ClaimTypes.Email, user.Email ?? string.Empty),
                 new(ClaimTypes.GivenName, user.FirstName ?? string.Empty),
                 new(ClaimTypes.Surname, user.LastName ?? string.Empty),
-                new(JwtRegisteredClaimNames.Jti, user.Id)
+                new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N"))
             };
 
             claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
