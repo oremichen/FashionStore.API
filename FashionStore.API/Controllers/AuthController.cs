@@ -1,12 +1,3 @@
-using FashionStore.Application.Abstractions.Auth;
-using FashionStore.Application.Dtos.Request;
-using FashionStore.Application.Dtos.Response;
-using FashionStore.Shared.Common;
-using Microsoft.AspNetCore.Authorization;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using Microsoft.AspNetCore.Mvc;
-
 namespace FashionStore.API.Controllers
 {
     [Route("api/[controller]")]

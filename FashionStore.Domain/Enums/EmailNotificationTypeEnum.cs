@@ -5,6 +5,7 @@
         Registration,
         Confirmation,
         ForgotPassword,
+        UserCreation,
         Checkout,
         FeedbackResponse,
     }

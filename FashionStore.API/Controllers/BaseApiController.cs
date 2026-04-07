@@ -1,6 +1,4 @@
-﻿using FashionStore.Shared.Common;
-using FashionStore.Shared.Constants;
-using Microsoft.AspNetCore.Mvc;
+﻿using FashionStore.Shared.Constants;
 
 namespace FashionStore.API.Controllers
 {
