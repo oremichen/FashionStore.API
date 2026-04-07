@@ -1,12 +1,3 @@
-using FashionStore.Application.Abstractions.Auth;
-using FashionStore.Application.Dtos.Request;
-using FashionStore.Application.Dtos.Response;
-using FashionStore.Shared.Common;
-using Microsoft.AspNetCore.Authorization;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using Microsoft.AspNetCore.Mvc;
-
 namespace FashionStore.API.Controllers
 {
     [Route("api/[controller]")]
@@ -63,6 +54,26 @@ namespace FashionStore.API.Controllers
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
         {
             var response = await _authService.ForgotPassword(request);
+            return ProcessResponse(response);
+        }
+
+        [Authorize]
+        [HttpPost("reset-password")]
+        [Produces("application/json")]
+        [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
+        [EndpointSummary("Reset password for authenticated user")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+        {
+            var username = User.FindFirst(ClaimTypes.Name)?.Value
+                ?? User.FindFirst(ClaimTypes.Email)?.Value
+                ?? string.Empty;
+
+            var response = await _authService.ResetPassword(username, request);
             return ProcessResponse(response);
         }
 

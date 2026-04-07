@@ -9,6 +9,7 @@ namespace FashionStore.Application.Abstractions.Auth
         Task<ResponseResult<LoginResponse>> Login(LoginRequest login);
         Task<ResponseResult> Logout(string username, string tokenId);
         Task<ResponseResult> ForgotPassword(ForgotPasswordRequest request);
+        Task<ResponseResult> ResetPassword(string username, ResetPasswordRequest request);
         Task<ResponseResult> Register(RegisterRequest request);
         Task<ResponseResult> ConfirmEmail(ConfirmEmailRequest request);
         Task<ResponseResult> ResendConfirmationLink(ResendConfirmationLinkRequest request);

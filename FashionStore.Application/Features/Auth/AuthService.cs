@@ -208,6 +208,77 @@ namespace FashionStore.Application.Features.Auth
             return response.Success("A temporary password has been sent to your email.");
         }
 
+        public async Task<ResponseResult> ResetPassword(string username, ResetPasswordRequest request)
+        {
+            var response = new ResponseResult();
+
+            _logger.LogInformation("Reset password request received for username {Username}.", username);
+
+            if (string.IsNullOrWhiteSpace(username))
+            {
+                _logger.LogWarning("Reset password rejected because the authenticated username claim was missing.");
+                return response.Fail("The current token is invalid.", ResponseCodes.INVALID_TOKEN);
+            }
+
+            var user = await _userManager.FindByNameAsync(username);
+            if (user == null)
+            {
+                _logger.LogWarning("Reset password failed for username {Username}: user was not found.", username);
+                return response.Fail("No user was found for the current token.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
+            }
+
+            if (user.IsDeleted || user.IsDeactivated)
+            {
+                _logger.LogWarning(
+                    "Reset password blocked for user {UserId} with username {Username}: account is inactive. Deleted: {IsDeleted}, Deactivated: {IsDeactivated}.",
+                    user.Id,
+                    username,
+                    user.IsDeleted,
+                    user.IsDeactivated);
+                return response.Fail("This account is not active.", ResponseCodes.ACTION_NOT_PERMITTED);
+            }
+
+            var changePasswordResult = await _userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
+            if (!changePasswordResult.Succeeded)
+            {
+                var errors = changePasswordResult.Errors.Select(error => error.Description).ToArray();
+
+                _logger.LogWarning(
+                    "Reset password failed for user {UserId} with username {Username}. Errors: {Errors}.",
+                    user.Id,
+                    username,
+                    string.Join(" | ", errors));
+
+                return response.Fail(
+                    string.Join(" ", errors),
+                    ResponseCodes.ACTION_FAILED,
+                    errors);
+            }
+
+            user.IsPasswordChanged = true;
+            user.PasswordChangedAt = DateTimeOffset.UtcNow;
+            user.UpdatedAt = DateTimeOffset.UtcNow;
+
+            var updateResult = await _userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+            {
+                var errors = updateResult.Errors.Select(error => error.Description).ToArray();
+
+                _logger.LogWarning(
+                    "Password changed for user {UserId}, but profile update failed. Errors: {Errors}.",
+                    user.Id,
+                    string.Join(" | ", errors));
+
+                return response.Fail(
+                    "Password was updated, but the account could not be fully updated.",
+                    ResponseCodes.ACTION_FAILED,
+                    errors);
+            }
+
+            _logger.LogInformation("Password reset successful for user {UserId} with username {Username}.", user.Id, username);
+            return response.Success("Password updated successfully.");
+        }
+
         public async Task<ResponseResult> Register(RegisterRequest request)
         {
             var response = new ResponseResult();
