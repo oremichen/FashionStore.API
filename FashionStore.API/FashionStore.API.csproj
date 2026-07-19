@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
+	<UseAppHost>false</UseAppHost>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>c46b5d46-d876-4b77-8a90-217813d04022</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>

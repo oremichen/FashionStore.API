@@ -5,24 +5,30 @@ namespace FashionStore.Application.Messages.NotificationQueue
 {
     public class EmailNotificationQueueService : IEmailNotificationQueueService, IAsyncDisposable
     {
-        private readonly Channel<EmailNotification> _channel;
+        private readonly Channel<(Guid Id, EmailNotification Notification)> _channel;
+        private readonly ILogger<EmailNotificationQueueService> _logger;
 
-        public EmailNotificationQueueService()
+        public EmailNotificationQueueService(ILogger<EmailNotificationQueueService> logger)
         {
+            _logger = logger;
             // BoundedCapacity prevents unbounded memory growth
-            _channel = Channel.CreateBounded<EmailNotification>(new BoundedChannelOptions(5000)
+            _channel = Channel.CreateBounded<(Guid, EmailNotification)>(new BoundedChannelOptions(5000)
             {
                 FullMode = BoundedChannelFullMode.DropOldest
             });
         }
 
-        public void Enqueue(EmailNotification metricsEvent)
+        public void Enqueue(Guid notificationId, EmailNotification notification)
         {
-            // TryWrite is non-blocking - never slows down your controller
-            _channel.Writer.TryWrite(metricsEvent);
+            if (!_channel.Writer.TryWrite((notificationId, notification)))
+            {
+                _logger.LogWarning(
+                    "Notification {NotificationId} was persisted but could not be added to the in-memory queue. It will be recovered by the retry processor.",
+                    notificationId);
+            }
         }
 
-        public ChannelReader<EmailNotification> Reader => _channel.Reader;
+        public ChannelReader<(Guid Id, EmailNotification Notification)> Reader => _channel.Reader;
 
         public async ValueTask DisposeAsync()
         {

@@ -8,11 +8,30 @@ namespace FashionStore.Application.Notification
     {
         private readonly IConfiguration _configuration;
         private readonly ILogger<EmailNotificationService> _logger;
+        private readonly INotificationRepository _notificationRepository;
+        private readonly IEmailNotificationQueueService _emailNotificationQueueService;
 
-        public EmailNotificationService(IConfiguration configuration, ILogger<EmailNotificationService> logger)
+        public EmailNotificationService(
+            IConfiguration configuration,
+            ILogger<EmailNotificationService> logger,
+            INotificationRepository notificationRepository,
+            IEmailNotificationQueueService emailNotificationQueueService)
         {
             _configuration = configuration;
             _logger = logger;
+            _notificationRepository = notificationRepository;
+            _emailNotificationQueueService = emailNotificationQueueService;
+        }
+
+        public async Task QueueEmailAsync(
+            EmailNotification notification,
+            CancellationToken cancellationToken = default)
+        {
+            var queuedNotification = await _notificationRepository.CreateProcessingAsync(
+                notification,
+                cancellationToken);
+
+            _emailNotificationQueueService.Enqueue(queuedNotification.Id, notification);
         }
 
         public async Task<ResponseResult> SendEmailAsync(EmailNotification notification)

@@ -12,7 +12,7 @@ namespace FashionStore.Application.Features.Auth
 
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ITokenService _tokenService;
-        private readonly IEmailNotificationQueueService _emailNotificationQueueService;
+        private readonly IEmailNotificationService _emailNotificationService;
         private readonly IEmailTemplateRenderer _emailTemplateRenderer;
         private readonly ILogger<AuthService> _logger;
         private readonly IConfiguration _configuration;
@@ -20,14 +20,14 @@ namespace FashionStore.Application.Features.Auth
         public AuthService(
             UserManager<ApplicationUser> userManager,
             ITokenService tokenService,
-            IEmailNotificationQueueService emailNotificationQueueService,
+            IEmailNotificationService emailNotificationService,
             IEmailTemplateRenderer emailTemplateRenderer,
             ILogger<AuthService> logger,
             IConfiguration configuration)
         {
             _userManager = userManager;
             _tokenService = tokenService;
-            _emailNotificationQueueService = emailNotificationQueueService;
+            _emailNotificationService = emailNotificationService;
             _emailTemplateRenderer = emailTemplateRenderer;
             _logger = logger;
             _configuration = configuration;
@@ -552,7 +552,7 @@ namespace FashionStore.Application.Features.Auth
                     ["year"] = DateTime.UtcNow.Year.ToString()
                 });
 
-            _emailNotificationQueueService.Enqueue(new EmailNotification
+            await _emailNotificationService.QueueEmailAsync(new EmailNotification
             {
                 To = new List<string> { user.Email! },
                 Subject = $"Welcome to {appName}",
@@ -588,7 +588,7 @@ namespace FashionStore.Application.Features.Auth
                     ["year"] = DateTime.UtcNow.Year.ToString()
                 });
 
-            _emailNotificationQueueService.Enqueue(new EmailNotification
+            await _emailNotificationService.QueueEmailAsync(new EmailNotification
             {
                 To = new List<string> { user.Email! },
                 Subject = $"{appName} email confirmation successful",
@@ -613,7 +613,7 @@ namespace FashionStore.Application.Features.Auth
                     ["year"] = DateTime.UtcNow.Year.ToString()
                 });
 
-            _emailNotificationQueueService.Enqueue(new EmailNotification
+            await _emailNotificationService.QueueEmailAsync(new EmailNotification
             {
                 To = new List<string> { user.Email! },
                 Subject = $"{appName} temporary password",

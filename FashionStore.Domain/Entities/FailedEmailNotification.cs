@@ -1,8 +1,8 @@
 namespace FashionStore.Domain.Entities
 {
-    public class FailedEmailNotification
+    public class QueueEmailNotification
     {
-        public Guid Id { get; set; } = Guid.NewGuid();
+        public Guid Id { get; set; }
 
         public string? From { get; set; }
 
@@ -16,7 +16,7 @@ namespace FashionStore.Domain.Entities
 
         public string Body { get; set; } = string.Empty;
 
-        public string Status { get; set; } = "Failed";
+        public string Status { get; set; } = "Processing";
 
         public int RetryCount { get; set; }
 

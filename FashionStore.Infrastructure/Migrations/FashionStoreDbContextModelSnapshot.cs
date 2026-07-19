@@ -233,10 +233,11 @@ namespace FashionStore.Infrastructure.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("FashionStore.Domain.Entities.FailedEmailNotification", b =>
+            modelBuilder.Entity("FashionStore.Domain.Entities.QueueEmailNotification", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasDefaultValueSql("gen_random_uuid()")
                         .HasColumnType("uuid");
 
                     b.Property<string>("BccRecipients")
@@ -278,7 +279,7 @@ namespace FashionStore.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("FailedEmailNotifications");
+                    b.ToTable("QueueEmailNotification");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
