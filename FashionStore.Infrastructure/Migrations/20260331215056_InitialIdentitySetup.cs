@@ -78,10 +78,10 @@ namespace FashionStore.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "FailedEmailNotifications",
+                name: "QueueEmailNotification",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     From = table.Column<string>(type: "text", nullable: true),
                     ToRecipients = table.Column<string>(type: "text", nullable: false),
                     CcRecipients = table.Column<string>(type: "text", nullable: true),
@@ -96,7 +96,7 @@ namespace FashionStore.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_FailedEmailNotifications", x => x.Id);
+                    table.PrimaryKey("PK_QueueEmailNotification", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -293,7 +293,7 @@ namespace FashionStore.Infrastructure.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
-                name: "FailedEmailNotifications");
+                name: "QueueEmailNotification");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");

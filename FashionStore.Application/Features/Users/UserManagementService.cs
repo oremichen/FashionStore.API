@@ -8,7 +8,7 @@ namespace FashionStore.Application.Features.Users
 
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<ApplicationRole> _roleManager;
-        private readonly IEmailNotificationQueueService _emailNotificationQueueService;
+        private readonly IEmailNotificationService _emailNotificationService;
         private readonly IEmailTemplateRenderer _emailTemplateRenderer;
         private readonly IConfiguration _configuration;
         private readonly ILogger<UserManagementService> _logger;
@@ -16,14 +16,14 @@ namespace FashionStore.Application.Features.Users
         public UserManagementService(
             UserManager<ApplicationUser> userManager,
             RoleManager<ApplicationRole> roleManager,
-            IEmailNotificationQueueService emailNotificationQueueService,
+            IEmailNotificationService emailNotificationService,
             IEmailTemplateRenderer emailTemplateRenderer,
             IConfiguration configuration,
             ILogger<UserManagementService> logger)
         {
             _userManager = userManager;
             _roleManager = roleManager;
-            _emailNotificationQueueService = emailNotificationQueueService;
+            _emailNotificationService = emailNotificationService;
             _emailTemplateRenderer = emailTemplateRenderer;
             _configuration = configuration;
             _logger = logger;
@@ -234,7 +234,7 @@ namespace FashionStore.Application.Features.Users
                     ["year"] = DateTime.UtcNow.Year.ToString()
                 });
 
-            _emailNotificationQueueService.Enqueue(new EmailNotification
+            await _emailNotificationService.QueueEmailAsync(new EmailNotification
             {
                 To = new List<string> { user.Email! },
                 Subject = $"{appName} account created",

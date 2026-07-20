@@ -21,6 +21,7 @@ namespace FashionStore.Application
             services.AddSingleton<EmailNotificationQueueService>();
             services.AddSingleton<IEmailNotificationQueueService>(sp => sp.GetRequiredService<EmailNotificationQueueService>());
             services.AddHostedService<EmailNotificationProcessorService>();
+            services.AddHostedService<PendingEmailNotificationProcessorService>();
 
             return services;
         }

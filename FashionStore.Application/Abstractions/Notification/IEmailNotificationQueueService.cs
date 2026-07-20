@@ -4,6 +4,6 @@ namespace FashionStore.Application.Abstractions.Notification
 {
     public interface IEmailNotificationQueueService
     {
-        public void Enqueue(EmailNotification notification);
+        void Enqueue(Guid notificationId, EmailNotification notification);
     }
 }

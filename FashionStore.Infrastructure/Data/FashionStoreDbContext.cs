@@ -10,7 +10,7 @@ namespace FashionStore.Infrastructure.Data
         }
 
         public DbSet<Address> Addresses { get; set; }
-        public DbSet<FailedEmailNotification> FailedEmailNotifications { get; set; }
+        public DbSet<QueueEmailNotification> QueueEmailNotifications { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -21,6 +21,12 @@ namespace FashionStore.Infrastructure.Data
                 .WithMany(u => u.Addresses)
                 .HasForeignKey(a => a.UserId)
                 .OnDelete(DeleteBehavior.Cascade); // Deletes addresses when user is deleted
+
+            builder.Entity<QueueEmailNotification>(entity =>
+            {
+                entity.ToTable("QueueEmailNotification");
+                entity.Property(item => item.Id).HasDefaultValueSql("gen_random_uuid()");
+            });
         }
     }
 }
