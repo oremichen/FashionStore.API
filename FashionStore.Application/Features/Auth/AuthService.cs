@@ -137,13 +137,13 @@ namespace FashionStore.Application.Features.Auth
             var user = await _userManager.FindByEmailAsync(request.Email);
             if (user == null)
             {
-                _logger.LogWarning("Forgot password failed for email {Email}: user was not found.", request.Email);
+                _logger.LogError("Forgot password failed for email {Email}: user was not found.", request.Email);
                 return response.Fail("No user was found for the supplied email address.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
             }
 
             if (user.IsDeleted || user.IsDeactivated)
             {
-                _logger.LogWarning(
+                _logger.LogError(
                     "Forgot password blocked for user {UserId} with email {Email}: account is inactive. Deleted: {IsDeleted}, Deactivated: {IsDeactivated}.",
                     user.Id,
                     user.Email,
@@ -155,7 +155,7 @@ namespace FashionStore.Application.Features.Auth
             if (!user.EmailConfirmed)
             {
                 await SendConfirmationMail(user);
-                _logger.LogWarning("Forgot password blocked for user {UserId} with email {Email}: email not confirmed.", user.Id, user.Email);
+                _logger.LogError("Forgot password blocked for user {UserId} with email {Email}: email not confirmed.", user.Id, user.Email);
                 return response.Fail("Email address has not been confirmed. A confirmation link has been sent to your email.", ResponseCodes.ACTION_NOT_PERMITTED);
             }
 
@@ -167,7 +167,7 @@ namespace FashionStore.Application.Features.Auth
             {
                 var errors = resetResult.Errors.Select(error => error.Description).ToArray();
 
-                _logger.LogWarning(
+                _logger.LogError(
                     "Forgot password reset failed for user {UserId} with email {Email}. Errors: {Errors}.",
                     user.Id,
                     user.Email,
@@ -188,7 +188,7 @@ namespace FashionStore.Application.Features.Auth
             {
                 var errors = updateResult.Errors.Select(error => error.Description).ToArray();
 
-                _logger.LogWarning(
+                _logger.LogError(
                     "Forgot password succeeded for user {UserId}, but profile update failed. Errors: {Errors}.",
                     user.Id,
                     string.Join(" | ", errors));

@@ -16,9 +16,10 @@ public static class DatabaseInitializer
         await using var scope = services.CreateAsyncScope();
         var context = scope.ServiceProvider.GetRequiredService<FashionStoreDbContext>();
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
         await RunMigrationsAsync(context, logger, cancellationToken);
-        await Seed.SeedData(context, roleManager, configuration);
+        await Seed.SeedData(roleManager, userManager, configuration, logger);
     }
 
     private static async Task RunMigrationsAsync(FashionStoreDbContext context, ILogger logger, CancellationToken cancellationToken)
