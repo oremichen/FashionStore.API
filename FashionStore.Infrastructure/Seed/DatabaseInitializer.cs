@@ -51,14 +51,14 @@ public static class DatabaseInitializer
             {
                 logger.LogWarning(ex, "Migration encountered an existing-schema conflict. Attempting to align EF migration history before retrying.");
 
-                var aligned = await TryAlignInitialMigrationHistoryAsync(context, logger, cancellationToken);
+                var aligned = await TryAlignMigrationHistoryAsync(context, logger, cancellationToken);
                 if (!aligned)
                 {
                     throw;
                 }
 
-                logger.LogInformation("Database migration history aligned successfully. Skipping reapplication of the initial migration.");
-                return;
+                logger.LogInformation("Database migration history aligned successfully. Skipping reapplication of the existing schema migration.");
+                continue;
             }
         }
     }
@@ -78,57 +78,34 @@ public static class DatabaseInitializer
             or PostgresErrorCodes.DuplicateObject
             or PostgresErrorCodes.DuplicateColumn;
 
-    private static async Task<bool> TryAlignInitialMigrationHistoryAsync(FashionStoreDbContext context, ILogger logger, CancellationToken cancellationToken)
+    private static async Task<bool> TryAlignMigrationHistoryAsync(FashionStoreDbContext context, ILogger logger, CancellationToken cancellationToken)
     {
-        var migrationsAssembly = context.GetService<IMigrationsAssembly>();
-        var allMigrations = migrationsAssembly.Migrations.Keys.ToList();
-        if (allMigrations.Count != 1)
-        {
-            logger.LogWarning("Automatic migration history alignment only supports a single initial migration. Found {Count} migrations.", allMigrations.Count);
-            return false;
-        }
-
-        var initialMigrationId = allMigrations[0];
-        var appliedMigrations = (await context.Database.GetAppliedMigrationsAsync(cancellationToken)).ToList();
-        if (appliedMigrations.Contains(initialMigrationId))
-        {
-            logger.LogInformation("Initial migration {MigrationId} is already recorded in migration history.", initialMigrationId);
+        var migrationId = (await context.Database.GetPendingMigrationsAsync(cancellationToken)).FirstOrDefault();
+        if (migrationId is null)
             return true;
-        }
 
-        if (appliedMigrations.Count > 0)
+        if (migrationId.EndsWith("_InitialIdentitySetup", StringComparison.Ordinal))
         {
-            logger.LogInformation("Migration history already contains other entries, so automatic alignment is being skipped.");
-            return true;
-        }
-
-        var unexpectedMigrations = appliedMigrations
-            .Where(m => m != initialMigrationId)
-            .ToList();
-
-        if (unexpectedMigrations.Count > 0)
-        {
-            logger.LogInformation(
-                "Migration history contains unexpected entries: {Entries}. Skipping automatic alignment.",
-                string.Join(", ", unexpectedMigrations));
-            return false;
-        }
-
-        var requiredTables = new[] 
-        {   "AspNetUsers", 
-            "AspNetRoles", 
-            "AspNetUserRoles",
-            "AspNetUserClaims", 
-            "AspNetUserLogins", 
-            "AspNetUserTokens",
-            "AspNetRoleClaims" 
-        };
-        foreach (var tableName in requiredTables)
-        {
-            if (!await TableExistsAsync(context, tableName, cancellationToken))
+            var requiredTables = new[]
             {
-                logger.LogInformation("Table {TableName} does not exist, so the schema does not look fully initialized yet.", tableName);
-                return false;
+                "AspNetUsers",
+                "AspNetRoles",
+                "AspNetUserRoles",
+                "AspNetUserClaims",
+                "AspNetUserLogins",
+                "AspNetUserTokens",
+                "AspNetRoleClaims"
+            };
+
+            foreach (var tableName in requiredTables)
+            {
+                if (!await TableExistsAsync(context, tableName, cancellationToken))
+                {
+                    logger.LogWarning(
+                        "Cannot align initial Identity migration because required table {TableName} does not exist.",
+                        tableName);
+                    return false;
+                }
             }
         }
 
@@ -149,9 +126,9 @@ public static class DatabaseInitializer
              " ON CONFLICT (\"MigrationId\") DO NOTHING;";
 
         await context.Database.ExecuteSqlRawAsync(createHistoryTableSql, cancellationToken);
-        await context.Database.ExecuteSqlRawAsync(insertHistorySql, [initialMigrationId, productVersion], cancellationToken);
+        await context.Database.ExecuteSqlRawAsync(insertHistorySql, [migrationId, productVersion], cancellationToken);
 
-        logger.LogWarning("Marked existing schema as migrated with initial migration {MigrationId}.", initialMigrationId);
+        logger.LogWarning("Marked existing schema migration {MigrationId} as applied.", migrationId);
         return true;
     }
 
@@ -165,7 +142,6 @@ public static class DatabaseInitializer
             ) AS "Value"
             """;
 
-        var exists = await context.Database.SqlQueryRaw<bool>(sql, tableName).SingleAsync(cancellationToken);
-        return exists;
+        return await context.Database.SqlQueryRaw<bool>(sql, tableName).SingleAsync(cancellationToken);
     }
 }
