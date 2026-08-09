@@ -11,10 +11,12 @@ namespace FashionStore.Infrastructure.Data
 
         public DbSet<Address> Addresses { get; set; }
         public DbSet<QueueEmailNotification> QueueEmailNotifications { get; set; }
+        public DbSet<Category> Categories { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
+            builder.ApplyConfigurationsFromAssembly(typeof(FashionStoreDbContext).Assembly);
 
             builder.Entity<Address>()
                 .HasOne(a => a.User)

@@ -40,7 +40,7 @@ namespace FashionStore.Infrastructure.Seed
             ILogger logger)
         {
             var email = configuration["SeedData:SuperAdmin:Email"]
-                ?? "superadmin@fashionstore.local";
+                ?? "superadmin@fashionstore.com";
             var password = configuration["SeedData:SuperAdmin:Password"]
                 ?? "SuperAdmin@123";
 

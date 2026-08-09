@@ -1,0 +1,14 @@
+17:28:33.420 +01:00 [Error] [Microsoft.EntityFrameworkCore.Database.Connection] An error occurred using the connection to database '"FashionStoreDB"' on server '"tcp://pg-2e6d9663-oremichenjoey-database-store.g.aivencloud.com:24223"'.
+17:35:16.797 +01:00 [Information] [Program] Database is up to date. No pending migrations found.
+17:35:21.571 +01:00 [Information] [Program] SuperAdmin seed user "superadmin@fashionstore.com" already exists. Skipping.
+17:35:26.603 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger" responded 301 in 17.1356 ms
+17:35:26.907 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/index.html" responded 200 in 238.2015 ms
+17:35:26.994 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/swagger-ui-standalone-preset.js" responded 200 in 93.0394 ms
+17:35:26.994 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/swagger-ui.css" responded 200 in 94.6499 ms
+17:35:27.044 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/swagger-ui-bundle.js" responded 200 in 146.0575 ms
+17:35:27.566 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/favicon-32x32.png" responded 200 in 5.6828 ms
+17:35:27.761 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/v1/swagger.json" responded 200 in 272.8122 ms
+17:59:16.509 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "OPTIONS" "/api/Auth/login" responded 204 in 5.3954 ms
+17:59:16.762 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Login attempt received for email "superadmin@fashionstore.com".
+17:59:22.327 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Login successful for user "411e5edb-9bb6-41a3-af46-6bff0ae12c17" with email "superadmin@fashionstore.com". Roles: "SuperAdmin". Token expires at 08/09/2026 17:59:20 +00:00.
+17:59:22.377 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "POST" "/api/Auth/login" responded 200 in 5855.9346 ms
