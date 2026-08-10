@@ -1,6 +1,10 @@
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 USER root
-RUN apt-get update && apt-get install -y libgssapi-krb5-2 libkrb5-dev && rm -rf /var/lib/apt/lists/*
+RUN sed -i 's|http://archive.ubuntu.com|https://archive.ubuntu.com|g; s|http://security.ubuntu.com|https://security.ubuntu.com|g' \
+      /etc/apt/sources.list.d/ubuntu.sources \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends libgssapi-krb5-2 libkrb5-dev \
+    && rm -rf /var/lib/apt/lists/*
 USER $APP_UID
 WORKDIR /app
 EXPOSE 8080
