@@ -11,10 +11,23 @@ namespace FashionStore.Infrastructure.Data
 
         public DbSet<Address> Addresses { get; set; }
         public DbSet<QueueEmailNotification> QueueEmailNotifications { get; set; }
+        public DbSet<Category> Categories { get; set; }
+        public DbSet<Brand> Brands { get; set; }
+        public DbSet<Product> Products { get; set; }
+        public DbSet<ProductImage> ProductImages { get; set; }
+        public DbSet<Size> Sizes { get; set; }
+        public DbSet<Color> Colors { get; set; }
+        public DbSet<ProductVariant> ProductVariants { get; set; }
+        public DbSet<ProductReview> ProductReviews { get; set; }
+        public DbSet<ProductAttribute> ProductAttributes { get; set; }
+        public DbSet<ProductTag> ProductTags { get; set; }
+        public DbSet<ProductTagMapping> ProductTagMappings { get; set; }
+        public DbSet<ProductVariantImage> ProductVariantImages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
+            builder.ApplyConfigurationsFromAssembly(typeof(FashionStoreDbContext).Assembly);
 
             builder.Entity<Address>()
                 .HasOne(a => a.User)

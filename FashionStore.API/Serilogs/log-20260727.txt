@@ -1,0 +1,19 @@
+08:02:12.444 +01:00 [Information] [Program] Database is up to date. No pending migrations found.
+08:02:14.362 +01:00 [Information] [Program] SuperAdmin seed user "superadmin@fashionstore.com" already exists. Skipping.
+08:02:17.629 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/index.html" responded 200 in 211.3040 ms
+08:02:17.951 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/v1/swagger.json" responded 200 in 78.6967 ms
+08:03:11.692 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "OPTIONS" "/api/Auth/confirm-email" responded 204 in 9.7495 ms
+08:03:12.290 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Email confirmation attempt received for email "oremichenjesumeichen@gmail.com".
+08:03:14.045 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Email confirmation successful for user "a17519d5-2885-45bc-9abe-633a16076887" with email "oremichenjesumeichen@gmail.com".
+08:03:14.082 +01:00 [Information] [FashionStore.Application.Notification.EmailNotificationService] Email send requested. Subject: "MasonDeLolaStore email confirmation successful". First recipient: "oremichenjesumeichen@gmail.com". Recipient count: 1.
+08:03:14.093 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "POST" "/api/Auth/confirm-email" responded 200 in 2384.9729 ms
+08:03:14.246 +01:00 [Information] [FashionStore.Application.Notification.EmailNotificationService] Sending email through host "smtp.gmail.com" on port 587 for recipient "oremichenjesumeichen@gmail.com".
+08:03:19.033 +01:00 [Information] [FashionStore.Application.Notification.EmailNotificationService] Email sent successfully. Subject: "MasonDeLolaStore email confirmation successful". First recipient: "oremichenjesumeichen@gmail.com".
+08:04:45.356 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "OPTIONS" "/api/Auth/login" responded 204 in 0.6348 ms
+08:04:45.387 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Login attempt received for email "oremichenjesumeichen@gmail.com".
+08:04:46.351 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Login successful for user "a17519d5-2885-45bc-9abe-633a16076887" with email "oremichenjesumeichen@gmail.com". Roles: "User". Token expires at 07/27/2026 08:04:45 +00:00.
+08:04:46.381 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "POST" "/api/Auth/login" responded 200 in 1019.8951 ms
+08:05:25.944 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "OPTIONS" "/api/Auth/logout" responded 204 in 0.1284 ms
+08:05:26.907 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Logout request received for username "oremichenjesumeichen@gmail.com".
+08:05:27.726 +01:00 [Information] [FashionStore.Application.Features.Auth.AuthService] Logout successful for user "a17519d5-2885-45bc-9abe-633a16076887" with username "oremichenjesumeichen@gmail.com". Token "de495a4ba8864c03a9111edd17519333" was revoked.
+08:05:27.731 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "POST" "/api/Auth/logout" responded 200 in 1781.1386 ms
