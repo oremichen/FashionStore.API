@@ -12,7 +12,6 @@ public sealed class Category
 
     private Category(string name, string slug, string? description, int sortOrder, bool isActive, bool showInMenu, string? parentId)
     {
-        Id = Guid.NewGuid().ToString();
         SetDetails(name, slug, description, sortOrder, isActive, showInMenu);
         AssignParent(parentId);
         CreatedAt = DateTimeOffset.UtcNow;
