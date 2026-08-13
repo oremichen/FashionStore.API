@@ -9,6 +9,8 @@ namespace FashionStore.Infrastructure
                 Repository.CategoryRepo.CategoryRepository>();
             services.AddScoped<FashionStore.Application.Abstractions.Brands.IBrandRepository,
                 Repository.BrandRepo.BrandRepository>();
+            services.AddScoped<FashionStore.Application.Abstractions.MainCarousels.IMainCarouselRepository,
+                Repository.MainCarouselRepo.MainCarouselRepository>();
             return services;
         }
     }

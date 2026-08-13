@@ -41,14 +41,11 @@ public sealed class Brand
 
     public void SetImage(byte[] data, string contentType, string fileName)
     {
-        if (data is null || data.Length == 0) throw new ArgumentException("Image cannot be empty.", nameof(data));
-        if (data.Length > 5 * 1024 * 1024) throw new ArgumentException("Image cannot exceed 5 MB.", nameof(data));
         string[] allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-        if (!allowed.Contains(contentType, StringComparer.OrdinalIgnoreCase))
-            throw new ArgumentException("Only JPEG, PNG, WebP, and GIF images are supported.", nameof(contentType));
-        ImageData = data.ToArray();
-        ImageContentType = contentType.ToLowerInvariant();
-        ImageFileName = CatalogRules.Required(Path.GetFileName(fileName), 255, nameof(fileName));
+        var image = ImageRules.Validate(data, contentType, fileName, allowed);
+        ImageData = image.Data;
+        ImageContentType = image.ContentType;
+        ImageFileName = image.FileName;
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 }
