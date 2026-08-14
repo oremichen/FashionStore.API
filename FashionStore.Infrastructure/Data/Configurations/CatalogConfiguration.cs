@@ -12,6 +12,25 @@ public sealed class BrandConfiguration : IEntityTypeConfiguration<Brand>
 {
     public void Configure(EntityTypeBuilder<Brand> b) { b.ToTable("Brands"); b.HasKey(x => x.Id); CatalogConfiguration.Id(b); b.Property(x => x.Name).HasMaxLength(150).IsRequired(); b.Property(x => x.Slug).HasMaxLength(180).IsRequired(); b.Property(x => x.WebsiteUrl).HasColumnType("text"); b.Property(x => x.ImageData).HasColumnType("bytea"); b.Property(x => x.ImageContentType).HasMaxLength(100); b.Property(x => x.ImageFileName).HasMaxLength(255); b.HasIndex(x => x.Name).IsUnique().HasDatabaseName("BrandsNameUnique"); b.HasIndex(x => x.Slug).IsUnique().HasDatabaseName("BrandsSlugUnique"); }
 }
+public sealed class MainCarouselConfiguration : IEntityTypeConfiguration<MainCarousel>
+{
+    public void Configure(EntityTypeBuilder<MainCarousel> b)
+    {
+        b.ToTable("MainCarousels"); b.HasKey(x => x.Id); CatalogConfiguration.Id(b);
+        b.Property(x => x.Title).HasMaxLength(150).IsRequired(); b.Property(x => x.Subtitle).HasMaxLength(250);
+        b.Property(x => x.ButtonText).HasMaxLength(80).HasDefaultValue("Shop now").IsRequired(); b.Property(x => x.LinkUrl).HasMaxLength(2048);
+        b.Property(x => x.ImageData).HasColumnType("bytea").IsRequired(); b.Property(x => x.ImageContentType).HasMaxLength(100).IsRequired();
+        b.Property(x => x.ImageFileName).HasMaxLength(255); b.Property(x => x.SortOrder).HasDefaultValue(0); b.Property(x => x.IsActive).HasDefaultValue(true);
+        b.ToTable(t =>
+        {
+            t.HasCheckConstraint("CK_MainCarousels_ImageData_NotEmpty", "octet_length(\"ImageData\") > 0");
+            t.HasCheckConstraint("CK_MainCarousels_ImageContentType", "\"ImageContentType\" IN ('image/jpeg', 'image/png', 'image/webp')");
+            t.HasCheckConstraint("CK_MainCarousels_ImageFileSize", "\"ImageFileSize\" > 0 AND \"ImageFileSize\" <= 5242880");
+            t.HasCheckConstraint("CK_MainCarousels_ImageDimensions", "\"ImageWidth\" = 1920 AND \"ImageHeight\" = 750");
+            t.HasCheckConstraint("CK_MainCarousels_SortOrder", "\"SortOrder\" >= 0");
+        });
+    }
+}
 public sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
 {
     public void Configure(EntityTypeBuilder<Product> b) { b.ToTable("Products"); b.HasKey(x => x.Id); CatalogConfiguration.Id(b); b.Property(x => x.CategoryId).HasMaxLength(50); b.Property(x => x.BrandId).HasMaxLength(50); b.Property(x => x.Name).HasMaxLength(250).IsRequired(); b.Property(x => x.Slug).HasMaxLength(280).IsRequired(); b.Property(x => x.ShortDescription).HasMaxLength(500); b.Property(x => x.OldPrice).HasPrecision(19,4); b.Property(x => x.NewPrice).HasPrecision(19,4); b.Property(x => x.Discount).HasPrecision(5,2); b.Property(x => x.CurrencyCode).HasMaxLength(3); b.Property(x => x.Weight).HasPrecision(12,3); b.Property(x => x.RatingsValue).HasPrecision(14,4); b.HasIndex(x => x.Slug).IsUnique(); b.HasOne(x => x.Category).WithMany().HasForeignKey(x => x.CategoryId).OnDelete(DeleteBehavior.Restrict); b.HasOne(x => x.Brand).WithMany(x => x.Products).HasForeignKey(x => x.BrandId).OnDelete(DeleteBehavior.SetNull); }

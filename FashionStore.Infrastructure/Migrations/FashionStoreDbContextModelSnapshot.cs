@@ -407,6 +407,88 @@ namespace FashionStore.Infrastructure.Migrations
                     b.ToTable("Colors", (string)null);
                 });
 
+            modelBuilder.Entity("FashionStore.Domain.Entities.MainCarousel", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValueSql("gen_random_uuid()::text");
+
+                    b.Property<string>("ButtonText")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasDefaultValue("Shop now");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ImageContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<byte[]>("ImageData")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.Property<string>("ImageFileName")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<long>("ImageFileSize")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("ImageHeight")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ImageWidth")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("LinkUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
+
+                    b.Property<int>("SortOrder")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<string>("Subtitle")
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MainCarousels", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_MainCarousels_ImageContentType", "\"ImageContentType\" IN ('image/jpeg', 'image/png', 'image/webp')");
+
+                            t.HasCheckConstraint("CK_MainCarousels_ImageData_NotEmpty", "octet_length(\"ImageData\") > 0");
+
+                            t.HasCheckConstraint("CK_MainCarousels_ImageDimensions", "\"ImageWidth\" = 1920 AND \"ImageHeight\" = 750");
+
+                            t.HasCheckConstraint("CK_MainCarousels_ImageFileSize", "\"ImageFileSize\" > 0 AND \"ImageFileSize\" <= 5242880");
+
+                            t.HasCheckConstraint("CK_MainCarousels_SortOrder", "\"SortOrder\" >= 0");
+                        });
+                });
+
             modelBuilder.Entity("FashionStore.Domain.Entities.Product", b =>
                 {
                     b.Property<string>("Id")
