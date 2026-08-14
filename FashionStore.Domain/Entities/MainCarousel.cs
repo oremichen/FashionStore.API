@@ -46,8 +46,8 @@ public sealed class MainCarousel
 
     public void SetImage(byte[] data, string contentType, string fileName, int width, int height)
     {
-        if (width is < 1280 or > 3840) throw new ArgumentOutOfRangeException(nameof(width), "Image width must be between 1280 and 3840 pixels.");
-        if (height is < 500 or > 2160) throw new ArgumentOutOfRangeException(nameof(height), "Image height must be between 500 and 2160 pixels.");
+        if (width != 1920 || height != 750)
+            throw new ArgumentException("Carousel images must be exactly 1920 × 750 pixels.");
         var image = ImageRules.Validate(data, contentType, fileName, AllowedImageTypes);
         ImageData = image.Data;
         ImageContentType = image.ContentType;

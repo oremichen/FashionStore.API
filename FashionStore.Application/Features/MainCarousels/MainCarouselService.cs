@@ -1,9 +1,13 @@
 using FashionStore.Application.Abstractions.MainCarousels;
+using FashionStore.Application.Abstractions.Images;
 
 namespace FashionStore.Application.Features.MainCarousels;
 
-public sealed class MainCarouselService(IMainCarouselRepository repository) : IMainCarouselService
+public sealed class MainCarouselService(IMainCarouselRepository repository, IImageProcessor imageProcessor) : IMainCarouselService
 {
+    private const int CarouselImageWidth = 1920;
+    private const int CarouselImageHeight = 750;
+
     public async Task<ResponseResult<IReadOnlyList<MainCarouselResponse>>> GetAllAsync(CancellationToken cancellationToken)
     {
         var carousels = await repository.GetAllAsync(cancellationToken);
@@ -28,8 +32,21 @@ public sealed class MainCarouselService(IMainCarouselRepository repository) : IM
         var response = new ResponseResult<MainCarouselResponse>();
         try
         {
+            var processedImage = await imageProcessor.CropAndResizeAsync(
+                request.ImageData,
+                request.ImageContentType,
+                request.ImageFileName,
+                CarouselImageWidth,
+                CarouselImageHeight,
+                cancellationToken);
+
             var carousel = MainCarousel.Create(request.Title, request.Subtitle, request.ButtonText, request.LinkUrl, request.SortOrder, request.IsActive);
-            carousel.SetImage(request.ImageData, request.ImageContentType, request.ImageFileName, request.ImageWidth, request.ImageHeight);
+            carousel.SetImage(
+                processedImage.Data,
+                processedImage.ContentType,
+                processedImage.FileName,
+                processedImage.Width,
+                processedImage.Height);
             await repository.AddAsync(carousel, cancellationToken);
             return response.Success(Map(carousel), "Carousel created successfully.").SetStatusCode(ResponseCodes.CREATED);
         }
@@ -47,10 +64,20 @@ public sealed class MainCarouselService(IMainCarouselRepository repository) : IM
             carousel.SetDetails(request.Title, request.Subtitle, request.ButtonText, request.LinkUrl, request.SortOrder, request.IsActive);
             if (request.ImageData is { Length: > 0 })
             {
-                if (request.ImageWidth is null || request.ImageHeight is null)
-                    return response.Fail("Image width and height are required when replacing the image.", ResponseCodes.INVALID_ACTION);
-                carousel.SetImage(request.ImageData, request.ImageContentType ?? string.Empty, request.ImageFileName ?? string.Empty,
-                    request.ImageWidth.Value, request.ImageHeight.Value);
+                var processedImage = await imageProcessor.CropAndResizeAsync(
+                    request.ImageData,
+                    request.ImageContentType ?? string.Empty,
+                    request.ImageFileName ?? string.Empty,
+                    CarouselImageWidth,
+                    CarouselImageHeight,
+                    cancellationToken);
+
+                carousel.SetImage(
+                    processedImage.Data,
+                    processedImage.ContentType,
+                    processedImage.FileName,
+                    processedImage.Width,
+                    processedImage.Height);
             }
             await repository.SaveChangesAsync(cancellationToken);
             return response.Success(Map(carousel), "Carousel updated successfully.");

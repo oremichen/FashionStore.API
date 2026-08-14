@@ -26,7 +26,7 @@ public sealed class MainCarouselConfiguration : IEntityTypeConfiguration<MainCar
             t.HasCheckConstraint("CK_MainCarousels_ImageData_NotEmpty", "octet_length(\"ImageData\") > 0");
             t.HasCheckConstraint("CK_MainCarousels_ImageContentType", "\"ImageContentType\" IN ('image/jpeg', 'image/png', 'image/webp')");
             t.HasCheckConstraint("CK_MainCarousels_ImageFileSize", "\"ImageFileSize\" > 0 AND \"ImageFileSize\" <= 5242880");
-            t.HasCheckConstraint("CK_MainCarousels_ImageDimensions", "\"ImageWidth\" >= 1280 AND \"ImageHeight\" >= 500 AND \"ImageWidth\" <= 3840 AND \"ImageHeight\" <= 2160");
+            t.HasCheckConstraint("CK_MainCarousels_ImageDimensions", "\"ImageWidth\" = 1920 AND \"ImageHeight\" = 750");
             t.HasCheckConstraint("CK_MainCarousels_SortOrder", "\"SortOrder\" >= 0");
         });
     }

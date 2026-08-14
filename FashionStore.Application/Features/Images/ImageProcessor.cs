@@ -1,0 +1,62 @@
+using FashionStore.Application.Abstractions.Images;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Webp;
+using SixLabors.ImageSharp.Processing;
+
+namespace FashionStore.Application.Features.Images;
+
+public sealed class ImageProcessor : IImageProcessor
+{
+    private static readonly string[] AllowedContentTypes = ["image/jpeg", "image/png", "image/webp"];
+
+    public async Task<ProcessedImage> CropAndResizeAsync(
+        byte[] data,
+        string contentType,
+        string fileName,
+        int width,
+        int height,
+        CancellationToken cancellationToken)
+    {
+        if (data is null || data.Length == 0)
+            throw new ArgumentException("Image cannot be empty.", nameof(data));
+        if (data.LongLength > ImageRules.MaximumFileSize)
+            throw new ArgumentException("Image cannot exceed 5 MB.", nameof(data));
+        if (!AllowedContentTypes.Contains(contentType, StringComparer.OrdinalIgnoreCase))
+            throw new ArgumentException("Only JPEG, PNG, and WebP images are supported.", nameof(contentType));
+        if (width <= 0) throw new ArgumentOutOfRangeException(nameof(width));
+        if (height <= 0) throw new ArgumentOutOfRangeException(nameof(height));
+
+        try
+        {
+            await using var inputStream = new MemoryStream(data, writable: false);
+            using var image = await Image.LoadAsync(inputStream, cancellationToken);
+
+            image.Mutate(context => context.Resize(new ResizeOptions
+            {
+                Size = new SixLabors.ImageSharp.Size(width, height),
+                Mode = ResizeMode.Crop,
+                Position = AnchorPositionMode.Center,
+                Sampler = KnownResamplers.Lanczos3
+            }));
+
+            await using var outputStream = new MemoryStream();
+            var encoder = new WebpEncoder
+            {
+                Quality = 85,
+                FileFormat = WebpFileFormatType.Lossy
+            };
+            await image.SaveAsWebpAsync(outputStream, encoder, cancellationToken);
+
+            var outputFileName = $"{Path.GetFileNameWithoutExtension(fileName)}.webp";
+            return new ProcessedImage(outputStream.ToArray(), "image/webp", outputFileName, width, height);
+        }
+        catch (UnknownImageFormatException exception)
+        {
+            throw new ArgumentException("The uploaded file is not a valid supported image.", nameof(data), exception);
+        }
+        catch (InvalidImageContentException exception)
+        {
+            throw new ArgumentException("The uploaded image is corrupt or invalid.", nameof(data), exception);
+        }
+    }
+}

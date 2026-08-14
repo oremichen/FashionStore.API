@@ -10,6 +10,8 @@ using FashionStore.Application.Abstractions.Brands;
 using FashionStore.Application.Features.Brands;
 using FashionStore.Application.Abstractions.MainCarousels;
 using FashionStore.Application.Features.MainCarousels;
+using FashionStore.Application.Abstractions.Images;
+using FashionStore.Application.Features.Images;
 
 namespace FashionStore.Application
 {
@@ -24,6 +26,7 @@ namespace FashionStore.Application
             services.AddScoped<ICategoryService, CategoryService>();
             services.AddScoped<IBrandService, BrandService>();
             services.AddScoped<IMainCarouselService, MainCarouselService>();
+            services.AddScoped<IImageProcessor, ImageProcessor>();
             services.AddScoped<IEmailNotificationService, EmailNotificationService>();
             services.AddScoped<IEmailTemplateRenderer, EmailTemplateRenderer>();
 
