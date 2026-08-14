@@ -39,9 +39,6 @@ public sealed class Category
     public void AssignParent(string? parentId)
     {
         parentId = string.IsNullOrWhiteSpace(parentId) ? null : parentId.Trim();
-        if (parentId == Id)
-            throw new ArgumentException("A category cannot be its own parent.", nameof(parentId));
-
         ParentId = parentId;
         UpdatedAt = DateTimeOffset.UtcNow;
     }
