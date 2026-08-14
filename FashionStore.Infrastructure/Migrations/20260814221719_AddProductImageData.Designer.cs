@@ -3,6 +3,7 @@ using System;
 using FashionStore.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FashionStore.Infrastructure.Migrations
 {
     [DbContext(typeof(FashionStoreDbContext))]
-    partial class FashionStoreDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260814221719_AddProductImageData")]
+    partial class AddProductImageData
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -658,9 +661,6 @@ namespace FashionStore.Infrastructure.Migrations
                     b.Property<bool>("IsPrimary")
                         .HasColumnType("boolean");
 
-                    b.Property<byte[]>("MediumImageData")
-                        .HasColumnType("bytea");
-
                     b.Property<string>("MediumUrl")
                         .HasColumnType("text");
 
@@ -668,9 +668,6 @@ namespace FashionStore.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
-
-                    b.Property<byte[]>("SmallImageData")
-                        .HasColumnType("bytea");
 
                     b.Property<string>("SmallUrl")
                         .HasColumnType("text");

@@ -9,7 +9,10 @@ public sealed class BrandService(IBrandRepository repository, ILogger<BrandServi
         logger.LogInformation("Creating brand with slug {Slug}.", request.Slug);
         var response = new ResponseResult<BrandResponse>();
         if (await repository.NameOrSlugExistsAsync(request.Name.Trim(), request.Slug.Trim(), cancellationToken))
+        {
+            logger.LogError("Brand creation validation failed because name {BrandName} or slug {BrandSlug} already exists.", request.Name, request.Slug);
             return response.Fail("A brand with this name or slug already exists.", ResponseCodes.DUPLICATE_RECORD);
+        }
         try
         {
             var brand = Brand.Create(request.Name, request.Slug, request.Description, request.WebsiteUrl, request.IsActive);

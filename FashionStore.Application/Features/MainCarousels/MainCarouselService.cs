@@ -25,7 +25,11 @@ public sealed class MainCarouselService(
     {
         logger.LogInformation("Retrieving main carousel {CarouselId}.", id);
         var response = new ResponseResult<MainCarouselResponse>();
-        if (string.IsNullOrWhiteSpace(id)) return response.Fail("Carousel id is required.", ResponseCodes.INVALID_ACTION);
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            logger.LogError("Main carousel retrieval validation failed because carousel id is empty.");
+            return response.Fail("Carousel id is required.", ResponseCodes.INVALID_ACTION);
+        }
         var carousel = await repository.GetByIdAsync(id.Trim(), false, cancellationToken);
         return carousel is null
             ? response.Fail("Carousel was not found.", ResponseCodes.UNABLE_TO_LOCATE_RECORD)
@@ -68,7 +72,11 @@ public sealed class MainCarouselService(
     {
         logger.LogInformation("Updating main carousel {CarouselId}.", id);
         var response = new ResponseResult<MainCarouselResponse>();
-        if (string.IsNullOrWhiteSpace(id)) return response.Fail("Carousel id is required.", ResponseCodes.INVALID_ACTION);
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            logger.LogError("Main carousel update validation failed because carousel id is empty.");
+            return response.Fail("Carousel id is required.", ResponseCodes.INVALID_ACTION);
+        }
         var carousel = await repository.GetByIdAsync(id.Trim(), true, cancellationToken);
         if (carousel is null) return response.Fail("Carousel was not found.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
         try
@@ -105,7 +113,11 @@ public sealed class MainCarouselService(
     public async Task<ResponseResult> DeleteAsync(string id, CancellationToken cancellationToken)
     {
         logger.LogInformation("Deleting main carousel {CarouselId}.", id);
-        if (string.IsNullOrWhiteSpace(id)) return new ResponseResult().Fail("Carousel id is required.", ResponseCodes.INVALID_ACTION);
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            logger.LogError("Main carousel deletion validation failed because carousel id is empty.");
+            return new ResponseResult().Fail("Carousel id is required.", ResponseCodes.INVALID_ACTION);
+        }
         var carousel = await repository.GetByIdAsync(id.Trim(), true, cancellationToken);
         if (carousel is null) return new ResponseResult().Fail("Carousel was not found.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
         await repository.DeleteAsync(carousel, cancellationToken);

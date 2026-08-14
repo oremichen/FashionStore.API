@@ -1,4 +1,5 @@
 using FashionStore.Application.Abstractions.MainCarousels;
+using FashionStore.Application.Dtos.Response;
 
 namespace FashionStore.API.Controllers;
 
@@ -7,6 +8,9 @@ namespace FashionStore.API.Controllers;
 public sealed class MainCarouselsController(IMainCarouselService service) : BaseApiController
 {
     [AllowAnonymous, HttpGet]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(ResponseResult<IReadOnlyList<MainCarouselResponse>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
         var response = await service.GetAllAsync(cancellationToken);
@@ -14,6 +18,10 @@ public sealed class MainCarouselsController(IMainCarouselService service) : Base
     }
 
     [AllowAnonymous, HttpGet("{id}")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(ResponseResult<MainCarouselResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ResponseResult<MainCarouselResponse>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetById(string id, CancellationToken cancellationToken)
     {
         var response = await service.GetByIdAsync(id, cancellationToken);
@@ -22,6 +30,8 @@ public sealed class MainCarouselsController(IMainCarouselService service) : Base
 
     [AllowAnonymous, HttpGet("{id}/image")]
     [Produces("image/jpeg", "image/png", "image/webp")]
+    [ProducesResponseType(typeof(byte[]), StatusCodes.Status200OK, "image/jpeg", "image/png", "image/webp")]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetImage(string id, CancellationToken cancellationToken)
     {
         var image = await service.GetImageAsync(id, cancellationToken);
@@ -30,6 +40,12 @@ public sealed class MainCarouselsController(IMainCarouselService service) : Base
 
     [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpPost]
     [Consumes("multipart/form-data"), RequestSizeLimit(5 * 1024 * 1024)]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(ResponseResult<MainCarouselResponse>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ResponseResult<MainCarouselResponse>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Create([FromForm] CreateMainCarouselForm form, CancellationToken cancellationToken)
     {
         var data = await ReadAsync(form.Image, cancellationToken);
@@ -40,6 +56,13 @@ public sealed class MainCarouselsController(IMainCarouselService service) : Base
 
     [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpPut("{id}")]
     [Consumes("multipart/form-data"), RequestSizeLimit(5 * 1024 * 1024)]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(ResponseResult<MainCarouselResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ResponseResult<MainCarouselResponse>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ResponseResult<MainCarouselResponse>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Update(string id, [FromForm] UpdateMainCarouselForm form, CancellationToken cancellationToken)
     {
         var data = await ReadAsync(form.Image, cancellationToken);
@@ -49,6 +72,12 @@ public sealed class MainCarouselsController(IMainCarouselService service) : Base
     }
 
     [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpDelete("{id}")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Delete(string id, CancellationToken cancellationToken)
     {
         var response = await service.DeleteAsync(id, cancellationToken);
