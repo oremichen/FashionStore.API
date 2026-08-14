@@ -5,7 +5,7 @@ public sealed class MainCarousel
     private static readonly string[] AllowedImageTypes = ["image/jpeg", "image/png", "image/webp"];
     private MainCarousel() { }
 
-    private MainCarousel(string title, string? subtitle, string buttonText, string? linkUrl, int sortOrder, bool isActive)
+    private MainCarousel(string? title, string? subtitle, string buttonText, string? linkUrl, int sortOrder, bool isActive)
     {
         SetDetails(title, subtitle, buttonText, linkUrl, sortOrder, isActive);
         CreatedAt = UpdatedAt = DateTimeOffset.UtcNow;
@@ -27,7 +27,7 @@ public sealed class MainCarousel
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset UpdatedAt { get; private set; }
 
-    public static MainCarousel Create(string title, string? subtitle, string buttonText, string? linkUrl, int sortOrder, bool isActive)
+    public static MainCarousel Create(string? title, string? subtitle, string buttonText, string? linkUrl, int sortOrder, bool isActive)
     {
         return new MainCarousel(title, subtitle, buttonText, linkUrl, sortOrder, isActive);
     }

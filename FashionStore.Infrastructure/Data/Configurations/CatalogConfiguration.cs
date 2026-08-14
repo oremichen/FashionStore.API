@@ -17,7 +17,7 @@ public sealed class MainCarouselConfiguration : IEntityTypeConfiguration<MainCar
     public void Configure(EntityTypeBuilder<MainCarousel> b)
     {
         b.ToTable("MainCarousels"); b.HasKey(x => x.Id); CatalogConfiguration.Id(b);
-        b.Property(x => x.Title).HasMaxLength(150).IsRequired(); b.Property(x => x.Subtitle).HasMaxLength(250);
+        b.Property(x => x.Title).HasMaxLength(150).IsRequired(false); b.Property(x => x.Subtitle).HasMaxLength(250);
         b.Property(x => x.ButtonText).HasMaxLength(80).HasDefaultValue("Shop now").IsRequired(); b.Property(x => x.LinkUrl).HasMaxLength(2048);
         b.Property(x => x.ImageData).HasColumnType("bytea").IsRequired(); b.Property(x => x.ImageContentType).HasMaxLength(100).IsRequired();
         b.Property(x => x.ImageFileName).HasMaxLength(255); b.Property(x => x.SortOrder).HasDefaultValue(0); b.Property(x => x.IsActive).HasDefaultValue(true);
