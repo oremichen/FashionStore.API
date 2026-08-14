@@ -28,7 +28,14 @@ namespace FashionStore.Application.Messages.NotificationQueue
             }
         }
 
-        public ChannelReader<(Guid Id, EmailNotification Notification)> Reader => _channel.Reader;
+        public ChannelReader<(Guid Id, EmailNotification Notification)> Reader
+        {
+            get
+            {
+                _logger.LogDebug("Accessing the email notification queue reader.");
+                return _channel.Reader;
+            }
+        }
 
         public async ValueTask DisposeAsync()
         {

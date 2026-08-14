@@ -44,12 +44,12 @@ public static class DatabaseInitializer
             }
             catch (PostgresException ex) when (attempt < MaxDatabaseAttempts && IsTransient(ex))
             {
-                logger.LogWarning(ex, "Database not ready yet. Retrying migration in 5 seconds (attempt {Attempt}/{MaxAttempts}).", attempt, MaxDatabaseAttempts);
+                logger.LogError(ex, "Database not ready yet. Retrying migration in 5 seconds (attempt {Attempt}/{MaxAttempts}).", attempt, MaxDatabaseAttempts);
                 await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
             }
             catch (PostgresException ex) when (IsAlreadyExistsFailure(ex))
             {
-                logger.LogWarning(ex, "Migration encountered an existing-schema conflict. Attempting to align EF migration history before retrying.");
+                logger.LogError(ex, "Migration encountered an existing-schema conflict. Attempting to align EF migration history before retrying.");
 
                 var aligned = await TryAlignMigrationHistoryAsync(context, logger, cancellationToken);
                 if (!aligned)
@@ -63,8 +63,9 @@ public static class DatabaseInitializer
         }
     }
 
-    private static bool IsTransient(PostgresException ex) =>
-        ex.SqlState is PostgresErrorCodes.ConnectionException
+    private static bool IsTransient(PostgresException ex)
+    {
+        return ex.SqlState is PostgresErrorCodes.ConnectionException
             or PostgresErrorCodes.ConnectionDoesNotExist
             or PostgresErrorCodes.ConnectionFailure
             or PostgresErrorCodes.SqlClientUnableToEstablishSqlConnection
@@ -72,11 +73,14 @@ public static class DatabaseInitializer
             or PostgresErrorCodes.TooManyConnections
             or PostgresErrorCodes.AdminShutdown
             or PostgresErrorCodes.CrashShutdown;
+    }
 
-    private static bool IsAlreadyExistsFailure(PostgresException ex) =>
-        ex.SqlState is PostgresErrorCodes.DuplicateTable
+    private static bool IsAlreadyExistsFailure(PostgresException ex)
+    {
+        return ex.SqlState is PostgresErrorCodes.DuplicateTable
             or PostgresErrorCodes.DuplicateObject
             or PostgresErrorCodes.DuplicateColumn;
+    }
 
     private static async Task<bool> TryAlignMigrationHistoryAsync(FashionStoreDbContext context, ILogger logger, CancellationToken cancellationToken)
     {

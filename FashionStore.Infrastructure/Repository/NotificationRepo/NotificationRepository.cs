@@ -9,17 +9,23 @@ namespace FashionStore.Infrastructure.Repository.NotificationRepo
     {
         private readonly FashionStoreDbContext _dbContext;
         private readonly IConfiguration _configuration;
+        private readonly ILogger<NotificationRepository> _logger;
 
-        public NotificationRepository(FashionStoreDbContext dbContext, IConfiguration configuration)
+        public NotificationRepository(
+            FashionStoreDbContext dbContext,
+            IConfiguration configuration,
+            ILogger<NotificationRepository> logger)
         {
             _dbContext = dbContext;
             _configuration = configuration;
+            _logger = logger;
         }
 
         public async Task<QueueEmailNotification> CreateProcessingAsync(
             EmailNotification notification,
             CancellationToken cancellationToken)
         {
+            _logger.LogInformation("Persisting email notification for processing.");
             var queuedNotification = new QueueEmailNotification
             {
                 From = string.IsNullOrWhiteSpace(notification.From)
@@ -36,6 +42,7 @@ namespace FashionStore.Infrastructure.Repository.NotificationRepo
 
             _dbContext.QueueEmailNotifications.Add(queuedNotification);
             await _dbContext.SaveChangesAsync(cancellationToken);
+            _logger.LogInformation("Persisted email notification {NotificationId} for processing.", queuedNotification.Id);
             return queuedNotification;
         }
 
@@ -45,6 +52,7 @@ namespace FashionStore.Infrastructure.Repository.NotificationRepo
             string? lastError,
             CancellationToken cancellationToken)
         {
+            _logger.LogInformation("Updating notification {NotificationId} to status {Status}.", id, status);
             var queuedNotification = await _dbContext.QueueEmailNotifications
                 .SingleAsync(item => item.Id == id, cancellationToken);
 
@@ -56,6 +64,7 @@ namespace FashionStore.Infrastructure.Repository.NotificationRepo
             }
 
             await _dbContext.SaveChangesAsync(cancellationToken);
+            _logger.LogInformation("Updated notification {NotificationId} to status {Status}.", id, status);
         }
 
         public async Task<IReadOnlyList<QueueEmailNotification>> GetRecoverableAsync(
@@ -63,6 +72,7 @@ namespace FashionStore.Infrastructure.Repository.NotificationRepo
             DateTimeOffset staleProcessingBefore,
             CancellationToken cancellationToken)
         {
+            _logger.LogDebug("Querying recoverable notifications with max retry count {MaxRetryCount}.", maxRetryCount);
             return await _dbContext.QueueEmailNotifications
                 .Where(item => (item.Status == NotificationStatus.Pending ||
                                 (item.Status == NotificationStatus.Processing &&
@@ -80,6 +90,7 @@ namespace FashionStore.Infrastructure.Repository.NotificationRepo
             int maxRetryCount,
             CancellationToken cancellationToken)
         {
+            _logger.LogInformation("Recording retry result for notification {NotificationId}; delivered: {Delivered}.", id, delivered);
             var queuedNotification = await _dbContext.QueueEmailNotifications
                 .SingleAsync(item => item.Id == id, cancellationToken);
 
@@ -97,6 +108,11 @@ namespace FashionStore.Infrastructure.Repository.NotificationRepo
             }
 
             await _dbContext.SaveChangesAsync(cancellationToken);
+            _logger.LogInformation(
+                "Recorded retry result for notification {NotificationId}; status: {Status}, retry count: {RetryCount}.",
+                id,
+                queuedNotification.Status,
+                queuedNotification.RetryCount);
         }
     }
 }

@@ -107,14 +107,14 @@ namespace FashionStore.Application.Features.Auth
 
             if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(tokenId))
             {
-                _logger.LogWarning("Logout rejected because token claims were incomplete. Username: {Username}, TokenId: {TokenId}.", username, tokenId);
+                _logger.LogError("Logout rejected because token claims were incomplete. Username: {Username}, TokenId: {TokenId}.", username, tokenId);
                 return response.Fail("The current token is invalid.", ResponseCodes.INVALID_TOKEN);
             }
 
             var user = await _userManager.FindByNameAsync(username);
             if (user == null)
             {
-                _logger.LogWarning("Logout failed for username {Username}: user was not found.", username);
+                _logger.LogError("Logout failed for username {Username}: user was not found.", username);
                 return response.Fail("No user was found for the current token.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
             }
 
@@ -216,20 +216,20 @@ namespace FashionStore.Application.Features.Auth
 
             if (string.IsNullOrWhiteSpace(username))
             {
-                _logger.LogWarning("Reset password rejected because the authenticated username claim was missing.");
+                _logger.LogError("Reset password rejected because the authenticated username claim was missing.");
                 return response.Fail("The current token is invalid.", ResponseCodes.INVALID_TOKEN);
             }
 
             var user = await _userManager.FindByNameAsync(username);
             if (user == null)
             {
-                _logger.LogWarning("Reset password failed for username {Username}: user was not found.", username);
+                _logger.LogError("Reset password failed for username {Username}: user was not found.", username);
                 return response.Fail("No user was found for the current token.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
             }
 
             if (user.IsDeleted || user.IsDeactivated)
             {
-                _logger.LogWarning(
+                _logger.LogError(
                     "Reset password blocked for user {UserId} with username {Username}: account is inactive. Deleted: {IsDeleted}, Deactivated: {IsDeactivated}.",
                     user.Id,
                     username,
@@ -243,7 +243,7 @@ namespace FashionStore.Application.Features.Auth
             {
                 var errors = changePasswordResult.Errors.Select(error => error.Description).ToArray();
 
-                _logger.LogWarning(
+                _logger.LogError(
                     "Reset password failed for user {UserId} with username {Username}. Errors: {Errors}.",
                     user.Id,
                     username,
@@ -264,7 +264,7 @@ namespace FashionStore.Application.Features.Auth
             {
                 var errors = updateResult.Errors.Select(error => error.Description).ToArray();
 
-                _logger.LogWarning(
+                _logger.LogError(
                     "Password changed for user {UserId}, but profile update failed. Errors: {Errors}.",
                     user.Id,
                     string.Join(" | ", errors));
@@ -313,7 +313,7 @@ namespace FashionStore.Application.Features.Auth
             {
                 var errors = createResult.Errors.Select(error => error.Description).ToArray();
 
-                _logger.LogWarning(
+                _logger.LogError(
                     "Registration failed for email {Email}. Errors: {Errors}.",
                     request.Email,
                     string.Join(" | ", errors));
@@ -378,13 +378,13 @@ namespace FashionStore.Application.Features.Auth
             var user = await _userManager.FindByEmailAsync(request.Email);
             if (user == null)
             {
-                _logger.LogWarning("Email confirmation failed for email {Email}: user was not found.", request.Email);
+                _logger.LogError("Email confirmation failed for email {Email}: user was not found.", request.Email);
                 return response.Fail("No user was found for the supplied email address.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
             }
 
             if (user.IsDeleted || user.IsDeactivated)
             {
-                _logger.LogWarning(
+                _logger.LogError(
                     "Email confirmation blocked for user {UserId} with email {Email}: account is inactive. Deleted: {IsDeleted}, Deactivated: {IsDeactivated}.",
                     user.Id,
                     user.Email,
@@ -402,7 +402,7 @@ namespace FashionStore.Application.Features.Auth
             var confirmationToken = DecodeConfirmationToken(request.Token);
             if (string.IsNullOrWhiteSpace(confirmationToken))
             {
-                _logger.LogWarning("Email confirmation failed for user {UserId}: token was empty after normalization.", user.Id);
+                _logger.LogError("Email confirmation failed for user {UserId}: token was empty after normalization.", user.Id);
                 return response.Fail("A valid confirmation token is required.", ResponseCodes.INVALID_ACTION);
             }
 
@@ -411,7 +411,7 @@ namespace FashionStore.Application.Features.Auth
             {
                 var errors = confirmResult.Errors.Select(error => error.Description).ToArray();
 
-                _logger.LogWarning(
+                _logger.LogError(
                     "Email confirmation failed for user {UserId} with email {Email}. Errors: {Errors}.",
                     user.Id,
                     user.Email,
@@ -458,13 +458,13 @@ namespace FashionStore.Application.Features.Auth
             var user = await _userManager.FindByEmailAsync(request.Email);
             if (user == null)
             {
-                _logger.LogWarning("Resend confirmation link failed for email {Email}: user was not found.", request.Email);
+                _logger.LogError("Resend confirmation link failed for email {Email}: user was not found.", request.Email);
                 return response.Fail("No user was found for the supplied email address.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
             }
 
             if (user.IsDeleted || user.IsDeactivated)
             {
-                _logger.LogWarning(
+                _logger.LogError(
                     "Resend confirmation link blocked for user {UserId} with email {Email}: account is inactive. Deleted: {IsDeleted}, Deactivated: {IsDeactivated}.",
                     user.Id,
                     user.Email,
@@ -565,7 +565,7 @@ namespace FashionStore.Application.Features.Auth
             var updateResult = await _userManager.UpdateAsync(user);
             if (!updateResult.Succeeded)
             {
-                _logger.LogWarning(
+                _logger.LogError(
                     "Confirmation email was queued for user {UserId}, but resend tracking could not be updated. Errors: {Errors}.",
                     user.Id,
                     string.Join(" | ", updateResult.Errors.Select(error => error.Description)));

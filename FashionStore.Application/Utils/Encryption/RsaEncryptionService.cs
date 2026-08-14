@@ -7,14 +7,17 @@ namespace FashionStore.Application.Utils.Encryption
     public class RsaEncryptionService : IRsaEncryptionService
     {
         private readonly IConfiguration _configuration;
+        private readonly ILogger<RsaEncryptionService> _logger;
 
-        public RsaEncryptionService(IConfiguration configuration)
+        public RsaEncryptionService(IConfiguration configuration, ILogger<RsaEncryptionService> logger)
         {
             _configuration = configuration;
+            _logger = logger;
         }
 
         public string Encrypt(string plainText)
         {
+            _logger.LogDebug("Encrypting application data with RSA.");
             if (string.IsNullOrWhiteSpace(plainText))
             {
                 throw new ArgumentException("Plain text cannot be null or empty.", nameof(plainText));
@@ -33,6 +36,7 @@ namespace FashionStore.Application.Utils.Encryption
 
         public string Decrypt(string cipherText)
         {
+            _logger.LogDebug("Decrypting application data with RSA.");
             if (string.IsNullOrWhiteSpace(cipherText))
             {
                 throw new ArgumentException("Cipher text cannot be null or empty.", nameof(cipherText));

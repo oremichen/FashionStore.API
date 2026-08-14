@@ -2,10 +2,11 @@ using FashionStore.Application.Abstractions.Brands;
 
 namespace FashionStore.Application.Features.Brands;
 
-public sealed class BrandService(IBrandRepository repository) : IBrandService
+public sealed class BrandService(IBrandRepository repository, ILogger<BrandService> logger) : IBrandService
 {
     public async Task<ResponseResult<BrandResponse>> CreateAsync(CreateBrandRequest request, CancellationToken cancellationToken)
     {
+        logger.LogInformation("Creating brand with slug {Slug}.", request.Slug);
         var response = new ResponseResult<BrandResponse>();
         if (await repository.NameOrSlugExistsAsync(request.Name.Trim(), request.Slug.Trim(), cancellationToken))
             return response.Fail("A brand with this name or slug already exists.", ResponseCodes.DUPLICATE_RECORD);
@@ -14,13 +15,19 @@ public sealed class BrandService(IBrandRepository repository) : IBrandService
             var brand = Brand.Create(request.Name, request.Slug, request.Description, request.WebsiteUrl, request.IsActive);
             if (request.ImageData is { Length: > 0 }) brand.SetImage(request.ImageData, request.ImageContentType ?? string.Empty, request.ImageFileName ?? string.Empty);
             await repository.AddAsync(brand, cancellationToken);
+            logger.LogInformation("Created brand {BrandId}.", brand.Id);
             return response.Success(Map(brand), "Brand created successfully.").SetStatusCode(ResponseCodes.CREATED);
         }
-        catch (ArgumentException ex) { return response.Fail(ex.Message, ResponseCodes.INVALID_ACTION); }
+        catch (ArgumentException ex)
+        {
+            logger.LogError(ex, "Brand creation validation failed for slug {Slug}.", request.Slug);
+            return response.Fail(ex.Message, ResponseCodes.INVALID_ACTION);
+        }
     }
 
     public async Task<ResponseResult<IReadOnlyList<BrandResponse>>> GetAllAsync(CancellationToken cancellationToken)
     {
+        logger.LogInformation("Retrieving brands.");
         var brands = await repository.GetAllAsync(cancellationToken);
         var mappedBrands = brands.Select(Map).ToList();
         return new ResponseResult<IReadOnlyList<BrandResponse>>()
@@ -29,6 +36,7 @@ public sealed class BrandService(IBrandRepository repository) : IBrandService
     
     public async Task<BrandImageResponse?> GetImageAsync(string id, CancellationToken cancellationToken)
     {
+        logger.LogInformation("Retrieving image for brand {BrandId}.", id);
         var brand = await repository.GetByIdAsync(id.Trim(), cancellationToken);
         return brand?.ImageData is null ? null : new(brand.ImageData, brand.ImageContentType!, brand.ImageFileName!);
     }

@@ -4,34 +4,52 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FashionStore.Infrastructure.Repository.CategoryRepo;
 
-public sealed class CategoryRepository(FashionStoreDbContext dbContext) : ICategoryRepository
+public sealed class CategoryRepository(FashionStoreDbContext dbContext, ILogger<CategoryRepository> logger) : ICategoryRepository
 {
     public async Task<IReadOnlyList<CategoryResponse>> GetPublicCategoriesAsync(CancellationToken cancellationToken)
-        => await Project(dbContext.Categories.Where(category => category.DeletedAt == null && category.IsActive))
+    {
+        logger.LogDebug("Querying public categories.");
+        return await Project(dbContext.Categories.Where(category => category.DeletedAt == null && category.IsActive))
             .ToListAsync(cancellationToken);
+    }
 
     public async Task<IReadOnlyList<CategoryResponse>> GetCategoriesWithParentAsync(CancellationToken cancellationToken)
-        => await Project(dbContext.Categories.Where(category => category.DeletedAt == null && category.ParentId != null))
+    {
+        logger.LogDebug("Querying categories with parents.");
+        return await Project(dbContext.Categories.Where(category => category.DeletedAt == null && category.ParentId != null))
             .ToListAsync(cancellationToken);
+    }
 
     public Task<Category?> GetByIdAsync(string id, CancellationToken cancellationToken)
-        => dbContext.Categories.SingleOrDefaultAsync(category => category.Id == id && category.DeletedAt == null, cancellationToken);
+    {
+        logger.LogDebug("Querying category {CategoryId}.", id);
+        return dbContext.Categories.SingleOrDefaultAsync(category => category.Id == id && category.DeletedAt == null, cancellationToken);
+    }
 
     public Task<bool> SlugExistsAsync(string slug, CancellationToken cancellationToken)
-        => dbContext.Categories.AnyAsync(category => category.DeletedAt == null && category.Slug.ToLower() == slug.ToLower(), cancellationToken);
+    {
+        logger.LogDebug("Checking category slug {Slug}.", slug);
+        return dbContext.Categories.AnyAsync(category => category.DeletedAt == null && category.Slug.ToLower() == slug.ToLower(), cancellationToken);
+    }
 
     public Task<bool> NameExistsUnderParentAsync(string name, string? parentId, CancellationToken cancellationToken)
-        => dbContext.Categories.AnyAsync(category => category.DeletedAt == null
+    {
+        logger.LogDebug("Checking category name under parent {ParentId}.", parentId);
+        return dbContext.Categories.AnyAsync(category => category.DeletedAt == null
             && category.ParentId == parentId && category.Name.ToLower() == name.ToLower(), cancellationToken);
+    }
 
     public async Task AddAsync(Category category, CancellationToken cancellationToken)
     {
+        logger.LogInformation("Persisting category {CategoryId}.", category.Id);
         dbContext.Categories.Add(category);
         await dbContext.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Persisted category {CategoryId}.", category.Id);
     }
 
     private static IQueryable<CategoryResponse> Project(IQueryable<Category> categories)
-        => categories.AsNoTracking()
+    {
+        return categories.AsNoTracking()
             .OrderBy(category => category.SortOrder)
             .ThenBy(category => category.Name)
             .Select(category => new CategoryResponse(
@@ -39,4 +57,5 @@ public sealed class CategoryRepository(FashionStoreDbContext dbContext) : ICateg
                 category.Name,
                 category.ParentId,
                 category.Children.Any(child => child.DeletedAt == null && child.IsActive)));
+    }
 }

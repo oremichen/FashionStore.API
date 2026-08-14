@@ -3,13 +3,17 @@ using FashionStore.Application.Abstractions.Images;
 
 namespace FashionStore.Application.Features.MainCarousels;
 
-public sealed class MainCarouselService(IMainCarouselRepository repository, IImageProcessor imageProcessor) : IMainCarouselService
+public sealed class MainCarouselService(
+    IMainCarouselRepository repository,
+    IImageProcessor imageProcessor,
+    ILogger<MainCarouselService> logger) : IMainCarouselService
 {
     private const int CarouselImageWidth = 1920;
     private const int CarouselImageHeight = 750;
 
     public async Task<ResponseResult<IReadOnlyList<MainCarouselResponse>>> GetAllAsync(CancellationToken cancellationToken)
     {
+        logger.LogInformation("Retrieving main carousels.");
         var carousels = await repository.GetAllAsync(cancellationToken);
         var result = carousels.Select(Map).ToList();
 
@@ -19,6 +23,7 @@ public sealed class MainCarouselService(IMainCarouselRepository repository, IIma
 
     public async Task<ResponseResult<MainCarouselResponse>> GetByIdAsync(string id, CancellationToken cancellationToken)
     {
+        logger.LogInformation("Retrieving main carousel {CarouselId}.", id);
         var response = new ResponseResult<MainCarouselResponse>();
         if (string.IsNullOrWhiteSpace(id)) return response.Fail("Carousel id is required.", ResponseCodes.INVALID_ACTION);
         var carousel = await repository.GetByIdAsync(id.Trim(), false, cancellationToken);
@@ -29,6 +34,7 @@ public sealed class MainCarouselService(IMainCarouselRepository repository, IIma
 
     public async Task<ResponseResult<MainCarouselResponse>> CreateAsync(CreateMainCarouselRequest request, CancellationToken cancellationToken)
     {
+        logger.LogInformation("Creating main carousel {Title}.", request.Title);
         var response = new ResponseResult<MainCarouselResponse>();
         try
         {
@@ -48,13 +54,19 @@ public sealed class MainCarouselService(IMainCarouselRepository repository, IIma
                 processedImage.Width,
                 processedImage.Height);
             await repository.AddAsync(carousel, cancellationToken);
+            logger.LogInformation("Created main carousel {CarouselId}.", carousel.Id);
             return response.Success(Map(carousel), "Carousel created successfully.").SetStatusCode(ResponseCodes.CREATED);
         }
-        catch (ArgumentException exception) { return response.Fail(exception.Message, ResponseCodes.INVALID_ACTION); }
+        catch (ArgumentException exception)
+        {
+            logger.LogError(exception, "Main carousel creation validation failed.");
+            return response.Fail(exception.Message, ResponseCodes.INVALID_ACTION);
+        }
     }
 
     public async Task<ResponseResult<MainCarouselResponse>> UpdateAsync(string id, UpdateMainCarouselRequest request, CancellationToken cancellationToken)
     {
+        logger.LogInformation("Updating main carousel {CarouselId}.", id);
         var response = new ResponseResult<MainCarouselResponse>();
         if (string.IsNullOrWhiteSpace(id)) return response.Fail("Carousel id is required.", ResponseCodes.INVALID_ACTION);
         var carousel = await repository.GetByIdAsync(id.Trim(), true, cancellationToken);
@@ -80,22 +92,30 @@ public sealed class MainCarouselService(IMainCarouselRepository repository, IIma
                     processedImage.Height);
             }
             await repository.SaveChangesAsync(cancellationToken);
+            logger.LogInformation("Updated main carousel {CarouselId}.", carousel.Id);
             return response.Success(Map(carousel), "Carousel updated successfully.");
         }
-        catch (ArgumentException exception) { return response.Fail(exception.Message, ResponseCodes.INVALID_ACTION); }
+        catch (ArgumentException exception)
+        {
+            logger.LogError(exception, "Main carousel update validation failed for {CarouselId}.", id);
+            return response.Fail(exception.Message, ResponseCodes.INVALID_ACTION);
+        }
     }
 
     public async Task<ResponseResult> DeleteAsync(string id, CancellationToken cancellationToken)
     {
+        logger.LogInformation("Deleting main carousel {CarouselId}.", id);
         if (string.IsNullOrWhiteSpace(id)) return new ResponseResult().Fail("Carousel id is required.", ResponseCodes.INVALID_ACTION);
         var carousel = await repository.GetByIdAsync(id.Trim(), true, cancellationToken);
         if (carousel is null) return new ResponseResult().Fail("Carousel was not found.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
         await repository.DeleteAsync(carousel, cancellationToken);
+        logger.LogInformation("Deleted main carousel {CarouselId}.", carousel.Id);
         return new ResponseResult().Success("Carousel deleted successfully.");
     }
 
     public async Task<MainCarouselImageResponse?> GetImageAsync(string id, CancellationToken cancellationToken)
     {
+        logger.LogInformation("Retrieving image for main carousel {CarouselId}.", id);
         if (string.IsNullOrWhiteSpace(id)) return null;
         var carousel = await repository.GetByIdAsync(id.Trim(), false, cancellationToken);
         return carousel is null ? null : new(carousel.ImageData, carousel.ImageContentType, carousel.ImageFileName);

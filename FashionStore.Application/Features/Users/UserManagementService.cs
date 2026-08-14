@@ -38,7 +38,7 @@ namespace FashionStore.Application.Features.Users
             var user = await _userManager.FindByEmailAsync(email);
             if (user == null)
             {
-                _logger.LogWarning("Get user by email failed for {Email}: user was not found.", email);
+                _logger.LogError("Get user by email failed for {Email}: user was not found.", email);
                 return response.Fail("No user was found for the supplied email address.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
             }
 
@@ -54,7 +54,7 @@ namespace FashionStore.Application.Features.Users
             var user = await _userManager.FindByEmailAsync(request.CurrentEmail);
             if (user == null)
             {
-                _logger.LogWarning("Update user details failed for {CurrentEmail}: user was not found.", request.CurrentEmail);
+                _logger.LogError("Update user details failed for {CurrentEmail}: user was not found.", request.CurrentEmail);
                 return response.Fail("No user was found for the supplied email address.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
             }
 
@@ -68,7 +68,7 @@ namespace FashionStore.Application.Features.Users
                 var existingUserWithNewEmail = await _userManager.FindByEmailAsync(requestedEmail);
                 if (existingUserWithNewEmail != null && existingUserWithNewEmail.Id != user.Id)
                 {
-                    _logger.LogWarning(
+                    _logger.LogError(
                         "Update user details rejected for user {UserId}: email {Email} already belongs to another account.",
                         user.Id,
                         requestedEmail);
@@ -94,7 +94,7 @@ namespace FashionStore.Application.Features.Users
             {
                 var errors = updateResult.Errors.Select(error => error.Description).ToArray();
 
-                _logger.LogWarning(
+                _logger.LogError(
                     "Update user details failed for user {UserId}. Errors: {Errors}.",
                     user.Id,
                     string.Join(" | ", errors));
@@ -117,7 +117,7 @@ namespace FashionStore.Application.Features.Users
             var existingUser = await _userManager.FindByEmailAsync(request.Email);
             if (existingUser != null)
             {
-                _logger.LogWarning("Create user rejected for email {Email}: user already exists.", request.Email);
+                _logger.LogError("Create user rejected for email {Email}: user already exists.", request.Email);
                 return response.Fail("A user with this email already exists.", ResponseCodes.DUPLICATE_RECORD);
             }
 
@@ -138,7 +138,7 @@ namespace FashionStore.Application.Features.Users
                 var roleExists = await _roleManager.RoleExistsAsync(role);
                 if (!roleExists)
                 {
-                    _logger.LogWarning("Create user rejected for email {Email}: role {Role} was not found.", request.Email, role);
+                    _logger.LogError("Create user rejected for email {Email}: role {Role} was not found.", request.Email, role);
                     return response.Fail($"Role '{role}' does not exist.", ResponseCodes.INVALID_ACTION);
                 }
             }
@@ -163,7 +163,7 @@ namespace FashionStore.Application.Features.Users
             {
                 var errors = createResult.Errors.Select(error => error.Description).ToArray();
 
-                _logger.LogWarning(
+                _logger.LogError(
                     "Create user failed for email {Email}. Errors: {Errors}.",
                     request.Email,
                     string.Join(" | ", errors));
@@ -180,7 +180,7 @@ namespace FashionStore.Application.Features.Users
                 var errors = roleResult.Errors.Select(error => error.Description).ToArray();
                 await _userManager.DeleteAsync(user);
 
-                _logger.LogWarning(
+                _logger.LogError(
                     "Create user role assignment failed for email {Email}. Errors: {Errors}. User creation was rolled back.",
                     request.Email,
                     string.Join(" | ", errors));

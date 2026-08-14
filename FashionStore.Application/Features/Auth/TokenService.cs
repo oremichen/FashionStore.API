@@ -5,20 +5,24 @@ using FashionStore.Application.Abstractions.Auth;
 using FashionStore.Domain.Entities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Logging;
 
 namespace FashionStore.Application.Features.Auth
 {
     public class TokenService : ITokenService
     {
         private readonly IConfiguration _configuration;
+        private readonly ILogger<TokenService> _logger;
 
-        public TokenService(IConfiguration configuration)
+        public TokenService(IConfiguration configuration, ILogger<TokenService> logger)
         {
             _configuration = configuration;
+            _logger = logger;
         }
 
         public string GenerateJwtToken(ApplicationUser user, IEnumerable<string> roles, DateTimeOffset expiresAtUtc)
         {
+            _logger.LogInformation("Generating JWT for user {UserId} expiring at {ExpiresAtUtc}.", user.Id, expiresAtUtc);
             var secret = _configuration["JwtSettings:Secret"]
                 ?? throw new InvalidOperationException("JWT secret is not configured.");
             var issuer = _configuration["JwtSettings:Issuer"]
@@ -48,7 +52,9 @@ namespace FashionStore.Application.Features.Auth
                 expires: expiresAtUtc.UtcDateTime,
                 signingCredentials: credentials);
 
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            var serializedToken = new JwtSecurityTokenHandler().WriteToken(token);
+            _logger.LogInformation("Generated JWT for user {UserId}.", user.Id);
+            return serializedToken;
         }
 
     }
