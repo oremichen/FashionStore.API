@@ -1,6 +1,6 @@
 namespace FashionStore.Application.Dtos.Response;
 
-public sealed record CategoryResponse(string Id, string Name, string? ParentId, bool HasSubCategory);
+public sealed record CategoryResponse(string Id, string Name, string Slug, string? ParentId, bool HasSubCategory);
 
 public sealed record CategoryDetailsResponse(
     string Id,

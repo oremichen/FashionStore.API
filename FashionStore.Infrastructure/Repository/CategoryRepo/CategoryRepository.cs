@@ -55,6 +55,7 @@ public sealed class CategoryRepository(FashionStoreDbContext dbContext, ILogger<
             .Select(category => new CategoryResponse(
                 category.Id,
                 category.Name,
+                category.Slug,
                 category.ParentId,
                 category.Children.Any(child => child.DeletedAt == null && child.IsActive)));
     }
