@@ -11,7 +11,7 @@ public sealed record UpdateMainCarouselRequest(string Title, string? Subtitle, s
 
 public sealed class CreateMainCarouselForm
 {
-    [Required, StringLength(150)] public string Title { get; init; } = string.Empty;
+    [StringLength(150)] public string Title { get; init; } = string.Empty;
     [StringLength(250)] public string? Subtitle { get; init; }
     [StringLength(80)] public string ButtonText { get; init; } = "Shop now";
     [StringLength(2048)] public string? LinkUrl { get; init; }
@@ -22,7 +22,7 @@ public sealed class CreateMainCarouselForm
 
 public sealed class UpdateMainCarouselForm
 {
-    [Required, StringLength(150)] public string Title { get; init; } = string.Empty;
+    [StringLength(150)] public string Title { get; init; } = string.Empty;
     [StringLength(250)] public string? Subtitle { get; init; }
     [StringLength(80)] public string ButtonText { get; init; } = "Shop now";
     [StringLength(2048)] public string? LinkUrl { get; init; }
