@@ -103,12 +103,23 @@ public sealed class MainCarouselService(IMainCarouselRepository repository, IIma
 
     private static MainCarouselResponse Map(MainCarousel carousel)
     {
+        var hasImage = carousel.ImageData is { Length: > 0 };
+        var imageUrl = hasImage ? $"/api/main-carousels/{carousel.Id}/image" : null;
+
         return new MainCarouselResponse(
             carousel.Id,
             carousel.Title,
             carousel.Subtitle,
             carousel.ButtonText,
             carousel.LinkUrl,
-            $"/api/main-carousels/{carousel.Id}/image");
+            carousel.SortOrder,
+            carousel.IsActive,
+            hasImage,
+            imageUrl,
+            imageUrl ?? string.Empty,
+            hasImage ? carousel.ImageWidth : null,
+            hasImage ? carousel.ImageHeight : null,
+            carousel.CreatedAt,
+            carousel.UpdatedAt);
     }
 }

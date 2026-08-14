@@ -12,9 +12,9 @@ public sealed class MainCarousel
     }
 
     public string Id { get; private set; } = null!;
-    public string Title { get; private set; } = null!;
+    public string? Title { get; private set; } = null!;
     public string? Subtitle { get; private set; }
-    public string ButtonText { get; private set; } = null!;
+    public string? ButtonText { get; private set; } = null!;
     public string? LinkUrl { get; private set; }
     public byte[] ImageData { get; private set; } = null!;
     public string ImageContentType { get; private set; } = null!;
@@ -32,11 +32,11 @@ public sealed class MainCarousel
         return new MainCarousel(title, subtitle, buttonText, linkUrl, sortOrder, isActive);
     }
 
-    public void SetDetails(string title, string? subtitle, string buttonText, string? linkUrl, int sortOrder, bool isActive)
+    public void SetDetails(string? title, string? subtitle, string? buttonText, string? linkUrl, int sortOrder, bool isActive)
     {
-        Title = CatalogRules.Required(title, 150, nameof(title));
+        Title = CatalogRules.Optional(title, 150, nameof(title));
         Subtitle = CatalogRules.Optional(subtitle, 250, nameof(subtitle));
-        ButtonText = CatalogRules.Required(buttonText, 80, nameof(buttonText));
+        ButtonText = CatalogRules.Optional(buttonText, 80, nameof(buttonText));
         LinkUrl = CatalogRules.Optional(linkUrl, 2048, nameof(linkUrl));
         if (sortOrder < 0) throw new ArgumentOutOfRangeException(nameof(sortOrder), "Sort order cannot be negative.");
         SortOrder = sortOrder;

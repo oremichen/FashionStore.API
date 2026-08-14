@@ -3,10 +3,10 @@ using Microsoft.AspNetCore.Http;
 
 namespace FashionStore.Application.Dtos.Request;
 
-public sealed record CreateMainCarouselRequest(string Title, string? Subtitle, string ButtonText, string? LinkUrl,
+public sealed record CreateMainCarouselRequest(string? Title, string? Subtitle, string? ButtonText, string? LinkUrl,
     int SortOrder, bool IsActive, byte[] ImageData, string ImageContentType, string ImageFileName);
 
-public sealed record UpdateMainCarouselRequest(string Title, string? Subtitle, string ButtonText, string? LinkUrl,
+public sealed record UpdateMainCarouselRequest(string? Title, string? Subtitle, string? ButtonText, string? LinkUrl,
     int SortOrder, bool IsActive, byte[]? ImageData, string? ImageContentType, string? ImageFileName);
 
 public sealed class CreateMainCarouselForm
