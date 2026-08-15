@@ -6,4 +6,5 @@ public interface ICategoryService
     Task<ResponseResult<CategoryDetailsResponse>> GetByIdAsync(string id, CancellationToken cancellationToken);
     Task<ResponseResult<IReadOnlyList<CategoryResponse>>> GetCategoriesWithParentAsync(CancellationToken cancellationToken);
     Task<ResponseResult<CategoryDetailsResponse>> CreateAsync(CreateCategoryRequest request, CancellationToken cancellationToken);
+    Task<ResponseResult<CategoryDetailsResponse>> UpdateAsync(string id, UpdateCategoryRequest request, CancellationToken cancellationToken);
 }

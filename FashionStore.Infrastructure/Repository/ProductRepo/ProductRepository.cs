@@ -170,6 +170,11 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
         return dbContext.ProductImages.SingleOrDefaultAsync(x => x.ProductId == productId && x.Id == imageId, ct);
     }
 
+    public Task<int> GetImageCountAsync(string productId, CancellationToken ct)
+    {
+        return dbContext.ProductImages.CountAsync(x => x.ProductId == productId, ct);
+    }
+
     public async Task DeleteImageAsync(ProductImage image, CancellationToken ct)
     {
         dbContext.ProductImages.Remove(image);

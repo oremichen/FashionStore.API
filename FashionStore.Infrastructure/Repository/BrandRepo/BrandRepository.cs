@@ -37,4 +37,18 @@ public sealed class BrandRepository(FashionStoreDbContext dbContext, ILogger<Bra
         await dbContext.SaveChangesAsync(cancellationToken);
         logger.LogInformation("Persisted brand {BrandId}.", brand.Id);
     }
+
+    public Task<bool> HasProductsAsync(string id, CancellationToken cancellationToken)
+    {
+        logger.LogDebug("Checking whether brand {BrandId} is mapped to products.", id);
+        return dbContext.Products.AnyAsync(product => product.BrandId == id, cancellationToken);
+    }
+
+    public async Task DeleteAsync(Brand brand, CancellationToken cancellationToken)
+    {
+        logger.LogInformation("Deleting brand {BrandId}.", brand.Id);
+        dbContext.Brands.Remove(brand);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Deleted brand {BrandId}.", brand.Id);
+    }
 }

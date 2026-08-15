@@ -202,6 +202,15 @@ public sealed class ProductService(IProductRepository repository, IImageProcesso
             logger.LogWarning("Image {ImageId} was not found for product {ProductId}.", imageId, productId);
             return new ResponseResult().Fail("Product image was not found.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
         }
+
+        if (await repository.GetImageCountAsync(productId, ct) <= 1)
+        {
+            logger.LogWarning("Image {ImageId} cannot be deleted because it is the only image for product {ProductId}.", imageId, productId);
+            return new ResponseResult().Fail(
+                "A product must have at least one image. Delete the product instead if you want to remove its only image.",
+                ResponseCodes.INVALID_ACTION);
+        }
+
         await repository.DeleteImageAsync(image, ct);
         logger.LogInformation("Deleted image {ImageId} from product {ProductId}.", imageId, productId);
         return new ResponseResult().Success("Product image deleted successfully.");

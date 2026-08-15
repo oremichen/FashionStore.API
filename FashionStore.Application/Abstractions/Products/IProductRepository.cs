@@ -15,5 +15,6 @@ public interface IProductRepository
     Task SaveChangesAsync(CancellationToken cancellationToken);
     Task DeleteAsync(Product product, CancellationToken cancellationToken);
     Task<ProductImage?> GetImageAsync(string productId, string imageId, CancellationToken cancellationToken);
+    Task<int> GetImageCountAsync(string productId, CancellationToken cancellationToken);
     Task DeleteImageAsync(ProductImage image, CancellationToken cancellationToken);
 }

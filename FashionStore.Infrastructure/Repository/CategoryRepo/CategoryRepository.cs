@@ -26,16 +26,16 @@ public sealed class CategoryRepository(FashionStoreDbContext dbContext, ILogger<
         return dbContext.Categories.SingleOrDefaultAsync(category => category.Id == id && category.DeletedAt == null, cancellationToken);
     }
 
-    public Task<bool> SlugExistsAsync(string slug, CancellationToken cancellationToken)
+    public Task<bool> SlugExistsAsync(string slug, CancellationToken cancellationToken, string? excludedId = null)
     {
         logger.LogDebug("Checking category slug {Slug}.", slug);
-        return dbContext.Categories.AnyAsync(category => category.DeletedAt == null && category.Slug.ToLower() == slug.ToLower(), cancellationToken);
+        return dbContext.Categories.AnyAsync(category => category.DeletedAt == null && category.Id != excludedId && category.Slug.ToLower() == slug.ToLower(), cancellationToken);
     }
 
-    public Task<bool> NameExistsUnderParentAsync(string name, string? parentId, CancellationToken cancellationToken)
+    public Task<bool> NameExistsUnderParentAsync(string name, string? parentId, CancellationToken cancellationToken, string? excludedId = null)
     {
         logger.LogDebug("Checking category name under parent {ParentId}.", parentId);
-        return dbContext.Categories.AnyAsync(category => category.DeletedAt == null
+        return dbContext.Categories.AnyAsync(category => category.DeletedAt == null && category.Id != excludedId
             && category.ParentId == parentId && category.Name.ToLower() == name.ToLower(), cancellationToken);
     }
 
@@ -45,6 +45,12 @@ public sealed class CategoryRepository(FashionStoreDbContext dbContext, ILogger<
         dbContext.Categories.Add(category);
         await dbContext.SaveChangesAsync(cancellationToken);
         logger.LogInformation("Persisted category {CategoryId}.", category.Id);
+    }
+
+    public Task SaveChangesAsync(CancellationToken cancellationToken)
+    {
+        logger.LogDebug("Saving category changes.");
+        return dbContext.SaveChangesAsync(cancellationToken);
     }
 
     private static IQueryable<CategoryResponse> Project(IQueryable<Category> categories)

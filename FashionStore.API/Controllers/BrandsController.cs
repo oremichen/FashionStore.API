@@ -58,4 +58,17 @@ public sealed class BrandsController(IBrandService brandService) : BaseApiContro
         };
         return ProcessResponse(await brandService.CreateAsync(request, cancellationToken));
     }
+
+    [Authorize(Roles = "SuperAdmin,BusinessAdmin")]
+    [HttpDelete("{id}")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> Delete(string id, CancellationToken cancellationToken)
+    {
+        return ProcessResponse(await brandService.DeleteAsync(id, cancellationToken));
+    }
 }
