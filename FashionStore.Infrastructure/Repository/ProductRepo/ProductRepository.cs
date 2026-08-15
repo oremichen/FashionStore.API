@@ -6,6 +6,84 @@ namespace FashionStore.Infrastructure.Repository.ProductRepo;
 
 public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProductRepository
 {
+    private IQueryable<Product> StorefrontProducts() => dbContext.Products.AsNoTracking()
+        .Include(x => x.Category).Include(x => x.Brand).Include(x => x.Images)
+        .Where(x => !x.IsArchived && x.IsActive && x.PublishedAt != null);
+
+    public async Task<(IReadOnlyList<Product> Items, int TotalCount)> GetStorefrontAsync(
+        StorefrontProductQuery request, string? collection, string? excludingProductId, CancellationToken ct)
+    {
+        var query = StorefrontProducts();
+        if (!string.IsNullOrWhiteSpace(excludingProductId)) query = query.Where(x => x.Id != excludingProductId);
+        if (!string.IsNullOrWhiteSpace(request.Search))
+        {
+            var term = request.Search.Trim().ToLower();
+            query = query.Where(x => x.Name.ToLower().Contains(term) || x.Slug.ToLower().Contains(term) ||
+                (x.ShortDescription != null && x.ShortDescription.ToLower().Contains(term)));
+        }
+        if (!string.IsNullOrWhiteSpace(request.CategorySlug) && collection != "related")
+        {
+            var slug = request.CategorySlug.Trim().ToLower();
+            if (request.IncludeDescendants)
+            {
+                var categoryId = await dbContext.Categories.AsNoTracking()
+                    .Where(x => x.DeletedAt == null && x.Slug.ToLower() == slug).Select(x => x.Id).SingleOrDefaultAsync(ct);
+                if (categoryId is null) query = query.Where(_ => false);
+                else
+                {
+                    var categoryIds = new List<string> { categoryId };
+                    var level = new List<string> { categoryId };
+                    while (level.Count > 0)
+                    {
+                        level = await dbContext.Categories.AsNoTracking()
+                            .Where(x => x.DeletedAt == null && x.ParentId != null && level.Contains(x.ParentId))
+                            .Select(x => x.Id).ToListAsync(ct);
+                        categoryIds.AddRange(level);
+                    }
+                    query = query.Where(x => categoryIds.Contains(x.CategoryId));
+                }
+            }
+            else query = query.Where(x => x.Category.Slug.ToLower() == slug);
+        }
+        if (!string.IsNullOrWhiteSpace(request.BrandId)) query = query.Where(x => x.BrandId == request.BrandId);
+        if (request.MinPrice.HasValue) query = query.Where(x => x.NewPrice >= request.MinPrice.Value);
+        if (request.MaxPrice.HasValue) query = query.Where(x => x.NewPrice <= request.MaxPrice.Value);
+        if (request.InStock.HasValue) query = request.InStock.Value
+            ? query.Where(x => x.AvailabilityCount > 0 || x.Variants.Any(v => v.IsActive && v.AvailabilityCount > 0))
+            : query.Where(x => x.AvailabilityCount == 0 && !x.Variants.Any(v => v.IsActive && v.AvailabilityCount > 0));
+        if (request.MinRating.HasValue) query = query.Where(x => x.RatingsValue >= request.MinRating.Value);
+        var colors = Split(request.Colors);
+        if (colors.Length > 0) query = query.Where(x => x.Variants.Any(v => v.IsActive && v.Color != null && colors.Contains(v.Color.Name.ToLower())));
+        var sizes = Split(request.Sizes);
+        if (sizes.Length > 0) query = query.Where(x => x.Variants.Any(v => v.IsActive && v.Size != null && (sizes.Contains(v.Size.Name.ToLower()) || sizes.Contains(v.Size.DisplayName.ToLower()))));
+        query = collection switch
+        {
+            "featured" => query.Where(x => x.IsFeatured),
+            "new-arrivals" => query.Where(x => x.IsNewArrival),
+            "on-sale" => query.Where(x => x.OldPrice.HasValue && x.OldPrice > x.NewPrice),
+            "related" => query.Where(x => x.CategoryId == request.CategorySlug),
+            _ => query
+        };
+        query = request.Sort.ToLowerInvariant() switch
+        {
+            "popular" => query.OrderByDescending(x => x.RatingsCount).ThenByDescending(x => x.RatingsValue),
+            "rating" => query.OrderByDescending(x => x.RatingsValue).ThenByDescending(x => x.RatingsCount),
+            "price-asc" => query.OrderBy(x => x.NewPrice),
+            "price-desc" => query.OrderByDescending(x => x.NewPrice),
+            _ => query.OrderByDescending(x => x.CreatedAt)
+        };
+        var total = await query.CountAsync(ct);
+        var items = await query.Skip((request.Page - 1) * request.PageSize).Take(request.PageSize).ToListAsync(ct);
+        return (items, total);
+    }
+
+    public Task<Product?> GetBySlugAsync(string slug, CancellationToken ct) => StorefrontProducts()
+        .SingleOrDefaultAsync(x => x.Slug.ToLower() == slug.Trim().ToLower(), ct);
+
+    private static string[] Split(string? values) => string.IsNullOrWhiteSpace(values) ? [] : values
+        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        .Select(x => x.ToLowerInvariant()).Distinct().ToArray();
+
     public async Task<(IReadOnlyList<Product> Items, int TotalCount)> GetAsync(ProductQuery request, CancellationToken cancellationToken)
     {
         var query = dbContext.Products.AsNoTracking().Include(x => x.Category).Include(x => x.Brand).Include(x => x.Images).AsQueryable();

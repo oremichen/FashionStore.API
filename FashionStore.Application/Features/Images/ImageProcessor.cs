@@ -60,7 +60,11 @@ public sealed class ImageProcessor : IImageProcessor
             await image.SaveAsWebpAsync(outputStream, encoder, cancellationToken);
 
             var outputFileName = $"{Path.GetFileNameWithoutExtension(fileName)}.webp";
-            return new ProcessedImage(outputStream.ToArray(), "image/webp", outputFileName, outputWidth, outputHeight);
+            return new ProcessedImage
+            {
+                Data = outputStream.ToArray(), ContentType = "image/webp", FileName = outputFileName,
+                Width = outputWidth, Height = outputHeight
+            };
         }
         catch (UnknownImageFormatException exception)
         {

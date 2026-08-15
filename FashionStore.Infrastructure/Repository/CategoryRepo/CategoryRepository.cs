@@ -52,11 +52,10 @@ public sealed class CategoryRepository(FashionStoreDbContext dbContext, ILogger<
         return categories.AsNoTracking()
             .OrderBy(category => category.SortOrder)
             .ThenBy(category => category.Name)
-            .Select(category => new CategoryResponse(
-                category.Id,
-                category.Name,
-                category.Slug,
-                category.ParentId,
-                category.Children.Any(child => child.DeletedAt == null && child.IsActive)));
+            .Select(category => new CategoryResponse
+            {
+                Id = category.Id, Name = category.Name, Slug = category.Slug, ParentId = category.ParentId,
+                HasSubCategory = category.Children.Any(child => child.DeletedAt == null && child.IsActive)
+            });
     }
 }

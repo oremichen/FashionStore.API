@@ -72,8 +72,11 @@ public sealed class CategoryService(ICategoryRepository repository, ILogger<Cate
 
     private static CategoryDetailsResponse ToDetails(Category category)
     {
-        return new CategoryDetailsResponse(
-            category.Id, category.ParentId, category.Name, category.Slug, category.Description,
-            category.SortOrder, category.IsActive, category.ShowInMenu, category.CreatedAt, category.UpdatedAt);
+        return new CategoryDetailsResponse
+        {
+            Id = category.Id, ParentId = category.ParentId, Name = category.Name, Slug = category.Slug,
+            Description = category.Description, SortOrder = category.SortOrder, IsActive = category.IsActive,
+            ShowInMenu = category.ShowInMenu, CreatedAt = category.CreatedAt, UpdatedAt = category.UpdatedAt
+        };
     }
 }

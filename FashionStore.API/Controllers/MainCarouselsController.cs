@@ -49,8 +49,12 @@ public sealed class MainCarouselsController(IMainCarouselService service) : Base
     public async Task<IActionResult> Create([FromForm] CreateMainCarouselForm form, CancellationToken cancellationToken)
     {
         var data = await ReadAsync(form.Image, cancellationToken);
-        var request = new CreateMainCarouselRequest(form.Title, form.Subtitle, form.ButtonText, form.LinkUrl, form.SortOrder,
-            form.IsActive, data!, form.Image.ContentType, form.Image.FileName);
+        var request = new CreateMainCarouselRequest
+        {
+            Title = form.Title, Subtitle = form.Subtitle, ButtonText = form.ButtonText, LinkUrl = form.LinkUrl,
+            SortOrder = form.SortOrder, IsActive = form.IsActive, ImageData = data!,
+            ImageContentType = form.Image.ContentType, ImageFileName = form.Image.FileName
+        };
         return ProcessResponse(await service.CreateAsync(request, cancellationToken));
     }
 
@@ -66,8 +70,12 @@ public sealed class MainCarouselsController(IMainCarouselService service) : Base
     public async Task<IActionResult> Update(string id, [FromForm] UpdateMainCarouselForm form, CancellationToken cancellationToken)
     {
         var data = await ReadAsync(form.Image, cancellationToken);
-        var request = new UpdateMainCarouselRequest(form.Title, form.Subtitle, form.ButtonText, form.LinkUrl, form.SortOrder,
-            form.IsActive, data, form.Image?.ContentType, form.Image?.FileName);
+        var request = new UpdateMainCarouselRequest
+        {
+            Title = form.Title, Subtitle = form.Subtitle, ButtonText = form.ButtonText, LinkUrl = form.LinkUrl,
+            SortOrder = form.SortOrder, IsActive = form.IsActive, ImageData = data,
+            ImageContentType = form.Image?.ContentType, ImageFileName = form.Image?.FileName
+        };
         return ProcessResponse(await service.UpdateAsync(id, request, cancellationToken));
     }
 

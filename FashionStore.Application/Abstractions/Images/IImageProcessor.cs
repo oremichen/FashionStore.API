@@ -1,6 +1,13 @@
 namespace FashionStore.Application.Abstractions.Images;
 
-public sealed record ProcessedImage(byte[] Data, string ContentType, string FileName, int Width, int Height);
+public sealed class ProcessedImage
+{
+    public required byte[] Data { get; init; }
+    public required string ContentType { get; init; }
+    public required string FileName { get; init; }
+    public int Width { get; init; }
+    public int Height { get; init; }
+}
 
 public interface IImageProcessor
 {

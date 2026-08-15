@@ -49,16 +49,11 @@ public sealed class BrandService(IBrandRepository repository, ILogger<BrandServi
         var hasImage = brand.ImageData is { Length: > 0 };
         var imageUrl = hasImage ? $"/api/brands/{brand.Id}/image" : null;
 
-        return new BrandResponse(
-            brand.Id,
-            brand.Name,
-            brand.Slug,
-            brand.Description,
-            brand.WebsiteUrl,
-            brand.IsActive,
-            hasImage,
-            imageUrl,
-            brand.CreatedAt,
-            brand.UpdatedAt);
+        return new BrandResponse
+        {
+            Id = brand.Id, Name = brand.Name, Slug = brand.Slug, Description = brand.Description,
+            WebsiteUrl = brand.WebsiteUrl, IsActive = brand.IsActive, HasImage = hasImage,
+            ImageUrl = imageUrl, CreatedAt = brand.CreatedAt, UpdatedAt = brand.UpdatedAt
+        };
     }
 }

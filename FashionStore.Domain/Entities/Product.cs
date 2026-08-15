@@ -14,6 +14,7 @@ public sealed class Product
     public string Name { get; private set; } = null!;
     public string Slug { get; private set; } = null!;
     public string? Description { get; private set; }
+    public string? AdditionalInformation { get; private set; }
     public string? ShortDescription { get; private set; }
     public decimal? OldPrice { get; private set; }
     public decimal NewPrice { get; private set; }
@@ -45,7 +46,7 @@ public sealed class Product
     }
 
     public void Update(string categoryId, string? brandId, string name, string slug, string? description,
-        string? shortDescription, decimal? oldPrice, decimal newPrice, string currencyCode, int stock,
+        string? additionalInformation, string? shortDescription, decimal? oldPrice, decimal newPrice, string currencyCode, int stock,
         decimal? weight, string? weightUnit, bool isFeatured, bool isNewArrival)
     {
         CatalogRules.NonNegative(newPrice, nameof(newPrice));
@@ -57,6 +58,7 @@ public sealed class Product
         Name = CatalogRules.Required(name, 250, nameof(name));
         Slug = CatalogRules.Slug(slug, 280);
         Description = CatalogRules.Optional(description, 10000, nameof(description));
+        AdditionalInformation = CatalogRules.Optional(additionalInformation, 10000, nameof(additionalInformation));
         ShortDescription = CatalogRules.Optional(shortDescription, 500, nameof(shortDescription));
         OldPrice = oldPrice;
         NewPrice = newPrice;

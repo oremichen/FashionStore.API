@@ -1,4 +1,13 @@
 namespace FashionStore.Application.Dtos.Request;
 
-public sealed record CreateBrandRequest(string Name, string Slug, string? Description, string? WebsiteUrl,
-    bool IsActive, byte[]? ImageData, string? ImageContentType, string? ImageFileName);
+public sealed class CreateBrandRequest
+{
+    public required string Name { get; init; }
+    public required string Slug { get; init; }
+    public string? Description { get; init; }
+    public string? WebsiteUrl { get; init; }
+    public bool IsActive { get; init; }
+    public byte[]? ImageData { get; init; }
+    public string? ImageContentType { get; init; }
+    public string? ImageFileName { get; init; }
+}

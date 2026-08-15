@@ -11,6 +11,58 @@ public sealed class ProductService(IProductRepository repository, IImageProcesso
     private static readonly string[] Statuses = ["draft", "active", "inactive", "archived"];
     private static readonly string[] StockStatuses = ["in-stock", "low-stock", "out-of-stock"];
     private static readonly string[] Sorts = ["newest", "oldest", "name-asc", "name-desc", "price-asc", "price-desc", "stock-asc", "stock-desc"];
+    private static readonly string[] StorefrontSorts = ["newest", "popular", "rating", "price-asc", "price-desc"];
+
+    public async Task<ResponseResult<PagedResponse<ProductResponse>>> GetStorefrontAsync(StorefrontProductQuery query, CancellationToken ct)
+    {
+        var validation = ValidateStorefrontQuery(query);
+        if (validation is not null) return new ResponseResult<PagedResponse<ProductResponse>>().Fail(validation, ResponseCodes.INVALID_ACTION);
+        return await GetStorefrontPageAsync(query, null, null, ct);
+    }
+
+    public Task<ResponseResult<PagedResponse<ProductResponse>>> GetCollectionAsync(string collection, int page, int pageSize, CancellationToken ct)
+    {
+        var query = new StorefrontProductQuery { Page = page, PageSize = pageSize };
+        if (page < 1 || pageSize is < 1 or > 100)
+            return Task.FromResult(new ResponseResult<PagedResponse<ProductResponse>>().Fail("Page and pageSize are invalid.", ResponseCodes.INVALID_ACTION));
+        return GetStorefrontPageAsync(query, collection, null, ct);
+    }
+
+    public async Task<ResponseResult<ProductResponse>> GetBySlugAsync(string slug, CancellationToken ct)
+    {
+        var product = await repository.GetBySlugAsync(slug, ct);
+        return product is null
+            ? new ResponseResult<ProductResponse>().Fail("Product was not found.", ResponseCodes.UNABLE_TO_LOCATE_RECORD)
+            : new ResponseResult<ProductResponse>().Success(Map(product, 5), "Product retrieved successfully.");
+    }
+
+    public async Task<ResponseResult<PagedResponse<ProductResponse>>> GetRelatedAsync(string productId, int page, int pageSize, CancellationToken ct)
+    {
+        if (page < 1 || pageSize is < 1 or > 100)
+            return new ResponseResult<PagedResponse<ProductResponse>>().Fail("Page and pageSize are invalid.", ResponseCodes.INVALID_ACTION);
+        var product = await repository.GetByIdAsync(productId, false, ct);
+        if (product is null || product.IsArchived || !product.IsActive || product.PublishedAt is null)
+            return new ResponseResult<PagedResponse<ProductResponse>>().Fail("Product was not found.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
+        var query = new StorefrontProductQuery { CategorySlug = product.CategoryId, Page = page, PageSize = pageSize };
+        return await GetStorefrontPageAsync(query, "related", product.Id, ct);
+    }
+
+    private async Task<ResponseResult<PagedResponse<ProductResponse>>> GetStorefrontPageAsync(
+        StorefrontProductQuery query, string? collection, string? excludingProductId, CancellationToken ct)
+    {
+        var (items, total) = await repository.GetStorefrontAsync(query, collection, excludingProductId, ct);
+        var mapped = items.Select(x => Map(x, 5)).ToList();
+        return new ResponseResult<PagedResponse<ProductResponse>>().Success(
+            new PagedResponse<ProductResponse> { Items = mapped, Page = query.Page, PageSize = query.PageSize, TotalCount = total,
+                TotalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)query.PageSize) }, "Products retrieved successfully.");
+    }
+
+    private static string? ValidateStorefrontQuery(StorefrontProductQuery query)
+    {
+        if (!StorefrontSorts.Contains(query.Sort.ToLowerInvariant())) return "The sort value is invalid.";
+        if (query.MinPrice < 0 || query.MaxPrice < 0 || query.MinPrice > query.MaxPrice) return "The price range is invalid.";
+        return null;
+    }
 
     public async Task<ResponseResult<PagedResponse<ProductResponse>>> GetAsync(ProductQuery query, CancellationToken ct)
     {
@@ -30,8 +82,8 @@ public sealed class ProductService(IProductRepository repository, IImageProcesso
         var (items, total) = await repository.GetAsync(query, ct);
         var mapped = items.Select(x => Map(x, query.LowStockThreshold)).ToList();
         logger.LogInformation("Retrieved {ProductCount} products from {TotalCount} matching products.", items.Count, total);
-        return response.Success(new PagedResponse<ProductResponse>(mapped, query.Page, query.PageSize, total,
-            total == 0 ? 0 : (int)Math.Ceiling(total / (double)query.PageSize)), "Products retrieved successfully.");
+        return response.Success(new PagedResponse<ProductResponse> { Items = mapped, Page = query.Page, PageSize = query.PageSize,
+            TotalCount = total, TotalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)query.PageSize) }, "Products retrieved successfully.");
     }
 
     public async Task<ResponseResult<ProductResponse>> GetByIdAsync(string id, CancellationToken ct)
@@ -61,11 +113,11 @@ public sealed class ProductService(IProductRepository repository, IImageProcesso
         {
             var product = Product.Create(request.CategoryId, request.BrandId, request.Name, request.Slug,
                 request.NewPrice, request.CurrencyCode, request.AvailabilityCount);
-            product.Update(request.CategoryId, request.BrandId, request.Name, request.Slug, request.Description,
+            product.Update(request.CategoryId, request.BrandId, request.Name, request.Slug, request.Description, request.AdditionalInformation,
                 request.ShortDescription, request.OldPrice, request.NewPrice, request.CurrencyCode, request.AvailabilityCount,
                 request.Weight, request.WeightUnit, request.IsFeatured, request.IsNewArrival);
             product.SetStatus(request.Status);
-            product.AddImages(await ProcessImagesAsync(request.Images, ct));
+            product.AddImages(await ProcessImagesAsync(request.ImageRequests, ct));
             await repository.AddAsync(product, ct);
             var saved = await repository.GetByIdAsync(product.Id, false, ct) ?? product;
             logger.LogInformation("Created product {ProductId}.", product.Id);
@@ -95,11 +147,11 @@ public sealed class ProductService(IProductRepository repository, IImageProcesso
         }
         try
         {
-            product.Update(request.CategoryId, request.BrandId, request.Name, request.Slug, request.Description,
+            product.Update(request.CategoryId, request.BrandId, request.Name, request.Slug, request.Description, request.AdditionalInformation,
                 request.ShortDescription, request.OldPrice, request.NewPrice, request.CurrencyCode, request.AvailabilityCount,
                 request.Weight, request.WeightUnit, request.IsFeatured, request.IsNewArrival);
             product.SetStatus(request.Status);
-            product.AddImages(await ProcessImagesAsync(request.Images, ct));
+            product.AddImages(await ProcessImagesAsync(request.ImageRequests, ct));
             await repository.SaveChangesAsync(ct);
             var saved = await repository.GetByIdAsync(product.Id, false, ct) ?? product;
             logger.LogInformation("Updated product {ProductId}.", product.Id);
@@ -203,8 +255,12 @@ public sealed class ProductService(IProductRepository repository, IImageProcesso
         var smallUrl = image.SmallImageData is { Length: > 0 } ? $"{baseUrl}/small" : image.SmallUrl;
         var mediumUrl = image.MediumImageData is { Length: > 0 } ? $"{baseUrl}/medium" : image.MediumUrl;
         var largeUrl = image.ImageData is { Length: > 0 } ? $"{baseUrl}/large" : image.BigUrl;
-        return new ProductImageResponse(image.Id, smallUrl, mediumUrl, largeUrl, image.AlternativeText,
-            image.SortOrder, image.IsPrimary, image.CreatedAt);
+        return new ProductImageResponse
+        {
+            Id = image.Id, SmallUrl = smallUrl, MediumUrl = mediumUrl, BigUrl = largeUrl,
+            AlternativeText = image.AlternativeText, SortOrder = image.SortOrder,
+            IsPrimary = image.IsPrimary, CreatedAt = image.CreatedAt
+        };
     }
 
     private async Task<IReadOnlyList<(byte[] SmallData, byte[] MediumData, byte[] LargeData, string FileName)>> ProcessImagesAsync(
@@ -227,10 +283,43 @@ public sealed class ProductService(IProductRepository repository, IImageProcesso
 
     private static ProductResponse Map(Product product, int threshold)
     {
-        return new ProductResponse(product.Id, product.CategoryId, product.Category.Name, product.BrandId,
-            product.Brand?.Name, product.Name, product.Slug, product.Description, product.ShortDescription, product.OldPrice,
-            product.NewPrice, product.Discount, product.CurrencyCode, product.AvailabilityCount, Stock(product, threshold),
-            product.Weight, product.WeightUnit, product.IsFeatured, product.IsNewArrival, Status(product), product.PublishedAt,
-            product.CreatedAt, product.UpdatedAt, product.Images.OrderBy(image => image.SortOrder).Select(MapImage).ToList());
+        return new ProductResponse
+        {
+            Id = product.Id, 
+            CategoryId = product.CategoryId, 
+            CategoryName = product.Category.Name,
+            BrandId = product.BrandId, 
+            BrandName = product.Brand?.Name, 
+            Name = product.Name, 
+            Slug = product.Slug,
+            Description = product.Description, 
+            AdditionalInformation = product.AdditionalInformation,
+            ShortDescription = product.ShortDescription, 
+            OldPrice = product.OldPrice, 
+            NewPrice = product.NewPrice,
+            Discount = product.Discount, 
+            CurrencyCode = product.CurrencyCode, 
+            AvailabilityCount = product.AvailabilityCount,
+            StockStatus = Stock(product, threshold), 
+            Weight = product.Weight, 
+            WeightUnit = product.WeightUnit,
+            IsFeatured = product.IsFeatured, 
+            IsNewArrival = product.IsNewArrival, 
+            Status = Status(product),
+            PublishedAt = product.PublishedAt, 
+            CreatedAt = product.CreatedAt, 
+            UpdatedAt = product.UpdatedAt,
+            Star = Star(product), 
+            Ratings = Ratings(product),
+            Images = product.Images.OrderBy(image => image.SortOrder).Select(MapImage).ToList()
+        };
     }
+
+    private static int Star(Product product) => product.RatingsCount == 0
+        ? 0
+        : Math.Clamp((int)Math.Round(product.RatingsValue, MidpointRounding.AwayFromZero), 1, 5);
+
+    private static string? Ratings(Product product) => product.RatingsCount == 0
+        ? null
+        : product.RatingsCount.ToString(System.Globalization.CultureInfo.InvariantCulture);
 }

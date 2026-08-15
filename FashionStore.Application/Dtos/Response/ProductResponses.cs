@@ -1,12 +1,53 @@
 namespace FashionStore.Application.Dtos.Response;
 
-public sealed record PagedResponse<T>(IReadOnlyList<T> Items, int Page, int PageSize, int TotalCount, int TotalPages);
-public sealed record ProductImageResponse(string Id, string? SmallUrl, string? MediumUrl, string? BigUrl,
-    string? AlternativeText, int SortOrder, bool IsPrimary, DateTimeOffset CreatedAt);
+public sealed class PagedResponse<T>
+{
+    public required IReadOnlyList<T> Items { get; init; }
+    public int Page { get; init; }
+    public int PageSize { get; init; }
+    public int TotalCount { get; init; }
+    public int TotalPages { get; init; }
+}
+
+public sealed class ProductImageResponse
+{
+    public required string Id { get; init; }
+    public string? SmallUrl { get; init; }
+    public string? MediumUrl { get; init; }
+    public string? BigUrl { get; init; }
+    public string? AlternativeText { get; init; }
+    public int SortOrder { get; init; }
+    public bool IsPrimary { get; init; }
+    public DateTimeOffset CreatedAt { get; init; }
+}
 public sealed record ProductImageFileResponse(byte[] Data, string ContentType, string FileName);
-public sealed record ProductResponse(string Id, string CategoryId, string CategoryName, string? BrandId,
-    string? BrandName, string Name, string Slug, string? Description, string? ShortDescription, decimal? OldPrice,
-    decimal NewPrice, decimal? Discount, string CurrencyCode, int AvailabilityCount, string StockStatus,
-    decimal? Weight, string? WeightUnit, bool IsFeatured, bool IsNewArrival, string Status,
-    DateTimeOffset? PublishedAt, DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt,
-    IReadOnlyList<ProductImageResponse> Images);
+public sealed class ProductResponse
+{
+    public required string Id { get; init; }
+    public required string CategoryId { get; init; }
+    public required string CategoryName { get; init; }
+    public string? BrandId { get; init; }
+    public string? BrandName { get; init; }
+    public required string Name { get; init; }
+    public required string Slug { get; init; }
+    public string? Description { get; init; }
+    public string? AdditionalInformation { get; init; }
+    public string? ShortDescription { get; init; }
+    public decimal? OldPrice { get; init; }
+    public decimal NewPrice { get; init; }
+    public decimal? Discount { get; init; }
+    public required string CurrencyCode { get; init; }
+    public int AvailabilityCount { get; init; }
+    public required string StockStatus { get; init; }
+    public decimal? Weight { get; init; }
+    public string? WeightUnit { get; init; }
+    public bool IsFeatured { get; init; }
+    public bool IsNewArrival { get; init; }
+    public required string Status { get; init; }
+    public DateTimeOffset? PublishedAt { get; init; }
+    public DateTimeOffset CreatedAt { get; init; }
+    public DateTimeOffset UpdatedAt { get; init; }
+    public int Star { get; init; }
+    public string? Ratings { get; init; }
+    public required IReadOnlyList<ProductImageResponse> Images { get; init; }
+}

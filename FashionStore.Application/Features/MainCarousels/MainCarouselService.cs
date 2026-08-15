@@ -140,20 +140,13 @@ public sealed class MainCarouselService(
         var hasImage = carousel.ImageData is { Length: > 0 };
         var imageUrl = hasImage ? $"/api/main-carousels/{carousel.Id}/image" : null;
 
-        return new MainCarouselResponse(
-            carousel.Id,
-            carousel.Title,
-            carousel.Subtitle,
-            carousel.ButtonText,
-            carousel.LinkUrl,
-            carousel.SortOrder,
-            carousel.IsActive,
-            hasImage,
-            imageUrl,
-            imageUrl ?? string.Empty,
-            hasImage ? carousel.ImageWidth : null,
-            hasImage ? carousel.ImageHeight : null,
-            carousel.CreatedAt,
-            carousel.UpdatedAt);
+        return new MainCarouselResponse
+        {
+            Id = carousel.Id, Title = carousel.Title, Subtitle = carousel.Subtitle,
+            ButtonText = carousel.ButtonText, LinkUrl = carousel.LinkUrl, SortOrder = carousel.SortOrder,
+            IsActive = carousel.IsActive, HasImage = hasImage, ImageUrl = imageUrl, Image = imageUrl ?? string.Empty,
+            ImageWidth = hasImage ? carousel.ImageWidth : null, ImageHeight = hasImage ? carousel.ImageHeight : null,
+            CreatedAt = carousel.CreatedAt, UpdatedAt = carousel.UpdatedAt
+        };
     }
 }

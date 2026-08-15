@@ -18,30 +18,31 @@ public sealed class ProductQuery
     [Range(1, int.MaxValue)] public int LowStockThreshold { get; init; } = 5;
 }
 
-public sealed record CreateProductRequest(
-    [Required] string CategoryId, string? BrandId, [Required, StringLength(250)] string Name,
-    [Required, StringLength(280)] string Slug, string? Description, [StringLength(500)] string? ShortDescription,
-    decimal? OldPrice, decimal NewPrice, [StringLength(3, MinimumLength = 3)] string CurrencyCode,
-    int AvailabilityCount, decimal? Weight, string? WeightUnit, bool IsFeatured, bool IsNewArrival,
-    string Status, IReadOnlyList<ProductImageRequest> Images);
+public sealed class StorefrontProductQuery
+{
+    public string? Search { get; init; }
+    public string? CategorySlug { get; init; }
+    public bool IncludeDescendants { get; init; }
+    public string? BrandId { get; init; }
+    public decimal? MinPrice { get; init; }
+    public decimal? MaxPrice { get; init; }
+    public string? Colors { get; init; }
+    public string? Sizes { get; init; }
+    public bool? InStock { get; init; }
+    [Range(0, 5)] public decimal? MinRating { get; init; }
+    public string Sort { get; init; } = "newest";
+    [Range(1, int.MaxValue)] public int Page { get; init; } = 1;
+    [Range(1, 100)] public int PageSize { get; init; } = 24;
+}
 
-public sealed record UpdateProductRequest(
-    [Required] string ProductId, [Required] string CategoryId, string? BrandId,
-    [Required, StringLength(250)] string Name, [Required, StringLength(280)] string Slug,
-    string? Description, [StringLength(500)] string? ShortDescription, decimal? OldPrice, decimal NewPrice,
-    [StringLength(3, MinimumLength = 3)] string CurrencyCode, int AvailabilityCount, decimal? Weight,
-    string? WeightUnit, bool IsFeatured, bool IsNewArrival, string Status,
-    IReadOnlyList<ProductImageRequest> Images);
-
-public sealed record ProductImageRequest(byte[] Data, string ContentType, string FileName);
-
-public class ProductForm
+public class ProductRequest
 {
     [Required] public string CategoryId { get; init; } = string.Empty;
     public string? BrandId { get; init; }
     [Required, StringLength(250)] public string Name { get; init; } = string.Empty;
     [Required, StringLength(280)] public string Slug { get; init; } = string.Empty;
     public string? Description { get; init; }
+    public string? AdditionalInformation { get; init; }
     [StringLength(500)] public string? ShortDescription { get; init; }
     public decimal? OldPrice { get; init; }
     public decimal NewPrice { get; init; }
@@ -52,6 +53,22 @@ public class ProductForm
     public bool IsFeatured { get; init; }
     public bool IsNewArrival { get; init; }
     public string Status { get; init; } = "draft";
+}
+
+public class CreateProductRequest : ProductRequest
+{
+    public required IReadOnlyList<ProductImageRequest> ImageRequests { get; init; }
+}
+
+public sealed class UpdateProductRequest : CreateProductRequest
+{
+    [Required] public required string ProductId { get; init; }
+}
+
+public sealed record ProductImageRequest(byte[] Data, string ContentType, string FileName);
+
+public class ProductForm : ProductRequest
+{
     public List<IFormFile> Images { get; init; } = [];
 }
 
