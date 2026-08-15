@@ -50,8 +50,25 @@ public sealed class BrandsController(IBrandService brandService) : BaseApiContro
             await form.Image.CopyToAsync(stream, cancellationToken);
             data = stream.ToArray();
         }
-        var request = new CreateBrandRequest(form.Name, form.Slug, form.Description, form.WebsiteUrl, form.IsActive,
-            data, form.Image?.ContentType, form.Image?.FileName);
+        var request = new CreateBrandRequest
+        {
+            Name = form.Name, Slug = form.Slug, Description = form.Description, WebsiteUrl = form.WebsiteUrl,
+            IsActive = form.IsActive, ImageData = data, ImageContentType = form.Image?.ContentType,
+            ImageFileName = form.Image?.FileName
+        };
         return ProcessResponse(await brandService.CreateAsync(request, cancellationToken));
+    }
+
+    [Authorize(Roles = "SuperAdmin,BusinessAdmin")]
+    [HttpDelete("{id}")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> Delete(string id, CancellationToken cancellationToken)
+    {
+        return ProcessResponse(await brandService.DeleteAsync(id, cancellationToken));
     }
 }

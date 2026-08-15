@@ -5,4 +5,5 @@ public interface IBrandService
     Task<ResponseResult<BrandResponse>> CreateAsync(CreateBrandRequest request, CancellationToken cancellationToken);
     Task<ResponseResult<IReadOnlyList<BrandResponse>>> GetAllAsync(CancellationToken cancellationToken);
     Task<BrandImageResponse?> GetImageAsync(string id, CancellationToken cancellationToken);
+    Task<ResponseResult> DeleteAsync(string id, CancellationToken cancellationToken);
 }

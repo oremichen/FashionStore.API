@@ -62,4 +62,20 @@ public sealed class CategoriesController(
         logger.LogInformation("Creating category with slug {Slug}.", request.Slug);
         return ProcessResponse(await categoryService.CreateAsync(request, cancellationToken));
     }
+
+    [Authorize(Roles = "SuperAdmin,BusinessAdmin")]
+    [HttpPut("{id}")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(ResponseResult<CategoryDetailsResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ResponseResult<CategoryDetailsResponse>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ResponseResult<CategoryDetailsResponse>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ResponseResult<CategoryDetailsResponse>), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> Update(string id, [FromBody] UpdateCategoryRequest request, CancellationToken cancellationToken)
+    {
+        logger.LogInformation("Updating category {CategoryId}.", id);
+        return ProcessResponse(await categoryService.UpdateAsync(id, request, cancellationToken));
+    }
 }

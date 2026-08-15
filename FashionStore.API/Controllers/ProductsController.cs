@@ -9,6 +9,69 @@ namespace FashionStore.API.Controllers;
 [Authorize(Roles = "SuperAdmin,BusinessAdmin")]
 public sealed class ProductsController(IProductService service) : BaseApiController
 {
+    #region User product calls
+
+    [AllowAnonymous]
+    [HttpGet]
+    [ProducesResponseType(typeof(ResponseResult<PagedResponse<ProductResponse>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ResponseResult<PagedResponse<ProductResponse>>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetStorefront([FromQuery] StorefrontProductQuery query, CancellationToken cancellationToken)
+    {
+        return ProcessResponse(await service.GetStorefrontAsync(query, cancellationToken));
+    }
+
+    [AllowAnonymous]
+    [HttpGet("featured")]
+    public async Task<IActionResult> GetFeatured([FromQuery] int page = 1, [FromQuery] int pageSize = 12, CancellationToken cancellationToken = default)
+    {
+        return ProcessResponse(await service.GetCollectionAsync("featured", page, pageSize, cancellationToken));
+    }
+
+    [AllowAnonymous]
+    [HttpGet("new-arrivals")]
+    public async Task<IActionResult> GetNewArrivals([FromQuery] int page = 1, [FromQuery] int pageSize = 12, CancellationToken cancellationToken = default)
+    {
+        return ProcessResponse(await service.GetCollectionAsync("new-arrivals", page, pageSize, cancellationToken));
+    }
+
+    [AllowAnonymous]
+    [HttpGet("on-sale")]
+    public async Task<IActionResult> GetOnSale([FromQuery] int page = 1, [FromQuery] int pageSize = 12, CancellationToken cancellationToken = default)
+    {
+        return ProcessResponse(await service.GetCollectionAsync("on-sale", page, pageSize, cancellationToken));
+    }
+
+    [AllowAnonymous]
+    [HttpGet("{productId}/related")]
+    public async Task<IActionResult> GetRelated(string productId, [FromQuery] int page = 1, [FromQuery] int pageSize = 12, CancellationToken cancellationToken = default)
+    {
+        return ProcessResponse(await service.GetRelatedAsync(productId, page, pageSize, cancellationToken));
+    }
+
+    [AllowAnonymous]
+    [HttpGet("{productSlug}")]
+    [ProducesResponseType(typeof(ResponseResult<ProductResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ResponseResult<ProductResponse>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetBySlug(string productSlug, CancellationToken cancellationToken)
+    {
+        return ProcessResponse(await service.GetBySlugAsync(productSlug, cancellationToken));
+    }
+
+    [AllowAnonymous]
+    [HttpGet("{productId}/images/{imageId}/{size}")]
+    [Produces("image/jpeg", "image/png", "image/webp", "image/gif")]
+    [ProducesResponseType(typeof(byte[]), StatusCodes.Status200OK, "image/jpeg", "image/png", "image/webp", "image/gif")]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetImage(string productId, string imageId, string size, CancellationToken cancellationToken)
+    {
+        var image = await service.GetImageAsync(productId, imageId, size, cancellationToken);
+        return image is null ? NotFound() : File(image.Data, image.ContentType, enableRangeProcessing: true);
+    }
+
+    #endregion
+
+    #region Admin product calls
+
     [HttpGet("~/api/admin/products")]
     [Produces("application/json")]
     [ProducesResponseType(typeof(ResponseResult<PagedResponse<ProductResponse>>), StatusCodes.Status200OK)]
@@ -46,9 +109,15 @@ public sealed class ProductsController(IProductService service) : BaseApiControl
     public async Task<IActionResult> Create([FromForm] CreateProductForm form, CancellationToken cancellationToken)
     {
         var images = await ReadImagesAsync(form.Images, cancellationToken);
-        var request = new CreateProductRequest(form.CategoryId, form.BrandId, form.Name, form.Slug, form.Description,
-            form.ShortDescription, form.OldPrice, form.NewPrice, form.CurrencyCode, form.AvailabilityCount, form.Weight,
-            form.WeightUnit, form.IsFeatured, form.IsNewArrival, form.Status, images);
+        var request = new CreateProductRequest
+        {
+            CategoryId = form.CategoryId, BrandId = form.BrandId, Name = form.Name, Slug = form.Slug,
+            Description = form.Description, AdditionalInformation = form.AdditionalInformation,
+            ShortDescription = form.ShortDescription, OldPrice = form.OldPrice, NewPrice = form.NewPrice,
+            CurrencyCode = form.CurrencyCode, AvailabilityCount = form.AvailabilityCount, Weight = form.Weight,
+            WeightUnit = form.WeightUnit, IsFeatured = form.IsFeatured, IsNewArrival = form.IsNewArrival,
+            Status = form.Status, ImageRequests = images
+        };
         return ProcessResponse(await service.CreateAsync(request, cancellationToken));
     }
 
@@ -66,9 +135,15 @@ public sealed class ProductsController(IProductService service) : BaseApiControl
     public async Task<IActionResult> Update([FromForm] UpdateProductForm form, CancellationToken cancellationToken)
     {
         var images = await ReadImagesAsync(form.Images, cancellationToken);
-        var request = new UpdateProductRequest(form.ProductId, form.CategoryId, form.BrandId, form.Name, form.Slug,
-            form.Description, form.ShortDescription, form.OldPrice, form.NewPrice, form.CurrencyCode,
-            form.AvailabilityCount, form.Weight, form.WeightUnit, form.IsFeatured, form.IsNewArrival, form.Status, images);
+        var request = new UpdateProductRequest
+        {
+            ProductId = form.ProductId, CategoryId = form.CategoryId, BrandId = form.BrandId, Name = form.Name,
+            Slug = form.Slug, Description = form.Description, AdditionalInformation = form.AdditionalInformation,
+            ShortDescription = form.ShortDescription, OldPrice = form.OldPrice, NewPrice = form.NewPrice,
+            CurrencyCode = form.CurrencyCode, AvailabilityCount = form.AvailabilityCount, Weight = form.Weight,
+            WeightUnit = form.WeightUnit, IsFeatured = form.IsFeatured, IsNewArrival = form.IsNewArrival,
+            Status = form.Status, ImageRequests = images
+        };
         return ProcessResponse(await service.UpdateAsync(request, cancellationToken));
     }
 
@@ -96,17 +171,6 @@ public sealed class ProductsController(IProductService service) : BaseApiControl
         return ProcessResponse(await service.GetImagesAsync(productId, cancellationToken));
     }
 
-    [AllowAnonymous]
-    [HttpGet("{productId}/images/{imageId}/{size}")]
-    [Produces("image/jpeg", "image/png", "image/webp", "image/gif")]
-    [ProducesResponseType(typeof(byte[]), StatusCodes.Status200OK, "image/jpeg", "image/png", "image/webp", "image/gif")]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetImage(string productId, string imageId, string size, CancellationToken cancellationToken)
-    {
-        var image = await service.GetImageAsync(productId, imageId, size, cancellationToken);
-        return image is null ? NotFound() : File(image.Data, image.ContentType, enableRangeProcessing: true);
-    }
-
     [HttpDelete("{productId}/images/{imageId}")]
     [Produces("application/json")]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status200OK)]
@@ -118,6 +182,8 @@ public sealed class ProductsController(IProductService service) : BaseApiControl
     {
         return ProcessResponse(await service.DeleteImageAsync(productId, imageId, cancellationToken));
     }
+
+    #endregion
 
     private static async Task<IReadOnlyList<ProductImageRequest>> ReadImagesAsync(
         IEnumerable<IFormFile> files, CancellationToken cancellationToken)
