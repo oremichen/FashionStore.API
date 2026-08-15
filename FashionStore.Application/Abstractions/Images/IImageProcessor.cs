@@ -10,5 +10,6 @@ public interface IImageProcessor
         string fileName,
         int width,
         int height,
+        bool allowUpscale,
         CancellationToken cancellationToken);
 }

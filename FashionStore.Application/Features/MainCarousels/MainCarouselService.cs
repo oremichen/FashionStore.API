@@ -48,6 +48,7 @@ public sealed class MainCarouselService(
                 request.ImageFileName,
                 CarouselImageWidth,
                 CarouselImageHeight,
+                allowUpscale: true,
                 cancellationToken);
 
             var carousel = MainCarousel.Create(request.Title, request.Subtitle, request.ButtonText, request.LinkUrl, request.SortOrder, request.IsActive);
@@ -90,6 +91,7 @@ public sealed class MainCarouselService(
                     request.ImageFileName ?? string.Empty,
                     CarouselImageWidth,
                     CarouselImageHeight,
+                    allowUpscale: true,
                     cancellationToken);
 
                 carousel.SetImage(

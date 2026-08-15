@@ -15,6 +15,7 @@ public sealed class ImageProcessor : IImageProcessor
         string fileName,
         int width,
         int height,
+        bool allowUpscale,
         CancellationToken cancellationToken)
     {
         if (data is null || data.Length == 0)
@@ -31,9 +32,20 @@ public sealed class ImageProcessor : IImageProcessor
             await using var inputStream = new MemoryStream(data, writable: false);
             using var image = await Image.LoadAsync(inputStream, cancellationToken);
 
+            var outputWidth = width;
+            var outputHeight = height;
+            if (!allowUpscale)
+            {
+                var scale = Math.Min(1d, Math.Min(
+                    image.Width / (double)width,
+                    image.Height / (double)height));
+                outputWidth = Math.Max(1, (int)Math.Floor(width * scale));
+                outputHeight = Math.Max(1, (int)Math.Floor(height * scale));
+            }
+
             image.Mutate(context => context.Resize(new ResizeOptions
             {
-                Size = new SixLabors.ImageSharp.Size(width, height),
+                Size = new SixLabors.ImageSharp.Size(outputWidth, outputHeight),
                 Mode = ResizeMode.Crop,
                 Position = AnchorPositionMode.Center,
                 Sampler = KnownResamplers.Lanczos3
@@ -48,7 +60,7 @@ public sealed class ImageProcessor : IImageProcessor
             await image.SaveAsWebpAsync(outputStream, encoder, cancellationToken);
 
             var outputFileName = $"{Path.GetFileNameWithoutExtension(fileName)}.webp";
-            return new ProcessedImage(outputStream.ToArray(), "image/webp", outputFileName, width, height);
+            return new ProcessedImage(outputStream.ToArray(), "image/webp", outputFileName, outputWidth, outputHeight);
         }
         catch (UnknownImageFormatException exception)
         {

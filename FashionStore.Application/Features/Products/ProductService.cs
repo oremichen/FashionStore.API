@@ -218,7 +218,7 @@ public sealed class ProductService(IProductRepository repository, IImageProcesso
             {
                 var size = ProductImageSizes[index];
                 variants[index] = await imageProcessor.CropAndResizeAsync(
-                    image.Data, image.ContentType, image.FileName, size.Width, size.Height, ct);
+                    image.Data, image.ContentType, image.FileName, size.Width, size.Height, allowUpscale: false, ct);
             }
             output.Add((variants[0].Data, variants[1].Data, variants[2].Data, variants[2].FileName));
         }
