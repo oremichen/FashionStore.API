@@ -111,12 +111,23 @@ public sealed class ProductsController(IProductService service) : BaseApiControl
         var images = await ReadImagesAsync(form.Images, cancellationToken);
         var request = new CreateProductRequest
         {
-            CategoryId = form.CategoryId, BrandId = form.BrandId, Name = form.Name, Slug = form.Slug,
-            Description = form.Description, AdditionalInformation = form.AdditionalInformation,
-            ShortDescription = form.ShortDescription, OldPrice = form.OldPrice, NewPrice = form.NewPrice,
-            CurrencyCode = form.CurrencyCode, AvailabilityCount = form.AvailabilityCount, Weight = form.Weight,
-            WeightUnit = form.WeightUnit, IsFeatured = form.IsFeatured, IsNewArrival = form.IsNewArrival,
-            Status = form.Status, ImageRequests = images
+            CategoryId = form.CategoryId, 
+            BrandId = form.BrandId, 
+            Name = form.Name, 
+            Slug = form.Slug,
+            Description = form.Description, 
+            AdditionalInformation = form.AdditionalInformation,
+            ShortDescription = form.ShortDescription, 
+            OldPrice = form.OldPrice, 
+            NewPrice = form.NewPrice,
+            CurrencyCode = form.CurrencyCode, 
+            AvailabilityCount = form.AvailabilityCount, 
+            Weight = form.Weight,
+            WeightUnit = form.WeightUnit, 
+            IsFeatured = form.IsFeatured, 
+            IsNewArrival = form.IsNewArrival,
+            Status = form.Status, 
+            ImageRequests = images
         };
         return ProcessResponse(await service.CreateAsync(request, cancellationToken));
     }
@@ -137,12 +148,24 @@ public sealed class ProductsController(IProductService service) : BaseApiControl
         var images = await ReadImagesAsync(form.Images, cancellationToken);
         var request = new UpdateProductRequest
         {
-            ProductId = form.ProductId, CategoryId = form.CategoryId, BrandId = form.BrandId, Name = form.Name,
-            Slug = form.Slug, Description = form.Description, AdditionalInformation = form.AdditionalInformation,
-            ShortDescription = form.ShortDescription, OldPrice = form.OldPrice, NewPrice = form.NewPrice,
-            CurrencyCode = form.CurrencyCode, AvailabilityCount = form.AvailabilityCount, Weight = form.Weight,
-            WeightUnit = form.WeightUnit, IsFeatured = form.IsFeatured, IsNewArrival = form.IsNewArrival,
-            Status = form.Status, ImageRequests = images
+            ProductId = form.ProductId, 
+            CategoryId = form.CategoryId, 
+            BrandId = form.BrandId, 
+            Name = form.Name,
+            Slug = form.Slug, 
+            Description = form.Description, 
+            AdditionalInformation = form.AdditionalInformation,
+            ShortDescription = form.ShortDescription, 
+            OldPrice = form.OldPrice, 
+            NewPrice = form.NewPrice,
+            CurrencyCode = form.CurrencyCode, 
+            AvailabilityCount = form.AvailabilityCount, 
+            Weight = form.Weight,
+            WeightUnit = form.WeightUnit, 
+            IsFeatured = form.IsFeatured, 
+            IsNewArrival = form.IsNewArrival,
+            Status = form.Status, 
+            ImageRequests = images
         };
         return ProcessResponse(await service.UpdateAsync(request, cancellationToken));
     }
