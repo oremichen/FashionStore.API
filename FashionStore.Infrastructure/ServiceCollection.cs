@@ -13,6 +13,8 @@ namespace FashionStore.Infrastructure
                 Repository.MainCarouselRepo.MainCarouselRepository>();
             services.AddScoped<FashionStore.Application.Abstractions.Products.IProductRepository,
                 Repository.ProductRepo.ProductRepository>();
+            services.AddScoped<FashionStore.Application.Abstractions.PromotionBanners.IPromotionBannerRepository,
+                Repository.PromotionBannerRepo.PromotionBannerRepository>();
             return services;
         }
     }

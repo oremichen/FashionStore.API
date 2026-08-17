@@ -78,7 +78,7 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
         var items = await query.Skip((request.Page - 1) * request.PageSize).Take(request.PageSize).ToListAsync(ct);
         return (items, total);
     }
-
+    
     public Task<Product?> GetBySlugAsync(string slug, CancellationToken ct) => StorefrontProducts()
         .SingleOrDefaultAsync(x => x.Slug.ToLower() == slug.Trim().ToLower(), ct);
 

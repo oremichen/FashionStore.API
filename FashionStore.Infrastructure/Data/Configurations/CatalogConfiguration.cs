@@ -31,6 +31,19 @@ public sealed class MainCarouselConfiguration : IEntityTypeConfiguration<MainCar
         });
     }
 }
+public sealed class PromotionBannerConfiguration : IEntityTypeConfiguration<PromotionBanner>
+{
+    public void Configure(EntityTypeBuilder<PromotionBanner> b)
+    {
+        b.ToTable("Promotion_banner"); b.HasKey(x => x.Id); CatalogConfiguration.Id(b);
+        b.Property(x => x.Title).HasMaxLength(150); b.Property(x => x.Subtitle).HasMaxLength(250);
+        b.Property(x => x.DestinationUrl).HasMaxLength(2048); b.Property(x => x.Placement).HasMaxLength(100).HasDefaultValue("homepage-banner-grid").IsRequired();
+        b.Property(x => x.IsActive).HasDefaultValue(false); b.Property(x => x.ImageData).HasColumnType("bytea").IsRequired();
+        b.Property(x => x.ImageContentType).HasMaxLength(100).IsRequired(); b.Property(x => x.ImageFileName).HasMaxLength(255).IsRequired();
+        b.HasIndex(x => x.Slot).IsUnique().HasDatabaseName("Promotion_banner_slot_unique");
+        b.ToTable(t => { t.HasCheckConstraint("CK_Promotion_banner_Slot", "\"Slot\" > 0"); t.HasCheckConstraint("CK_Promotion_banner_ImageData", "octet_length(\"ImageData\") > 0"); t.HasCheckConstraint("CK_Promotion_banner_ImageFileSize", "\"ImageFileSize\" > 0 AND \"ImageFileSize\" <= 5242880"); });
+    }
+}
 public sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
 {
     public void Configure(EntityTypeBuilder<Product> b) { b.ToTable("Products"); b.HasKey(x => x.Id); CatalogConfiguration.Id(b); b.Property(x => x.CategoryId).HasMaxLength(50); b.Property(x => x.BrandId).HasMaxLength(50); b.Property(x => x.Name).HasMaxLength(250).IsRequired(); b.Property(x => x.Slug).HasMaxLength(280).IsRequired(); b.Property(x => x.ShortDescription).HasMaxLength(500); b.Property(x => x.OldPrice).HasPrecision(19,4); b.Property(x => x.NewPrice).HasPrecision(19,4); b.Property(x => x.Discount).HasPrecision(5,2); b.Property(x => x.CurrencyCode).HasMaxLength(3); b.Property(x => x.Weight).HasPrecision(12,3); b.Property(x => x.RatingsValue).HasPrecision(14,4); b.Property(x => x.IsArchived).HasDefaultValue(false); b.HasIndex(x => x.Slug).IsUnique(); b.HasOne(x => x.Category).WithMany().HasForeignKey(x => x.CategoryId).OnDelete(DeleteBehavior.Restrict); b.HasOne(x => x.Brand).WithMany(x => x.Products).HasForeignKey(x => x.BrandId).OnDelete(DeleteBehavior.SetNull); }
