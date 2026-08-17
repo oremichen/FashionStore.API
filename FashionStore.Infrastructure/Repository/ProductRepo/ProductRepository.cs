@@ -45,7 +45,9 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
             }
             else query = query.Where(x => x.Category.Slug.ToLower() == slug);
         }
-        if (!string.IsNullOrWhiteSpace(request.BrandId)) query = query.Where(x => x.BrandId == request.BrandId);
+        var brandIds = Split(request.BrandId);
+        if (brandIds.Length > 0)
+            query = query.Where(x => x.BrandId != null && brandIds.Contains(x.BrandId.ToLower()));
         if (request.MinPrice.HasValue) query = query.Where(x => x.NewPrice >= request.MinPrice.Value);
         if (request.MaxPrice.HasValue) query = query.Where(x => x.NewPrice <= request.MaxPrice.Value);
         if (request.InStock.HasValue) query = request.InStock.Value

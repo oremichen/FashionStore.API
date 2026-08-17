@@ -53,8 +53,13 @@ public sealed class ProductService(IProductRepository repository, IImageProcesso
         var (items, total) = await repository.GetStorefrontAsync(query, collection, excludingProductId, ct);
         var mapped = items.Select(x => Map(x, 5)).ToList();
         return new ResponseResult<PagedResponse<ProductResponse>>().Success(
-            new PagedResponse<ProductResponse> { Items = mapped, Page = query.Page, PageSize = query.PageSize, TotalCount = total,
-                TotalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)query.PageSize) }, "Products retrieved successfully.");
+            new PagedResponse<ProductResponse> 
+            {   Items = mapped, 
+                Page = query.Page, 
+                PageSize = query.PageSize, 
+                TotalCount = total,
+                TotalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)query.PageSize) 
+            }, "Products retrieved successfully.");
     }
 
     private static string? ValidateStorefrontQuery(StorefrontProductQuery query)
