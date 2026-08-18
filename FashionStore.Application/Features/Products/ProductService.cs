@@ -28,12 +28,12 @@ public sealed class ProductService(IProductRepository repository, IImageProcesso
         return GetStorefrontPageAsync(query, collection, null, ct);
     }
 
-    public async Task<ResponseResult<ProductResponse>> GetBySlugAsync(string slug, CancellationToken ct)
+    public async Task<ResponseResult<ProductDetailResponse>> GetBySlugAsync(string slug, CancellationToken ct)
     {
         var product = await repository.GetBySlugAsync(slug, ct);
         return product is null
-            ? new ResponseResult<ProductResponse>().Fail("Product was not found.", ResponseCodes.UNABLE_TO_LOCATE_RECORD)
-            : new ResponseResult<ProductResponse>().Success(Map(product, 5), "Product retrieved successfully.");
+            ? new ResponseResult<ProductDetailResponse>().Fail("Product was not found.", ResponseCodes.UNABLE_TO_LOCATE_RECORD)
+            : new ResponseResult<ProductDetailResponse>().Success(MapDetail(product, 5), "Product retrieved successfully.");
     }
 
     public async Task<ResponseResult<PagedResponse<ProductResponse>>> GetRelatedAsync(string productId, int page, int pageSize, CancellationToken ct)
@@ -91,18 +91,18 @@ public sealed class ProductService(IProductRepository repository, IImageProcesso
             TotalCount = total, TotalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)query.PageSize) }, "Products retrieved successfully.");
     }
 
-    public async Task<ResponseResult<ProductResponse>> GetByIdAsync(string id, CancellationToken ct)
+    public async Task<ResponseResult<ProductDetailResponse>> GetByIdAsync(string id, CancellationToken ct)
     {
         logger.LogInformation("Retrieving product {ProductId}.", id);
         var product = await repository.GetByIdAsync(id, false, ct);
         if (product is null)
         {
             logger.LogWarning("Product {ProductId} was not found.", id);
-            return new ResponseResult<ProductResponse>().Fail("Product was not found.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
+            return new ResponseResult<ProductDetailResponse>().Fail("Product was not found.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
         }
 
         logger.LogInformation("Retrieved product {ProductId}.", id);
-        return new ResponseResult<ProductResponse>().Success(Map(product, 5), "Product retrieved successfully.");
+        return new ResponseResult<ProductDetailResponse>().Success(MapDetail(product, 5), "Product retrieved successfully.");
     }
 
     public async Task<ResponseResult<ProductResponse>> CreateAsync(CreateProductRequest request, CancellationToken ct)
@@ -114,6 +114,13 @@ public sealed class ProductService(IProductRepository repository, IImageProcesso
             logger.LogError("Product creation validation failed for slug {ProductSlug}: {ValidationMessage}.", request.Slug, validation.Value.Message);
             return new ResponseResult<ProductResponse>().Fail(validation.Value.Message, validation.Value.Code);
         }
+        var sizeIds = SplitIds(request.Sizes);
+        var colorIds = SplitIds(request.Colors);
+        var optionValidation = await ValidateOptionsAsync(sizeIds, colorIds, ct);
+        if (optionValidation is not null)
+        {
+            return new ResponseResult<ProductResponse>().Fail(optionValidation, ResponseCodes.INVALID_REFERENCE_PROVIDED);
+        }
         try
         {
             var product = Product.Create(request.CategoryId, request.BrandId, request.Name, request.Slug,
@@ -124,6 +131,7 @@ public sealed class ProductService(IProductRepository repository, IImageProcesso
             product.SetStatus(request.Status);
             product.AddImages(await ProcessImagesAsync(request.ImageRequests, ct));
             await repository.AddAsync(product, ct);
+            await repository.SetSizesAndColorsAsync(product.Id, sizeIds, colorIds, ct);
             var saved = await repository.GetByIdAsync(product.Id, false, ct) ?? product;
             logger.LogInformation("Created product {ProductId}.", product.Id);
             return new ResponseResult<ProductResponse>().Success(Map(saved, 5), "Product created successfully.").SetStatusCode(ResponseCodes.CREATED);
@@ -150,6 +158,13 @@ public sealed class ProductService(IProductRepository repository, IImageProcesso
             logger.LogError("Product {ProductId} update validation failed: {ValidationMessage}.", request.ProductId, validation.Value.Message);
             return new ResponseResult<ProductResponse>().Fail(validation.Value.Message, validation.Value.Code);
         }
+        var sizeIds = SplitIds(request.Sizes);
+        var colorIds = SplitIds(request.Colors);
+        var optionValidation = await ValidateOptionsAsync(sizeIds, colorIds, ct);
+        if (optionValidation is not null)
+        {
+            return new ResponseResult<ProductResponse>().Fail(optionValidation, ResponseCodes.INVALID_REFERENCE_PROVIDED);
+        }
         try
         {
             product.Update(request.CategoryId, request.BrandId, request.Name, request.Slug, request.Description, request.AdditionalInformation,
@@ -158,6 +173,7 @@ public sealed class ProductService(IProductRepository repository, IImageProcesso
             product.SetStatus(request.Status);
             product.AddImages(await ProcessImagesAsync(request.ImageRequests, ct));
             await repository.SaveChangesAsync(ct);
+            await repository.SetSizesAndColorsAsync(product.Id, sizeIds, colorIds, ct);
             var saved = await repository.GetByIdAsync(product.Id, false, ct) ?? product;
             logger.LogInformation("Updated product {ProductId}.", product.Id);
             return new ResponseResult<ProductResponse>().Success(Map(saved, 5), "Product updated successfully.");
@@ -248,6 +264,34 @@ public sealed class ProductService(IProductRepository repository, IImageProcesso
         return null;
     }
 
+    private async Task<string?> ValidateOptionsAsync(
+        IReadOnlyCollection<string> sizeIds,
+        IReadOnlyCollection<string> colorIds,
+        CancellationToken ct)
+    {
+        if (!await repository.SizeIdsExistAsync(sizeIds, ct))
+        {
+            return "One or more selected sizes do not exist.";
+        }
+        if (!await repository.ColorIdsExistAsync(colorIds, ct))
+        {
+            return "One or more selected colors do not exist.";
+        }
+        return null;
+    }
+
+    private static IReadOnlyCollection<string> SplitIds(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return [];
+        }
+        return value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+
     private static bool ValidOptional(string? value, string[] allowed)
     {
         return string.IsNullOrWhiteSpace(value) || allowed.Contains(value.ToLowerInvariant());
@@ -326,6 +370,33 @@ public sealed class ProductService(IProductRepository repository, IImageProcesso
             Star = Star(product), 
             Ratings = Ratings(product),
             Images = product.Images.OrderBy(image => image.SortOrder).Select(MapImage).ToList()
+        };
+    }
+
+    private static ProductDetailResponse MapDetail(Product product, int threshold)
+    {
+        var response = Map(product, threshold);
+        return new ProductDetailResponse
+        {
+            Id = response.Id, CategoryId = response.CategoryId, CategoryName = response.CategoryName,
+            BrandId = response.BrandId, BrandName = response.BrandName, Name = response.Name, Slug = response.Slug,
+            Description = response.Description, AdditionalInformation = response.AdditionalInformation,
+            ShortDescription = response.ShortDescription, OldPrice = response.OldPrice, NewPrice = response.NewPrice,
+            Discount = response.Discount, CurrencyCode = response.CurrencyCode, AvailabilityCount = response.AvailabilityCount,
+            StockStatus = response.StockStatus, Weight = response.Weight, WeightUnit = response.WeightUnit,
+            IsFeatured = response.IsFeatured, IsNewArrival = response.IsNewArrival, Status = response.Status,
+            PublishedAt = response.PublishedAt, CreatedAt = response.CreatedAt, UpdatedAt = response.UpdatedAt,
+            Star = response.Star, Ratings = response.Ratings, Images = response.Images,
+            Sizes = product.ProductSizes.OrderBy(item => item.Size.SortOrder).Select(item => new SizeResponse
+            {
+                Id = item.Size.Id, Name = item.Size.Name, DisplayName = item.Size.DisplayName,
+                SortOrder = item.Size.SortOrder, IsActive = item.Size.IsActive
+            }).ToList(),
+            Colors = product.ProductColors.OrderBy(item => item.Color.SortOrder).Select(item => new ColorResponse
+            {
+                Id = item.Color.Id, Name = item.Color.Name, HexCode = item.Color.HexCode,
+                SortOrder = item.Color.SortOrder, IsActive = item.Color.IsActive
+            }).ToList()
         };
     }
 

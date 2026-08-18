@@ -11,6 +11,9 @@ public interface IProductRepository
     Task<bool> CategoryExistsAsync(string id, CancellationToken cancellationToken);
     Task<bool> BrandExistsAsync(string id, CancellationToken cancellationToken);
     Task<bool> SlugExistsAsync(string slug, string? excludingId, CancellationToken cancellationToken);
+    Task<bool> SizeIdsExistAsync(IReadOnlyCollection<string> ids, CancellationToken cancellationToken);
+    Task<bool> ColorIdsExistAsync(IReadOnlyCollection<string> ids, CancellationToken cancellationToken);
+    Task SetSizesAndColorsAsync(string productId, IReadOnlyCollection<string> sizeIds, IReadOnlyCollection<string> colorIds, CancellationToken cancellationToken);
     Task AddAsync(Product product, CancellationToken cancellationToken);
     Task SaveChangesAsync(CancellationToken cancellationToken);
     Task DeleteAsync(Product product, CancellationToken cancellationToken);

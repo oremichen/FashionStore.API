@@ -52,6 +52,8 @@ public class ProductRequest
     public string? WeightUnit { get; init; }
     public bool IsFeatured { get; init; }
     public bool IsNewArrival { get; init; }
+    public string? Sizes { get; init; }
+    public string? Colors { get; init; }
     public string Status { get; init; } = "draft";
 }
 

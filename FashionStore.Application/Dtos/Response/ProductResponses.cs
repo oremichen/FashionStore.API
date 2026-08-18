@@ -21,7 +21,23 @@ public sealed class ProductImageResponse
     public DateTimeOffset CreatedAt { get; init; }
 }
 public sealed record ProductImageFileResponse(byte[] Data, string ContentType, string FileName);
-public sealed class ProductResponse
+public sealed class SizeResponse
+{
+    public required string Id { get; init; }
+    public required string Name { get; init; }
+    public required string DisplayName { get; init; }
+    public int SortOrder { get; init; }
+    public bool IsActive { get; init; }
+}
+public sealed class ColorResponse
+{
+    public required string Id { get; init; }
+    public required string Name { get; init; }
+    public string? HexCode { get; init; }
+    public int SortOrder { get; init; }
+    public bool IsActive { get; init; }
+}
+public class ProductResponse
 {
     public required string Id { get; init; }
     public required string CategoryId { get; init; }
@@ -50,4 +66,10 @@ public sealed class ProductResponse
     public int Star { get; init; }
     public string? Ratings { get; init; }
     public required IReadOnlyList<ProductImageResponse> Images { get; init; }
+}
+
+public sealed class ProductDetailResponse : ProductResponse
+{
+    public required IReadOnlyList<SizeResponse> Sizes { get; init; }
+    public required IReadOnlyList<ColorResponse> Colors { get; init; }
 }

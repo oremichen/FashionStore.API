@@ -15,6 +15,8 @@ namespace FashionStore.Infrastructure
                 Repository.ProductRepo.ProductRepository>();
             services.AddScoped<FashionStore.Application.Abstractions.PromotionBanners.IPromotionBannerRepository,
                 Repository.PromotionBannerRepo.PromotionBannerRepository>();
+            services.AddScoped<FashionStore.Application.Abstractions.CatalogOptions.ICatalogOptionRepository,
+                Repository.CatalogOptionRepo.CatalogOptionRepository>();
             return services;
         }
     }

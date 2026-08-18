@@ -57,3 +57,23 @@ public sealed class ProductAttributeConfiguration : IEntityTypeConfiguration<Pro
 public sealed class ProductTagConfiguration : IEntityTypeConfiguration<ProductTag> { public void Configure(EntityTypeBuilder<ProductTag> b) { b.ToTable("ProductTags"); b.HasKey(x=>x.Id); CatalogConfiguration.Id(b); b.Property(x=>x.Name).HasMaxLength(100); b.Property(x=>x.Slug).HasMaxLength(120); b.HasIndex(x=>x.Name).IsUnique(); b.HasIndex(x=>x.Slug).IsUnique(); } }
 public sealed class ProductTagMappingConfiguration : IEntityTypeConfiguration<ProductTagMapping> { public void Configure(EntityTypeBuilder<ProductTagMapping> b) { b.ToTable("ProductTagMappings"); b.HasKey(x=>x.Id); CatalogConfiguration.Id(b); b.HasIndex(x=>new{x.ProductId,x.ProductTagId}).IsUnique(); b.HasOne(x=>x.Product).WithMany().HasForeignKey(x=>x.ProductId).OnDelete(DeleteBehavior.Cascade); b.HasOne(x=>x.ProductTag).WithMany().HasForeignKey(x=>x.ProductTagId).OnDelete(DeleteBehavior.Cascade); } }
 public sealed class ProductVariantImageConfiguration : IEntityTypeConfiguration<ProductVariantImage> { public void Configure(EntityTypeBuilder<ProductVariantImage> b) { b.ToTable("ProductVariantImages"); b.HasKey(x=>x.Id); CatalogConfiguration.Id(b); b.HasIndex(x=>new{x.ProductVariantId,x.ProductImageId}).IsUnique(); b.HasOne(x=>x.ProductVariant).WithMany().HasForeignKey(x=>x.ProductVariantId).OnDelete(DeleteBehavior.Cascade); b.HasOne(x=>x.ProductImage).WithMany().HasForeignKey(x=>x.ProductImageId).OnDelete(DeleteBehavior.Cascade); } }
+public sealed class ProductSizeConfiguration : IEntityTypeConfiguration<ProductSize>
+{
+    public void Configure(EntityTypeBuilder<ProductSize> b)
+    {
+        b.ToTable("ProductSize"); b.HasKey(x => new { x.ProductId, x.SizeId });
+        b.Property(x => x.ProductId).HasMaxLength(50); b.Property(x => x.SizeId).HasMaxLength(50);
+        b.HasOne(x => x.Product).WithMany(x => x.ProductSizes).HasForeignKey(x => x.ProductId).OnDelete(DeleteBehavior.Cascade);
+        b.HasOne(x => x.Size).WithMany().HasForeignKey(x => x.SizeId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+public sealed class ProductColorConfiguration : IEntityTypeConfiguration<ProductColor>
+{
+    public void Configure(EntityTypeBuilder<ProductColor> b)
+    {
+        b.ToTable("ProductColor"); b.HasKey(x => new { x.ProductId, x.ColorId });
+        b.Property(x => x.ProductId).HasMaxLength(50); b.Property(x => x.ColorId).HasMaxLength(50);
+        b.HasOne(x => x.Product).WithMany(x => x.ProductColors).HasForeignKey(x => x.ProductId).OnDelete(DeleteBehavior.Cascade);
+        b.HasOne(x => x.Color).WithMany().HasForeignKey(x => x.ColorId).OnDelete(DeleteBehavior.Cascade);
+    }
+}

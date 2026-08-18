@@ -25,6 +25,8 @@ namespace FashionStore.Infrastructure.Data
         public DbSet<ProductTag> ProductTags { get; set; }
         public DbSet<ProductTagMapping> ProductTagMappings { get; set; }
         public DbSet<ProductVariantImage> ProductVariantImages { get; set; }
+        public DbSet<ProductSize> ProductSizes { get; set; }
+        public DbSet<ProductColor> ProductColors { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

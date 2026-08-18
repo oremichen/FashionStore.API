@@ -10,7 +10,8 @@ public sealed class BrandRepository(FashionStoreDbContext dbContext, ILogger<Bra
         logger.LogDebug("Querying all brands.");
         return await dbContext.Brands
             .AsNoTracking()
-            .OrderBy(brand => brand.Name)
+            .OrderByDescending(brand => brand.CreatedAt)
+            .ThenBy(brand => brand.Name)
             .ToListAsync(cancellationToken);
     }
 

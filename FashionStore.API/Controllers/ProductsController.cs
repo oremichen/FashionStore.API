@@ -50,7 +50,7 @@ public sealed class ProductsController(IProductService service) : BaseApiControl
 
     [AllowAnonymous]
     [HttpGet("{productSlug}")]
-    [ProducesResponseType(typeof(ResponseResult<ProductResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ResponseResult<ProductDetailResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ResponseResult<ProductResponse>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetBySlug(string productSlug, CancellationToken cancellationToken)
     {
@@ -126,6 +126,8 @@ public sealed class ProductsController(IProductService service) : BaseApiControl
             WeightUnit = form.WeightUnit, 
             IsFeatured = form.IsFeatured, 
             IsNewArrival = form.IsNewArrival,
+            Sizes = form.Sizes,
+            Colors = form.Colors,
             Status = form.Status, 
             ImageRequests = images
         };
@@ -164,6 +166,8 @@ public sealed class ProductsController(IProductService service) : BaseApiControl
             WeightUnit = form.WeightUnit, 
             IsFeatured = form.IsFeatured, 
             IsNewArrival = form.IsNewArrival,
+            Sizes = form.Sizes,
+            Colors = form.Colors,
             Status = form.Status, 
             ImageRequests = images
         };

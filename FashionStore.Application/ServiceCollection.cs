@@ -16,6 +16,8 @@ using FashionStore.Application.Abstractions.Products;
 using FashionStore.Application.Features.Products;
 using FashionStore.Application.Abstractions.PromotionBanners;
 using FashionStore.Application.Features.PromotionBanners;
+using FashionStore.Application.Abstractions.CatalogOptions;
+using FashionStore.Application.Features.CatalogOptions;
 
 namespace FashionStore.Application
 {
@@ -33,6 +35,7 @@ namespace FashionStore.Application
             services.AddScoped<IImageProcessor, ImageProcessor>();
             services.AddScoped<IProductService, ProductService>();
             services.AddScoped<IPromotionBannerService, PromotionBannerService>();
+            services.AddScoped<ICatalogOptionService, CatalogOptionService>();
             services.AddScoped<IEmailNotificationService, EmailNotificationService>();
             services.AddScoped<IEmailTemplateRenderer, EmailTemplateRenderer>();
 
