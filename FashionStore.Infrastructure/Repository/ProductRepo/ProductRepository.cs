@@ -80,6 +80,8 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
     }
     
     public Task<Product?> GetBySlugAsync(string slug, CancellationToken ct) => StorefrontProducts()
+        .Include(x => x.ProductSizes).ThenInclude(x => x.Size)
+        .Include(x => x.ProductColors).ThenInclude(x => x.Color)
         .SingleOrDefaultAsync(x => x.Slug.ToLower() == slug.Trim().ToLower(), ct);
 
     private static string[] Split(string? values) => string.IsNullOrWhiteSpace(values) ? [] : values
@@ -131,7 +133,9 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
 
     public Task<Product?> GetByIdAsync(string id, bool trackChanges, CancellationToken cancellationToken)
     {
-        var query = dbContext.Products.Include(x => x.Category).Include(x => x.Brand).Include(x => x.Images).AsQueryable();
+        var query = dbContext.Products.Include(x => x.Category).Include(x => x.Brand).Include(x => x.Images)
+            .Include(x => x.ProductSizes).ThenInclude(x => x.Size)
+            .Include(x => x.ProductColors).ThenInclude(x => x.Color).AsQueryable();
         if (!trackChanges) query = query.AsNoTracking();
         return query.SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
@@ -148,6 +152,35 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
     public Task<bool> SlugExistsAsync(string slug, string? excludingId, CancellationToken ct)
     {
         return dbContext.Products.AnyAsync(x => x.Slug.ToLower() == slug.ToLower() && x.Id != excludingId, ct);
+    }
+
+    public async Task<bool> SizeIdsExistAsync(IReadOnlyCollection<string> ids, CancellationToken ct)
+    {
+        if (ids.Count == 0) return true;
+        var count = await dbContext.Sizes.CountAsync(item => ids.Contains(item.Id), ct);
+        return count == ids.Count;
+    }
+
+    public async Task<bool> ColorIdsExistAsync(IReadOnlyCollection<string> ids, CancellationToken ct)
+    {
+        if (ids.Count == 0) return true;
+        var count = await dbContext.Colors.CountAsync(item => ids.Contains(item.Id), ct);
+        return count == ids.Count;
+    }
+
+    public async Task SetSizesAndColorsAsync(
+        string productId,
+        IReadOnlyCollection<string> sizeIds,
+        IReadOnlyCollection<string> colorIds,
+        CancellationToken ct)
+    {
+        var currentSizes = await dbContext.ProductSizes.Where(item => item.ProductId == productId).ToListAsync(ct);
+        var currentColors = await dbContext.ProductColors.Where(item => item.ProductId == productId).ToListAsync(ct);
+        dbContext.ProductSizes.RemoveRange(currentSizes);
+        dbContext.ProductColors.RemoveRange(currentColors);
+        dbContext.ProductSizes.AddRange(sizeIds.Select(sizeId => ProductSize.Create(productId, sizeId)));
+        dbContext.ProductColors.AddRange(colorIds.Select(colorId => ProductColor.Create(productId, colorId)));
+        await dbContext.SaveChangesAsync(ct);
     }
 
     public async Task AddAsync(Product product, CancellationToken ct)

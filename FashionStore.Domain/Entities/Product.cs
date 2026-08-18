@@ -5,6 +5,8 @@ public sealed class Product
     private readonly List<ProductImage> _images = [];
     private readonly List<ProductVariant> _variants = [];
     private readonly List<ProductReview> _reviews = [];
+    private readonly List<ProductSize> _productSizes = [];
+    private readonly List<ProductColor> _productColors = [];
     private Product() { }
     public string Id { get; private set; } = null!;
     public string CategoryId { get; private set; } = null!;
@@ -35,6 +37,8 @@ public sealed class Product
     public IReadOnlyCollection<ProductImage> Images { get { return _images; } }
     public IReadOnlyCollection<ProductVariant> Variants { get { return _variants; } }
     public IReadOnlyCollection<ProductReview> Reviews { get { return _reviews; } }
+    public IReadOnlyCollection<ProductSize> ProductSizes { get { return _productSizes; } }
+    public IReadOnlyCollection<ProductColor> ProductColors { get { return _productColors; } }
 
     public static Product Create(string categoryId, string? brandId, string name, string slug, decimal newPrice, string currencyCode, int stock)
     {

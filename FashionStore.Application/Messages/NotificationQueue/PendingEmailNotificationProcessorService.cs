@@ -33,12 +33,39 @@ namespace FashionStore.Application.Messages.NotificationQueue
             using var timer = new PeriodicTimer(pollingInterval);
             do
             {
-                await ProcessPendingNotificationsAsync(
-                    maxRetryCount,
-                    processingRecoveryDelay,
-                    stoppingToken);
+                try
+                {
+                    await ProcessPendingNotificationsAsync(
+                        maxRetryCount,
+                        processingRecoveryDelay,
+                        stoppingToken);
+                }
+                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                {
+                    break;
+                }
+                catch (Exception exception)
+                {
+                    _logger.LogError(
+                        exception,
+                        "Pending notification recovery failed. The background service will continue on the next polling cycle.");
+                }
             }
-            while (await timer.WaitForNextTickAsync(stoppingToken));
+            while (await WaitForNextPollingCycleAsync(timer, stoppingToken));
+        }
+
+        private static async Task<bool> WaitForNextPollingCycleAsync(
+            PeriodicTimer timer,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                return await timer.WaitForNextTickAsync(cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                return false;
+            }
         }
 
         private async Task ProcessPendingNotificationsAsync(

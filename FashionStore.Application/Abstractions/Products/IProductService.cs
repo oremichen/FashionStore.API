@@ -8,9 +8,9 @@ public interface IProductService
     Task<ResponseResult<PagedResponse<ProductResponse>>> GetAsync(ProductQuery query, CancellationToken cancellationToken);
     Task<ResponseResult<PagedResponse<ProductResponse>>> GetStorefrontAsync(StorefrontProductQuery query, CancellationToken cancellationToken);
     Task<ResponseResult<PagedResponse<ProductResponse>>> GetCollectionAsync(string collection, int page, int pageSize, CancellationToken cancellationToken);
-    Task<ResponseResult<ProductResponse>> GetBySlugAsync(string slug, CancellationToken cancellationToken);
+    Task<ResponseResult<ProductDetailResponse>> GetBySlugAsync(string slug, CancellationToken cancellationToken);
     Task<ResponseResult<PagedResponse<ProductResponse>>> GetRelatedAsync(string productId, int page, int pageSize, CancellationToken cancellationToken);
-    Task<ResponseResult<ProductResponse>> GetByIdAsync(string id, CancellationToken cancellationToken);
+    Task<ResponseResult<ProductDetailResponse>> GetByIdAsync(string id, CancellationToken cancellationToken);
     Task<ResponseResult<ProductResponse>> CreateAsync(CreateProductRequest request, CancellationToken cancellationToken);
     Task<ResponseResult<ProductResponse>> UpdateAsync(UpdateProductRequest request, CancellationToken cancellationToken);
     Task<ResponseResult> DeleteAsync(string id, CancellationToken cancellationToken);
