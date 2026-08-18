@@ -7,12 +7,20 @@ public sealed class CatalogOptionRepository(FashionStoreDbContext dbContext) : I
 {
     public async Task<IReadOnlyList<Size>> GetSizesAsync(CancellationToken cancellationToken)
     {
-        return await dbContext.Sizes.AsNoTracking().OrderBy(item => item.SortOrder).ThenBy(item => item.Name).ToListAsync(cancellationToken);
+        return await dbContext.Sizes
+            .AsNoTracking()
+            .OrderByDescending(item => item.CreatedAt)
+            .ThenBy(item => item.Name)
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<IReadOnlyList<Color>> GetColorsAsync(CancellationToken cancellationToken)
     {
-        return await dbContext.Colors.AsNoTracking().OrderBy(item => item.SortOrder).ThenBy(item => item.Name).ToListAsync(cancellationToken);
+        return await dbContext.Colors
+            .AsNoTracking()
+            .OrderByDescending(item => item.CreatedAt)
+            .ThenBy(item => item.Name)
+            .ToListAsync(cancellationToken);
     }
 
     public Task<bool> SizeNameExistsAsync(string name, CancellationToken cancellationToken)
