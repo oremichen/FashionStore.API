@@ -13,7 +13,8 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
     public async Task<(IReadOnlyList<Product> Items, int TotalCount)> GetStorefrontAsync(
         StorefrontProductQuery request, string? collection, string? excludingProductId, CancellationToken ct)
     {
-        var query = StorefrontProducts();
+        var query = dbContext.Products.AsNoTracking()
+            .Where(x => !x.IsArchived && x.IsActive && x.PublishedAt != null);
         if (!string.IsNullOrWhiteSpace(excludingProductId)) query = query.Where(x => x.Id != excludingProductId);
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
@@ -66,16 +67,26 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
             "related" => query.Where(x => x.CategoryId == request.CategorySlug),
             _ => query
         };
-        query = request.Sort.ToLowerInvariant() switch
-        {
-            "popular" => query.OrderByDescending(x => x.RatingsCount).ThenByDescending(x => x.RatingsValue),
-            "rating" => query.OrderByDescending(x => x.RatingsValue).ThenByDescending(x => x.RatingsCount),
-            "price-asc" => query.OrderBy(x => x.NewPrice),
-            "price-desc" => query.OrderByDescending(x => x.NewPrice),
-            _ => query.OrderByDescending(x => x.CreatedAt)
-        };
+        // Count the complete filtered result before ordering, eager loading, or paging.
+        // Keeping this query separate prevents the page size (and collection includes)
+        // from affecting the pagination metadata.
         var total = await query.CountAsync(ct);
-        var items = await query.Skip((request.Page - 1) * request.PageSize).Take(request.PageSize).ToListAsync(ct);
+
+        var orderedQuery = request.Sort.ToLowerInvariant() switch
+        {
+            "popular" => query.OrderByDescending(x => x.RatingsCount).ThenByDescending(x => x.RatingsValue).ThenBy(x => x.Id),
+            "rating" => query.OrderByDescending(x => x.RatingsValue).ThenByDescending(x => x.RatingsCount).ThenBy(x => x.Id),
+            "price-asc" => query.OrderBy(x => x.NewPrice).ThenBy(x => x.Id),
+            "price-desc" => query.OrderByDescending(x => x.NewPrice).ThenBy(x => x.Id),
+            _ => query.OrderByDescending(x => x.CreatedAt).ThenBy(x => x.Id)
+        };
+        var items = await orderedQuery
+            .Include(x => x.Category)
+            .Include(x => x.Brand)
+            .Include(x => x.Images)
+            .Skip((request.Page - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .ToListAsync(ct);
         return (items, total);
     }
     

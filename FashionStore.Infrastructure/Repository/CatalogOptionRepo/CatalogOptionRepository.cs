@@ -10,7 +10,6 @@ public sealed class CatalogOptionRepository(FashionStoreDbContext dbContext) : I
         return await dbContext.Sizes
             .AsNoTracking()
             .OrderByDescending(item => item.CreatedAt)
-            .ThenBy(item => item.Name)
             .ToListAsync(cancellationToken);
     }
 
@@ -19,7 +18,6 @@ public sealed class CatalogOptionRepository(FashionStoreDbContext dbContext) : I
         return await dbContext.Colors
             .AsNoTracking()
             .OrderByDescending(item => item.CreatedAt)
-            .ThenBy(item => item.Name)
             .ToListAsync(cancellationToken);
     }
 
