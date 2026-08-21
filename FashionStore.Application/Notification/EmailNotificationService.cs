@@ -1,181 +1,98 @@
-using MailKit.Net.Smtp;
-using MailKit.Security;
-using MimeKit;
-
 namespace FashionStore.Application.Notification
 {
     public class EmailNotificationService : IEmailNotificationService
     {
-        private readonly IConfiguration _configuration;
+        private readonly IReadOnlyList<IEmailProvider> _providers;
         private readonly ILogger<EmailNotificationService> _logger;
         private readonly INotificationRepository _notificationRepository;
         private readonly IEmailNotificationQueueService _emailNotificationQueueService;
 
         public EmailNotificationService(
+            IEnumerable<IEmailProvider> providers,
             IConfiguration configuration,
             ILogger<EmailNotificationService> logger,
             INotificationRepository notificationRepository,
             IEmailNotificationQueueService emailNotificationQueueService)
         {
-            _configuration = configuration;
+            _providers = OrderProviders(providers, configuration);
             _logger = logger;
             _notificationRepository = notificationRepository;
             _emailNotificationQueueService = emailNotificationQueueService;
         }
 
-        public async Task QueueEmailAsync(
-            EmailNotification notification,
-            CancellationToken cancellationToken = default)
+        public async Task QueueEmailAsync(EmailNotification notification, CancellationToken cancellationToken = default)
         {
-            var queuedNotification = await _notificationRepository.CreateProcessingAsync(
-                notification,
-                cancellationToken);
-
+            var queuedNotification = await _notificationRepository.CreateProcessingAsync(notification, cancellationToken);
             _emailNotificationQueueService.Enqueue(queuedNotification.Id, notification);
         }
 
         public async Task<ResponseResult> SendEmailAsync(EmailNotification notification)
         {
             var response = new ResponseResult();
-
             if (notification.To == null || notification.To.Count == 0)
             {
                 _logger.LogError("Email request rejected because no recipient was provided.");
                 return response.Fail("At least one recipient is required.", ResponseCodes.INVALID_ACTION);
             }
 
-            _logger.LogInformation(
-                "Email send requested. Subject: {Subject}. First recipient: {Recipient}. Recipient count: {RecipientCount}.",
-                notification.Subject,
-                notification.To[0],
-                notification.To.Count);
-
-            try
+            if (_providers.Count == 0)
             {
-                using var smtpClient = new SmtpClient();
-                var host = _configuration["MailSettings:SmtpHost"]
-                    ?? throw new InvalidOperationException("MailSettings:SmtpHost is not configured.");
-                var port = _configuration.GetValue<int?>("MailSettings:Port")
-                    ?? throw new InvalidOperationException("MailSettings:Port is not configured.");
-                var username = _configuration["MailSettings:Username"];
-                var password = _configuration["MailSettings:Password"];
-                var enableSsl = _configuration.GetValue("MailSettings:EnableSsl", true);
+                _logger.LogError("Email request rejected because no email providers are registered.");
+                return response.Fail("No email provider is configured.", ResponseCodes.SERVICE_UNAVAILABLE);
+            }
 
-                var message = BuildMimeMessage(notification);
-
+            var providerErrors = new List<string>();
+            foreach (var provider in _providers)
+            {
                 _logger.LogInformation(
-                    "Sending email through host {Host} on port {Port} for recipient {Recipient}.",
-                    host,
-                    port,
-                    notification.To[0]);
+                    "Attempting email delivery through {Provider}. Subject: {Subject}. First recipient: {Recipient}.",
+                    provider.Name, notification.Subject, notification.To[0]);
 
-                await smtpClient.ConnectAsync(
-                    host,
-                    port,
-                    SecureSocketOptions.StartTls);
-
-                if (!string.IsNullOrWhiteSpace(username) && !string.IsNullOrWhiteSpace(password))
+                try
                 {
-                    await smtpClient.AuthenticateAsync(username, password);
-                }
-
-                await smtpClient.SendAsync(message);
-                await smtpClient.DisconnectAsync(true);
-
-                _logger.LogInformation(
-                    "Email sent successfully. Subject: {Subject}. First recipient: {Recipient}.",
-                    notification.Subject,
-                    notification.To[0]);
-
-                return response.Success("Email sent successfully.");
-            }
-            catch (SmtpCommandException exception)
-            {
-                _logger.LogError(
-                    exception,
-                    "Failed to send email. Subject: {Subject}. First recipient: {Recipient}. SMTP status code: {StatusCode}.",
-                    notification.Subject,
-                    notification.To[0],
-                    exception.StatusCode);
-
-                return response.Fail("Error sending email.", ResponseCodes.SERVICE_UNAVAILABLE);
-            }
-            catch (SmtpProtocolException exception)
-            {
-                _logger.LogError(
-                    exception,
-                    "SMTP protocol error occurred while sending email. Subject: {Subject}. First recipient: {Recipient}.",
-                    notification.Subject,
-                    notification.To[0]);
-
-                return response.Fail("Error sending email.", ResponseCodes.SERVICE_UNAVAILABLE);
-            }
-            catch (Exception exception)
-            {
-                _logger.LogError(
-                    exception,
-                    "Unexpected error occurred while sending email. Subject: {Subject}. First recipient: {Recipient}.",
-                    notification.Subject,
-                    notification.To[0]);
-
-                return response.Fail("An unexpected error occurred while sending email.", ResponseCodes.SYSTEM_MALFUNCTION);
-            }
-        }
-
-        private MimeMessage BuildMimeMessage(EmailNotification notification)
-        {
-            var fromAddress = notification.From;
-            if (string.IsNullOrWhiteSpace(fromAddress))
-            {
-                fromAddress = _configuration["MailSettings:DefaultFromAddress"]
-                    ?? throw new InvalidOperationException("MailSettings:DefaultFromAddress is not configured.");
-            }
-
-            var message = new MimeMessage();
-            message.From.Add(MailboxAddress.Parse(fromAddress));
-            AddAddresses(message.To, notification.To);
-            AddAddresses(message.Cc, notification.Cc);
-            AddAddresses(message.Bcc, notification.Bcc);
-            message.Subject = notification.Subject;
-
-            var bodyBuilder = new BodyBuilder
-            {
-                HtmlBody = notification.Body
-            };
-
-            if (notification.Attchements != null)
-            {
-                foreach (var attachment in notification.Attchements)
-                {
-                    if (attachment.Attachmentfile == null || attachment.Attachmentfile.Length == 0)
+                    var result = await provider.SendAsync(notification);
+                    if (result.IsSuccessful)
                     {
-                        continue;
+                        _logger.LogInformation(
+                            "Email sent successfully through {Provider}. Subject: {Subject}. First recipient: {Recipient}.",
+                            provider.Name, notification.Subject, notification.To[0]);
+                        return response.Success($"Email sent successfully through {provider.Name}.");
                     }
 
-                    bodyBuilder.Attachments.Add(attachment.FileName, attachment.Attachmentfile);
+                    providerErrors.Add($"{provider.Name}: {result.Error ?? "Unknown provider error."}");
+                    _logger.LogWarning(
+                        "Email delivery through {Provider} failed; trying the next configured provider. Error: {Error}",
+                        provider.Name, result.Error);
                 }
-
-                _logger.LogInformation(
-                    "Email request includes {AttachmentCount} attachment(s). First recipient: {Recipient}.",
-                    notification.Attchements.Count,
-                    notification.To[0]);
+                catch (Exception exception) when (exception is not OperationCanceledException)
+                {
+                    providerErrors.Add($"{provider.Name}: Unexpected provider error.");
+                    _logger.LogError(exception,
+                        "Email delivery through {Provider} threw an exception; trying the next configured provider.",
+                        provider.Name);
+                }
             }
 
-            message.Body = bodyBuilder.ToMessageBody();
-            return message;
+            _logger.LogError(
+                "All configured email providers failed. Subject: {Subject}. First recipient: {Recipient}. Provider errors: {ProviderErrors}",
+                notification.Subject, notification.To[0], string.Join(" | ", providerErrors));
+            return response.Fail("All configured email providers failed.", ResponseCodes.SERVICE_UNAVAILABLE);
         }
 
-        private static void AddAddresses(InternetAddressList targetCollection, List<string>? addresses)
+        private static IReadOnlyList<IEmailProvider> OrderProviders(
+            IEnumerable<IEmailProvider> providers,
+            IConfiguration configuration)
         {
-            if (addresses == null || addresses.Count == 0)
-            {
-                return;
-            }
+            var registered = providers.ToDictionary(provider => provider.Name, StringComparer.OrdinalIgnoreCase);
+            var configuredOrder = configuration.GetSection("EmailProviders:ProviderOrder").Get<string[]>() ?? [];
+            var ordered = configuredOrder
+                .Where(registered.ContainsKey)
+                .Select(name => registered[name])
+                .ToList();
 
-            foreach (var address in addresses.Where(address => !string.IsNullOrWhiteSpace(address)))
-            {
-                targetCollection.Add(MailboxAddress.Parse(address));
-            }
+            ordered.AddRange(registered.Values.Where(provider => ordered.All(
+                item => !string.Equals(item.Name, provider.Name, StringComparison.OrdinalIgnoreCase))));
+            return ordered;
         }
     }
 }

@@ -38,6 +38,7 @@ namespace FashionStore.Application
             services.AddScoped<ICatalogOptionService, CatalogOptionService>();
             services.AddScoped<IEmailNotificationService, EmailNotificationService>();
             services.AddScoped<IEmailTemplateRenderer, EmailTemplateRenderer>();
+            services.AddHttpClient<IEmailProvider, MailgunEmailProvider>();
 
             services.AddSingleton<EmailNotificationQueueService>();
             services.AddSingleton<IEmailNotificationQueueService>(sp => sp.GetRequiredService<EmailNotificationQueueService>());
