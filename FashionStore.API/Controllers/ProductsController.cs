@@ -6,7 +6,7 @@ namespace FashionStore.API.Controllers;
 
 [Route("api/products")]
 [ApiController]
-[Authorize(Roles = "SuperAdmin,BusinessAdmin")]
+//[Authorize(Roles = "SuperAdmin,BusinessAdmin")]
 public sealed class ProductsController(IProductService service) : BaseApiController
 {
     #region User product calls
@@ -55,17 +55,6 @@ public sealed class ProductsController(IProductService service) : BaseApiControl
     public async Task<IActionResult> GetBySlug(string productSlug, CancellationToken cancellationToken)
     {
         return ProcessResponse(await service.GetBySlugAsync(productSlug, cancellationToken));
-    }
-
-    [AllowAnonymous]
-    [HttpGet("{productId}/images/{imageId}/{size}")]
-    [Produces("image/jpeg", "image/png", "image/webp", "image/gif")]
-    [ProducesResponseType(typeof(byte[]), StatusCodes.Status200OK, "image/jpeg", "image/png", "image/webp", "image/gif")]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetImage(string productId, string imageId, string size, CancellationToken cancellationToken)
-    {
-        var image = await service.GetImageAsync(productId, imageId, size, cancellationToken);
-        return image is null ? NotFound() : File(image.Data, image.ContentType, enableRangeProcessing: true);
     }
 
     #endregion

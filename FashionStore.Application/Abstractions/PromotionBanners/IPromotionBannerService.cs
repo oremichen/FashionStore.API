@@ -7,5 +7,4 @@ public interface IPromotionBannerService
     Task<ResponseResult<PromotionBannerResponse>> CreateAsync(CreatePromotionBannerRequest request, CancellationToken cancellationToken);
     Task<ResponseResult<PromotionBannerResponse>> UpdateAsync(string id, UpdatePromotionBannerRequest request, CancellationToken cancellationToken);
     Task<ResponseResult> DeleteAsync(string id, CancellationToken cancellationToken);
-    Task<PromotionBannerImageResponse?> GetImageAsync(string id, CancellationToken cancellationToken);
 }

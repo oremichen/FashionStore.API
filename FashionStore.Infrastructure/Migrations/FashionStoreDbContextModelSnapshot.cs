@@ -247,16 +247,9 @@ namespace FashionStore.Infrastructure.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
-                    b.Property<string>("ImageContentType")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<byte[]>("ImageData")
-                        .HasColumnType("bytea");
-
-                    b.Property<string>("ImageFileName")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
@@ -425,27 +418,10 @@ namespace FashionStore.Infrastructure.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("ImageContentType")
+                    b.Property<string>("ImageUrl")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<byte[]>("ImageData")
-                        .IsRequired()
-                        .HasColumnType("bytea");
-
-                    b.Property<string>("ImageFileName")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.Property<long>("ImageFileSize")
-                        .HasColumnType("bigint");
-
-                    b.Property<int>("ImageHeight")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("ImageWidth")
-                        .HasColumnType("integer");
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
 
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
@@ -476,14 +452,6 @@ namespace FashionStore.Infrastructure.Migrations
 
                     b.ToTable("MainCarousels", null, t =>
                         {
-                            t.HasCheckConstraint("CK_MainCarousels_ImageContentType", "\"ImageContentType\" IN ('image/jpeg', 'image/png', 'image/webp')");
-
-                            t.HasCheckConstraint("CK_MainCarousels_ImageData_NotEmpty", "octet_length(\"ImageData\") > 0");
-
-                            t.HasCheckConstraint("CK_MainCarousels_ImageDimensions", "\"ImageWidth\" = 1920 AND \"ImageHeight\" = 750");
-
-                            t.HasCheckConstraint("CK_MainCarousels_ImageFileSize", "\"ImageFileSize\" > 0 AND \"ImageFileSize\" <= 5242880");
-
                             t.HasCheckConstraint("CK_MainCarousels_SortOrder", "\"SortOrder\" >= 0");
                         });
                 });
@@ -495,6 +463,9 @@ namespace FashionStore.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasDefaultValueSql("gen_random_uuid()::text");
+
+                    b.Property<string>("AdditionalInformation")
+                        .HasColumnType("text");
 
                     b.Property<int>("AvailabilityCount")
                         .HasColumnType("integer");
@@ -626,6 +597,23 @@ namespace FashionStore.Infrastructure.Migrations
                     b.ToTable("ProductAttributes", (string)null);
                 });
 
+            modelBuilder.Entity("FashionStore.Domain.Entities.ProductColor", b =>
+                {
+                    b.Property<string>("ProductId")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("ColorId")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("ProductId", "ColorId");
+
+                    b.HasIndex("ColorId");
+
+                    b.ToTable("ProductColor", (string)null);
+                });
+
             modelBuilder.Entity("FashionStore.Domain.Entities.ProductImage", b =>
                 {
                     b.Property<string>("Id")
@@ -639,41 +627,30 @@ namespace FashionStore.Infrastructure.Migrations
                         .HasColumnType("character varying(250)");
 
                     b.Property<string>("BigUrl")
-                        .HasColumnType("text");
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("ImageContentType")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<byte[]>("ImageData")
-                        .HasColumnType("bytea");
-
-                    b.Property<string>("ImageFileName")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
                     b.Property<bool>("IsPrimary")
                         .HasColumnType("boolean");
 
-                    b.Property<byte[]>("MediumImageData")
-                        .HasColumnType("bytea");
-
                     b.Property<string>("MediumUrl")
-                        .HasColumnType("text");
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
 
                     b.Property<string>("ProductId")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
-                    b.Property<byte[]>("SmallImageData")
-                        .HasColumnType("bytea");
-
                     b.Property<string>("SmallUrl")
-                        .HasColumnType("text");
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
 
                     b.Property<int>("SortOrder")
                         .HasColumnType("integer");
@@ -739,6 +716,23 @@ namespace FashionStore.Infrastructure.Migrations
                     b.HasIndex("ProductId");
 
                     b.ToTable("ProductReviews", (string)null);
+                });
+
+            modelBuilder.Entity("FashionStore.Domain.Entities.ProductSize", b =>
+                {
+                    b.Property<string>("ProductId")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("SizeId")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("ProductId", "SizeId");
+
+                    b.HasIndex("SizeId");
+
+                    b.ToTable("ProductSize", (string)null);
                 });
 
             modelBuilder.Entity("FashionStore.Domain.Entities.ProductTag", b =>
@@ -914,6 +908,64 @@ namespace FashionStore.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("ProductVariantImages", (string)null);
+                });
+
+            modelBuilder.Entity("FashionStore.Domain.Entities.PromotionBanner", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValueSql("gen_random_uuid()::text");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DestinationUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Placement")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasDefaultValue("homepage-banner-grid");
+
+                    b.Property<int>("Slot")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Subtitle")
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)");
+
+                    b.Property<string>("Title")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Slot")
+                        .IsUnique()
+                        .HasDatabaseName("Promotion_banner_slot_unique");
+
+                    b.ToTable("Promotion_banner", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Promotion_banner_Slot", "\"Slot\" > 0");
+                        });
                 });
 
             modelBuilder.Entity("FashionStore.Domain.Entities.QueueEmailNotification", b =>
@@ -1157,6 +1209,25 @@ namespace FashionStore.Infrastructure.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("FashionStore.Domain.Entities.ProductColor", b =>
+                {
+                    b.HasOne("FashionStore.Domain.Entities.Color", "Color")
+                        .WithMany()
+                        .HasForeignKey("ColorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FashionStore.Domain.Entities.Product", "Product")
+                        .WithMany("ProductColors")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Color");
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("FashionStore.Domain.Entities.ProductImage", b =>
                 {
                     b.HasOne("FashionStore.Domain.Entities.Product", "Product")
@@ -1177,6 +1248,25 @@ namespace FashionStore.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("FashionStore.Domain.Entities.ProductSize", b =>
+                {
+                    b.HasOne("FashionStore.Domain.Entities.Product", "Product")
+                        .WithMany("ProductSizes")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FashionStore.Domain.Entities.Size", "Size")
+                        .WithMany()
+                        .HasForeignKey("SizeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("Size");
                 });
 
             modelBuilder.Entity("FashionStore.Domain.Entities.ProductTagMapping", b =>
@@ -1311,6 +1401,10 @@ namespace FashionStore.Infrastructure.Migrations
             modelBuilder.Entity("FashionStore.Domain.Entities.Product", b =>
                 {
                     b.Navigation("Images");
+
+                    b.Navigation("ProductColors");
+
+                    b.Navigation("ProductSizes");
 
                     b.Navigation("Reviews");
 

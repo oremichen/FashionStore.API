@@ -15,6 +15,5 @@ public interface IProductService
     Task<ResponseResult<ProductResponse>> UpdateAsync(UpdateProductRequest request, CancellationToken cancellationToken);
     Task<ResponseResult> DeleteAsync(string id, CancellationToken cancellationToken);
     Task<ResponseResult<IReadOnlyList<ProductImageResponse>>> GetImagesAsync(string productId, CancellationToken cancellationToken);
-    Task<ProductImageFileResponse?> GetImageAsync(string productId, string imageId, string size, CancellationToken cancellationToken);
     Task<ResponseResult> DeleteImageAsync(string productId, string imageId, CancellationToken cancellationToken);
 }

@@ -18,4 +18,3 @@ public sealed class MainCarouselResponse
     public DateTimeOffset UpdatedAt { get; init; }
 }
 
-public sealed record MainCarouselImageResponse(byte[] Data, string ContentType, string? FileName);

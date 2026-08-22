@@ -19,17 +19,6 @@ public sealed class BrandsController(IBrandService brandService) : BaseApiContro
         return ProcessResponse(response);
     }
 
-    [AllowAnonymous]
-    [HttpGet("{id}/image")]
-    [Produces("image/jpeg", "image/png", "image/webp", "image/gif")]
-    [ProducesResponseType(typeof(byte[]), StatusCodes.Status200OK, "image/jpeg", "image/png", "image/webp", "image/gif")]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetImage(string id, CancellationToken cancellationToken)
-    {
-        var image = await brandService.GetImageAsync(id, cancellationToken);
-        return image is null ? NotFound() : File(image.Data, image.ContentType, enableRangeProcessing: true);
-    }
-
     [Authorize(Roles = "SuperAdmin,BusinessAdmin")]
     [HttpPost]
     [Consumes("multipart/form-data")]

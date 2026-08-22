@@ -7,5 +7,4 @@ public interface IMainCarouselService
     Task<ResponseResult<MainCarouselResponse>> CreateAsync(CreateMainCarouselRequest request, CancellationToken cancellationToken);
     Task<ResponseResult<MainCarouselResponse>> UpdateAsync(string id, UpdateMainCarouselRequest request, CancellationToken cancellationToken);
     Task<ResponseResult> DeleteAsync(string id, CancellationToken cancellationToken);
-    Task<MainCarouselImageResponse?> GetImageAsync(string id, CancellationToken cancellationToken);
 }

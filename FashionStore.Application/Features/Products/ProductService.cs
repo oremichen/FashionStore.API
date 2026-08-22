@@ -5,7 +5,7 @@ using FashionStore.Application.Dtos.Response;
 
 namespace FashionStore.Application.Features.Products;
 
-public sealed class ProductService(IProductRepository repository, IImageProcessor imageProcessor, ILogger<ProductService> logger) : IProductService
+public sealed class ProductService(IProductRepository repository, IImageProcessor imageProcessor, ICloudinaryImageService cloudinary, ILogger<ProductService> logger) : IProductService
 {
     private static readonly (int Width, int Height)[] ProductImageSizes = [(240, 300), (600, 750), (1200, 1500)];
     private static readonly string[] Statuses = ["draft", "active", "inactive", "archived"];
@@ -195,6 +195,12 @@ public sealed class ProductService(IProductRepository repository, IImageProcesso
             return new ResponseResult().Fail("Product was not found.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
         }
         await repository.DeleteAsync(product, ct);
+        foreach (var image in product.Images)
+        {
+            await cloudinary.DeleteAsync(image.SmallUrl, ct);
+            await cloudinary.DeleteAsync(image.MediumUrl, ct);
+            await cloudinary.DeleteAsync(image.BigUrl, ct);
+        }
         logger.LogInformation("Deleted product {ProductId}.", id);
         return new ResponseResult().Success("Product deleted successfully.");
     }
@@ -233,27 +239,11 @@ public sealed class ProductService(IProductRepository repository, IImageProcesso
         }
 
         await repository.DeleteImageAsync(image, ct);
+        await cloudinary.DeleteAsync(image.SmallUrl, ct);
+        await cloudinary.DeleteAsync(image.MediumUrl, ct);
+        await cloudinary.DeleteAsync(image.BigUrl, ct);
         logger.LogInformation("Deleted image {ImageId} from product {ProductId}.", imageId, productId);
         return new ResponseResult().Success("Product image deleted successfully.");
-    }
-
-    public async Task<ProductImageFileResponse?> GetImageAsync(string productId, string imageId, string size, CancellationToken ct)
-    {
-        logger.LogInformation("Retrieving image {ImageId} for product {ProductId}.", imageId, productId);
-        var image = await repository.GetImageAsync(productId, imageId, ct);
-        var data = size.ToLowerInvariant() switch
-        {
-            "small" => image?.SmallImageData,
-            "medium" => image?.MediumImageData,
-            "large" => image?.ImageData,
-            _ => null
-        };
-        return data is null
-            ? null
-            : new ProductImageFileResponse(
-                data,
-                size.Equals("large", StringComparison.OrdinalIgnoreCase) ? image!.ImageContentType! : "image/webp",
-                image!.ImageFileName!);
     }
 
     private async Task<(string Message, string Code)?> ValidateReferencesAsync(string categoryId, string? brandId, string slug, string? id, CancellationToken ct)
@@ -309,22 +299,18 @@ public sealed class ProductService(IProductRepository repository, IImageProcesso
 
     private static ProductImageResponse MapImage(ProductImage image)
     {
-        var baseUrl = $"/api/products/{image.ProductId}/images/{image.Id}";
-        var smallUrl = image.SmallImageData is { Length: > 0 } ? $"{baseUrl}/small" : image.SmallUrl;
-        var mediumUrl = image.MediumImageData is { Length: > 0 } ? $"{baseUrl}/medium" : image.MediumUrl;
-        var largeUrl = image.ImageData is { Length: > 0 } ? $"{baseUrl}/large" : image.BigUrl;
         return new ProductImageResponse
         {
-            Id = image.Id, SmallUrl = smallUrl, MediumUrl = mediumUrl, BigUrl = largeUrl,
+            Id = image.Id, SmallUrl = image.SmallUrl, MediumUrl = image.MediumUrl, BigUrl = image.BigUrl,
             AlternativeText = image.AlternativeText, SortOrder = image.SortOrder,
             IsPrimary = image.IsPrimary, CreatedAt = image.CreatedAt
         };
     }
 
-    private async Task<IReadOnlyList<(byte[] SmallData, byte[] MediumData, byte[] LargeData, string FileName)>> ProcessImagesAsync(
+    private async Task<IReadOnlyList<(string SmallUrl, string MediumUrl, string BigUrl, string ContentType, string FileName)>> ProcessImagesAsync(
         IReadOnlyList<ProductImageRequest> images, CancellationToken ct)
     {
-        var output = new List<(byte[], byte[], byte[], string)>(images.Count);
+        var output = new List<(string, string, string, string, string)>(images.Count);
         foreach (var image in images)
         {
             var variants = new ProcessedImage[ProductImageSizes.Length];
@@ -334,7 +320,10 @@ public sealed class ProductService(IProductRepository repository, IImageProcesso
                 variants[index] = await imageProcessor.CropAndResizeAsync(
                     image.Data, image.ContentType, image.FileName, size.Width, size.Height, allowUpscale: false, ct);
             }
-            output.Add((variants[0].Data, variants[1].Data, variants[2].Data, variants[2].FileName));
+            var small = await cloudinary.UploadWithMetadataAsync(variants[0].Data, variants[0].FileName, ct);
+            var medium = await cloudinary.UploadWithMetadataAsync(variants[1].Data, variants[1].FileName, ct);
+            var large = await cloudinary.UploadWithMetadataAsync(variants[2].Data, variants[2].FileName, ct);
+            output.Add((small.Url, medium.Url, large.Url, large.ContentType, large.FileName));
         }
         return output;
     }

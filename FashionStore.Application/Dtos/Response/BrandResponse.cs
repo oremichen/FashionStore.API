@@ -14,4 +14,3 @@ public sealed class BrandResponse
     public DateTimeOffset UpdatedAt { get; init; }
 }
 
-public sealed record BrandImageResponse(byte[] Data, string ContentType, string FileName);

@@ -20,7 +20,6 @@ public sealed class ProductImageResponse
     public bool IsPrimary { get; init; }
     public DateTimeOffset CreatedAt { get; init; }
 }
-public sealed record ProductImageFileResponse(byte[] Data, string ContentType, string FileName);
 public sealed class SizeResponse
 {
     public required string Id { get; init; }

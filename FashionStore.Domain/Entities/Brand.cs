@@ -17,6 +17,7 @@ public sealed class Brand
     public byte[]? ImageData { get; private set; }
     public string? ImageContentType { get; private set; }
     public string? ImageFileName { get; private set; }
+    public string? ImageUrl { get; private set; }
     public bool IsActive { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset UpdatedAt { get; private set; }
@@ -39,13 +40,11 @@ public sealed class Brand
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 
-    public void SetImage(byte[] data, string contentType, string fileName)
+    public void SetImageUrl(string imageUrl, string? contentType = null, string? fileName = null)
     {
-        string[] allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-        var image = ImageRules.Validate(data, contentType, fileName, allowed);
-        ImageData = image.Data;
-        ImageContentType = image.ContentType;
-        ImageFileName = image.FileName;
+        ImageUrl = CatalogRules.Required(imageUrl, 2048, nameof(imageUrl));
+        ImageContentType = contentType;
+        ImageFileName = fileName;
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 }

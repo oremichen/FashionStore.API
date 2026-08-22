@@ -2,7 +2,6 @@ namespace FashionStore.Domain.Entities;
 
 public sealed class PromotionBanner
 {
-    private static readonly string[] AllowedImageTypes = ["image/jpeg", "image/png", "image/webp"];
     private PromotionBanner() { }
 
     private PromotionBanner(string? title, string? subtitle, string? destinationUrl, string? placement, int slot, bool isActive)
@@ -18,10 +17,11 @@ public sealed class PromotionBanner
     public string Placement { get; private set; } = "homepage-banner-grid";
     public int Slot { get; private set; }
     public bool IsActive { get; private set; }
-    public byte[] ImageData { get; private set; } = null!;
-    public string ImageContentType { get; private set; } = null!;
-    public string ImageFileName { get; private set; } = null!;
+    public byte[] ImageData { get; private set; } = [];
+    public string ImageContentType { get; private set; } = string.Empty;
+    public string ImageFileName { get; private set; } = string.Empty;
     public long ImageFileSize { get; private set; }
+    public string? ImageUrl { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset UpdatedAt { get; private set; }
 
@@ -42,13 +42,12 @@ public sealed class PromotionBanner
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 
-    public void SetImage(byte[] data, string contentType, string fileName)
+    public void SetImageUrl(string imageUrl, string? contentType = null, string? fileName = null, long fileSize = 0)
     {
-        var image = ImageRules.Validate(data, contentType, fileName, AllowedImageTypes);
-        ImageData = image.Data;
-        ImageContentType = image.ContentType;
-        ImageFileName = image.FileName;
-        ImageFileSize = image.FileSize;
+        ImageUrl = CatalogRules.Required(imageUrl, 2048, nameof(imageUrl));
+        ImageContentType = contentType ?? string.Empty;
+        ImageFileName = fileName ?? string.Empty;
+        ImageFileSize = fileSize;
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 }

@@ -91,13 +91,13 @@ public sealed class Product
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 
-    public void AddImages(IEnumerable<(byte[] SmallData, byte[] MediumData, byte[] LargeData, string FileName)> images)
+    public void AddImages(IEnumerable<(string SmallUrl, string MediumUrl, string BigUrl, string ContentType, string FileName)> images)
     {
         var sortOrder = _images.Count == 0 ? 0 : _images.Max(x => x.SortOrder) + 1;
         var hasPrimary = _images.Any(x => x.IsPrimary);
         foreach (var image in images)
         {
-            _images.Add(ProductImage.Create(image.SmallData, image.MediumData, image.LargeData, image.FileName, Name, sortOrder++, !hasPrimary));
+            _images.Add(ProductImage.Create(image.SmallUrl, image.MediumUrl, image.BigUrl, image.ContentType, image.FileName, Name, sortOrder++, !hasPrimary));
             hasPrimary = true;
         }
         UpdatedAt = DateTimeOffset.UtcNow;

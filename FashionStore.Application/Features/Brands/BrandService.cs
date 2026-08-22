@@ -1,8 +1,9 @@
 using FashionStore.Application.Abstractions.Brands;
+using FashionStore.Application.Abstractions.Images;
 
 namespace FashionStore.Application.Features.Brands;
 
-public sealed class BrandService(IBrandRepository repository, ILogger<BrandService> logger) : IBrandService
+public sealed class BrandService(IBrandRepository repository, ICloudinaryImageService cloudinary, ILogger<BrandService> logger) : IBrandService
 {
     public async Task<ResponseResult<BrandResponse>> CreateAsync(CreateBrandRequest request, CancellationToken cancellationToken)
     {
@@ -16,7 +17,11 @@ public sealed class BrandService(IBrandRepository repository, ILogger<BrandServi
         try
         {
             var brand = Brand.Create(request.Name, request.Slug, request.Description, request.WebsiteUrl, request.IsActive);
-            if (request.ImageData is { Length: > 0 }) brand.SetImage(request.ImageData, request.ImageContentType ?? string.Empty, request.ImageFileName ?? string.Empty);
+            if (request.ImageData is { Length: > 0 })
+            {
+                var upload = await cloudinary.UploadWithMetadataAsync(request.ImageData, request.ImageFileName ?? "brand-image", cancellationToken);
+                brand.SetImageUrl(upload.Url, upload.ContentType, upload.FileName);
+            }
             await repository.AddAsync(brand, cancellationToken);
             logger.LogInformation("Created brand {BrandId}.", brand.Id);
             return response.Success(Map(brand), "Brand created successfully.").SetStatusCode(ResponseCodes.CREATED);
@@ -37,13 +42,6 @@ public sealed class BrandService(IBrandRepository repository, ILogger<BrandServi
             .Success(mappedBrands, "Brands retrieved successfully.");
     }
     
-    public async Task<BrandImageResponse?> GetImageAsync(string id, CancellationToken cancellationToken)
-    {
-        logger.LogInformation("Retrieving image for brand {BrandId}.", id);
-        var brand = await repository.GetByIdAsync(id.Trim(), cancellationToken);
-        return brand?.ImageData is null ? null : new(brand.ImageData, brand.ImageContentType!, brand.ImageFileName!);
-    }
-
     public async Task<ResponseResult> DeleteAsync(string id, CancellationToken cancellationToken)
     {
         logger.LogInformation("Deleting brand {BrandId}.", id);
@@ -63,20 +61,20 @@ public sealed class BrandService(IBrandRepository repository, ILogger<BrandServi
         }
 
         await repository.DeleteAsync(brand, cancellationToken);
+        await cloudinary.DeleteAsync(brand.ImageUrl, cancellationToken);
         logger.LogInformation("Deleted brand {BrandId}.", brandId);
         return response.Success("Brand deleted successfully.");
     }
 
     private static BrandResponse Map(Brand brand)
     {
-        var hasImage = brand.ImageData is { Length: > 0 };
-        var imageUrl = hasImage ? $"/api/brands/{brand.Id}/image" : null;
+        var hasImage = !string.IsNullOrWhiteSpace(brand.ImageUrl);
 
         return new BrandResponse
         {
             Id = brand.Id, Name = brand.Name, Slug = brand.Slug, Description = brand.Description,
             WebsiteUrl = brand.WebsiteUrl, IsActive = brand.IsActive, HasImage = hasImage,
-            ImageUrl = imageUrl, CreatedAt = brand.CreatedAt, UpdatedAt = brand.UpdatedAt
+            ImageUrl = brand.ImageUrl, CreatedAt = brand.CreatedAt, UpdatedAt = brand.UpdatedAt
         };
     }
 }

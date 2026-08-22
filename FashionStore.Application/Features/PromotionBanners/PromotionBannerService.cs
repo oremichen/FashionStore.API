@@ -1,8 +1,9 @@
 using FashionStore.Application.Abstractions.PromotionBanners;
+using FashionStore.Application.Abstractions.Images;
 
 namespace FashionStore.Application.Features.PromotionBanners;
 
-public sealed class PromotionBannerService(IPromotionBannerRepository repository) : IPromotionBannerService
+public sealed class PromotionBannerService(IPromotionBannerRepository repository, ICloudinaryImageService cloudinary) : IPromotionBannerService
 {
     public async Task<ResponseResult<IReadOnlyList<PromotionBannerResponse>>> GetAllAsync(CancellationToken cancellationToken)
     {
@@ -26,7 +27,8 @@ public sealed class PromotionBannerService(IPromotionBannerRepository repository
         try
         {
             var banner = PromotionBanner.Create(request.Title, request.Subtitle, request.DestinationUrl, request.Placement, request.Slot, request.IsActive);
-            banner.SetImage(request.ImageData, request.ImageContentType, request.ImageFileName);
+            var upload = await cloudinary.UploadWithMetadataAsync(request.ImageData, request.ImageFileName, cancellationToken);
+            banner.SetImageUrl(upload.Url, upload.ContentType, upload.FileName, upload.FileSize);
             await repository.AddAsync(banner, cancellationToken);
             return response.Success(Map(banner), "Promotion banner created successfully.").SetStatusCode(ResponseCodes.CREATED);
         }
@@ -45,7 +47,12 @@ public sealed class PromotionBannerService(IPromotionBannerRepository repository
         {
             banner.SetDetails(request.Title, request.Subtitle, request.DestinationUrl, request.Placement, request.Slot, request.IsActive);
             if (request.ImageData is { Length: > 0 })
-                banner.SetImage(request.ImageData, request.ImageContentType ?? string.Empty, request.ImageFileName ?? string.Empty);
+            {
+                var oldUrl = banner.ImageUrl;
+                var upload = await cloudinary.UploadWithMetadataAsync(request.ImageData, request.ImageFileName ?? "promotion-banner", cancellationToken);
+                banner.SetImageUrl(upload.Url, upload.ContentType, upload.FileName, upload.FileSize);
+                await cloudinary.DeleteAsync(oldUrl, cancellationToken);
+            }
             await repository.SaveChangesAsync(cancellationToken);
             return response.Success(Map(banner), "Promotion banner updated successfully.");
         }
@@ -58,14 +65,8 @@ public sealed class PromotionBannerService(IPromotionBannerRepository repository
         var banner = await repository.GetByIdAsync(id.Trim(), true, cancellationToken);
         if (banner is null) return new ResponseResult().Fail("Promotion banner was not found.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
         await repository.DeleteAsync(banner, cancellationToken);
+        await cloudinary.DeleteAsync(banner.ImageUrl, cancellationToken);
         return new ResponseResult().Success("Promotion banner deleted successfully.");
-    }
-
-    public async Task<PromotionBannerImageResponse?> GetImageAsync(string id, CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrWhiteSpace(id)) return null;
-        var banner = await repository.GetByIdAsync(id.Trim(), false, cancellationToken);
-        return banner is null ? null : new(banner.ImageData, banner.ImageContentType);
     }
 
     private static PromotionBannerResponse Map(PromotionBanner banner)
@@ -73,7 +74,7 @@ public sealed class PromotionBannerService(IPromotionBannerRepository repository
         return new PromotionBannerResponse
         {
             Id = banner.Id, Title = banner.Title, Subtitle = banner.Subtitle,
-            Image = $"/api/promotion-banners/{banner.Id}/image", DestinationUrl = banner.DestinationUrl,
+            Image = banner.ImageUrl ?? string.Empty, DestinationUrl = banner.DestinationUrl,
             Placement = banner.Placement, Slot = banner.Slot, IsActive = banner.IsActive
         };
     }

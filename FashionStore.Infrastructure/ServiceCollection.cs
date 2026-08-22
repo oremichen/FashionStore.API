@@ -4,6 +4,12 @@ namespace FashionStore.Infrastructure
     {
         public static IServiceCollection AddInfrastructureServices(this IServiceCollection services)
         {
+            services.AddOptions<Images.CloudinarySettings>()
+                .BindConfiguration(Images.CloudinarySettings.SectionName)
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
+            services.AddScoped<FashionStore.Application.Abstractions.Images.ICloudinaryImageService,
+                Images.CloudinaryImageService>();
             services.AddScoped<INotificationRepository, NotificationRepository>();
             services.AddScoped<FashionStore.Application.Abstractions.Categories.ICategoryRepository,
                 Repository.CategoryRepo.CategoryRepository>();

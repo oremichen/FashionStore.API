@@ -18,20 +18,16 @@ public sealed class ProductImage
     public bool IsPrimary { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; } = DateTimeOffset.UtcNow;
 
-    public static ProductImage Create(byte[] smallData, byte[] mediumData, byte[] largeData, string fileName, string? alternativeText,
+    public static ProductImage Create(string smallUrl, string mediumUrl, string bigUrl, string? contentType, string? fileName, string? alternativeText,
         int sortOrder, bool isPrimary)
     {
-        string[] allowed = ["image/webp"];
-        var small = ImageRules.Validate(smallData, "image/webp", fileName, allowed);
-        var medium = ImageRules.Validate(mediumData, "image/webp", fileName, allowed);
-        var large = ImageRules.Validate(largeData, "image/webp", fileName, allowed);
         return new ProductImage
         {
-            SmallImageData = small.Data,
-            MediumImageData = medium.Data,
-            ImageData = large.Data,
-            ImageContentType = large.ContentType,
-            ImageFileName = large.FileName,
+            SmallUrl = CatalogRules.Required(smallUrl, 2048, nameof(smallUrl)),
+            MediumUrl = CatalogRules.Required(mediumUrl, 2048, nameof(mediumUrl)),
+            BigUrl = CatalogRules.Required(bigUrl, 2048, nameof(bigUrl)),
+            ImageContentType = contentType,
+            ImageFileName = fileName,
             AlternativeText = CatalogRules.Optional(alternativeText, 250, nameof(alternativeText)),
             SortOrder = sortOrder,
             IsPrimary = isPrimary

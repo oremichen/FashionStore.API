@@ -11,5 +11,3 @@ public sealed class PromotionBannerResponse
     public int Slot { get; init; }
     public bool IsActive { get; init; }
 }
-
-public sealed record PromotionBannerImageResponse(byte[] Data, string ContentType);

@@ -6,6 +6,7 @@ namespace FashionStore.Application.Features.MainCarousels;
 public sealed class MainCarouselService(
     IMainCarouselRepository repository,
     IImageProcessor imageProcessor,
+    ICloudinaryImageService cloudinary,
     ILogger<MainCarouselService> logger) : IMainCarouselService
 {
     private const int CarouselImageWidth = 1920;
@@ -52,12 +53,8 @@ public sealed class MainCarouselService(
                 cancellationToken);
 
             var carousel = MainCarousel.Create(request.Title, request.Subtitle, request.ButtonText, request.LinkUrl, request.SortOrder, request.IsActive);
-            carousel.SetImage(
-                processedImage.Data,
-                processedImage.ContentType,
-                processedImage.FileName,
-                processedImage.Width,
-                processedImage.Height);
+            var upload = await cloudinary.UploadWithMetadataAsync(processedImage.Data, processedImage.FileName, cancellationToken);
+            carousel.SetImageUrl(upload.Url, upload.ContentType, upload.FileName, upload.FileSize, upload.Width, upload.Height);
             await repository.AddAsync(carousel, cancellationToken);
             logger.LogInformation("Created main carousel {CarouselId}.", carousel.Id);
             return response.Success(Map(carousel), "Carousel created successfully.").SetStatusCode(ResponseCodes.CREATED);
@@ -94,12 +91,10 @@ public sealed class MainCarouselService(
                     allowUpscale: true,
                     cancellationToken);
 
-                carousel.SetImage(
-                    processedImage.Data,
-                    processedImage.ContentType,
-                    processedImage.FileName,
-                    processedImage.Width,
-                    processedImage.Height);
+                var oldUrl = carousel.ImageUrl;
+                var upload = await cloudinary.UploadWithMetadataAsync(processedImage.Data, processedImage.FileName, cancellationToken);
+                carousel.SetImageUrl(upload.Url, upload.ContentType, upload.FileName, upload.FileSize, upload.Width, upload.Height);
+                await cloudinary.DeleteAsync(oldUrl, cancellationToken);
             }
             await repository.SaveChangesAsync(cancellationToken);
             logger.LogInformation("Updated main carousel {CarouselId}.", carousel.Id);
@@ -123,22 +118,15 @@ public sealed class MainCarouselService(
         var carousel = await repository.GetByIdAsync(id.Trim(), true, cancellationToken);
         if (carousel is null) return new ResponseResult().Fail("Carousel was not found.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
         await repository.DeleteAsync(carousel, cancellationToken);
+        await cloudinary.DeleteAsync(carousel.ImageUrl, cancellationToken);
         logger.LogInformation("Deleted main carousel {CarouselId}.", carousel.Id);
         return new ResponseResult().Success("Carousel deleted successfully.");
     }
 
-    public async Task<MainCarouselImageResponse?> GetImageAsync(string id, CancellationToken cancellationToken)
-    {
-        logger.LogInformation("Retrieving image for main carousel {CarouselId}.", id);
-        if (string.IsNullOrWhiteSpace(id)) return null;
-        var carousel = await repository.GetByIdAsync(id.Trim(), false, cancellationToken);
-        return carousel is null ? null : new(carousel.ImageData, carousel.ImageContentType, carousel.ImageFileName);
-    }
-
     private static MainCarouselResponse Map(MainCarousel carousel)
     {
-        var hasImage = carousel.ImageData is { Length: > 0 };
-        var imageUrl = hasImage ? $"/api/main-carousels/{carousel.Id}/image" : null;
+        var hasImage = !string.IsNullOrWhiteSpace(carousel.ImageUrl);
+        var imageUrl = carousel.ImageUrl;
 
         return new MainCarouselResponse
         {

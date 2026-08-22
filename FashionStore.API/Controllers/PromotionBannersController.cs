@@ -18,14 +18,6 @@ public sealed class PromotionBannersController(IPromotionBannerService service) 
         return ProcessResponse(await service.GetByIdAsync(id, cancellationToken));
     }
 
-    [AllowAnonymous, HttpGet("{id}/image")]
-    [Produces("image/jpeg", "image/png", "image/webp")]
-    public async Task<IActionResult> GetImage(string id, CancellationToken cancellationToken)
-    {
-        var image = await service.GetImageAsync(id, cancellationToken);
-        return image is null ? NotFound() : File(image.Data, image.ContentType, enableRangeProcessing: true);
-    }
-
     [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpPost]
     [Consumes("multipart/form-data"), RequestSizeLimit(5 * 1024 * 1024)]
     public async Task<IActionResult> Create([FromForm] CreatePromotionBannerForm form, CancellationToken cancellationToken)
