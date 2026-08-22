@@ -41,6 +41,22 @@ public sealed class PromotionBannerConfiguration : IEntityTypeConfiguration<Prom
         b.ToTable(t => t.HasCheckConstraint("CK_Promotion_banner_Slot", "\"Slot\" > 0"));
     }
 }
+public sealed class PromotionVideoConfiguration : IEntityTypeConfiguration<PromotionVideo>
+{
+    public void Configure(EntityTypeBuilder<PromotionVideo> b)
+    {
+        b.ToTable("PromotionVideos"); b.HasKey(x => x.Id); CatalogConfiguration.Id(b);
+        b.Property(x => x.Title).HasMaxLength(150).IsRequired();
+        b.Property(x => x.Slug).HasMaxLength(180).IsRequired();
+        b.Property(x => x.VideoUrl).HasMaxLength(2048).IsRequired(false);
+        b.Property(x => x.VideoContentType).HasMaxLength(100).IsRequired();
+        b.Property(x => x.VideoFileName).HasMaxLength(255).IsRequired();
+        b.Property(x => x.IsActive).HasDefaultValue(false);
+        b.Ignore(x => x.HasExpired);
+        b.HasIndex(x => x.Slug).IsUnique().HasDatabaseName("PromotionVideosSlugUnique");
+        b.HasIndex(x => x.IsActive).IsUnique().HasFilter("\"IsActive\" = TRUE").HasDatabaseName("PromotionVideosOneActiveUnique");
+    }
+}
 public sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
 {
     public void Configure(EntityTypeBuilder<Product> b) { b.ToTable("Products"); b.HasKey(x => x.Id); CatalogConfiguration.Id(b); b.Property(x => x.CategoryId).HasMaxLength(50); b.Property(x => x.BrandId).HasMaxLength(50); b.Property(x => x.Name).HasMaxLength(250).IsRequired(); b.Property(x => x.Slug).HasMaxLength(280).IsRequired(); b.Property(x => x.ShortDescription).HasMaxLength(500); b.Property(x => x.OldPrice).HasPrecision(19,4); b.Property(x => x.NewPrice).HasPrecision(19,4); b.Property(x => x.Discount).HasPrecision(5,2); b.Property(x => x.CurrencyCode).HasMaxLength(3); b.Property(x => x.Weight).HasPrecision(12,3); b.Property(x => x.RatingsValue).HasPrecision(14,4); b.Property(x => x.IsArchived).HasDefaultValue(false); b.HasIndex(x => x.Slug).IsUnique(); b.HasOne(x => x.Category).WithMany().HasForeignKey(x => x.CategoryId).OnDelete(DeleteBehavior.Restrict); b.HasOne(x => x.Brand).WithMany(x => x.Products).HasForeignKey(x => x.BrandId).OnDelete(DeleteBehavior.SetNull); }

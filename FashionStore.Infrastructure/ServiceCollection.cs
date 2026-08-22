@@ -10,6 +10,8 @@ namespace FashionStore.Infrastructure
                 .ValidateOnStart();
             services.AddScoped<FashionStore.Application.Abstractions.Images.ICloudinaryImageService,
                 Images.CloudinaryImageService>();
+            services.AddScoped<FashionStore.Application.Abstractions.Videos.ICloudinaryVideoService,
+                Images.CloudinaryVideoService>();
             services.AddScoped<INotificationRepository, NotificationRepository>();
             services.AddScoped<FashionStore.Application.Abstractions.Categories.ICategoryRepository,
                 Repository.CategoryRepo.CategoryRepository>();
@@ -23,6 +25,8 @@ namespace FashionStore.Infrastructure
                 Repository.PromotionBannerRepo.PromotionBannerRepository>();
             services.AddScoped<FashionStore.Application.Abstractions.CatalogOptions.ICatalogOptionRepository,
                 Repository.CatalogOptionRepo.CatalogOptionRepository>();
+            services.AddScoped<FashionStore.Application.Abstractions.PromotionVideos.IPromotionVideoRepository,
+                Repository.PromotionVideoRepo.PromotionVideoRepository>();
             return services;
         }
     }
