@@ -6,7 +6,7 @@ namespace FashionStore.API.Controllers;
 
 [Route("api/products")]
 [ApiController]
-//[Authorize(Roles = "SuperAdmin,BusinessAdmin")]
+[Authorize(Roles = "SuperAdmin,BusinessAdmin")]
 public sealed class ProductsController(IProductService service) : BaseApiController
 {
     #region User product calls
