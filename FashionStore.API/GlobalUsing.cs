@@ -43,6 +43,9 @@ global using FashionStore.Domain.Abstractions.Notification;
 global using Microsoft.AspNetCore.Identity;
 global using Microsoft.Extensions.Logging;
 global using FashionStore.Shared.Constants;
+global using FashionStore.Domain.Abstractions.Users;
+global using FashionStore.Infrastructure.Data;
+global using Microsoft.EntityFrameworkCore;
 
 
 

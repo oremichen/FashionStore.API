@@ -40,6 +40,16 @@ namespace FashionStore.Infrastructure.Data
                 .HasForeignKey(a => a.UserId)
                 .OnDelete(DeleteBehavior.Cascade); // Deletes addresses when user is deleted
 
+            builder.Entity<Address>()
+                .Property(address => address.Id)
+                .HasMaxLength(50)
+                .HasDefaultValueSql("gen_random_uuid()::text");
+
+            builder.Entity<Address>()
+                .HasIndex(a => a.UserId)
+                .IsUnique()
+                .HasFilter("\"IsMain\" = TRUE");
+
             builder.Entity<QueueEmailNotification>(entity =>
             {
                 entity.ToTable("QueueEmailNotification");

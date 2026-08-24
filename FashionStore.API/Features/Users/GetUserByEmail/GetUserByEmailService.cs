@@ -25,7 +25,10 @@ namespace FashionStore.API.Features.Users.GetUserByEmail
         {
             var response = new ResponseResult<UserDetailsResponse>();
             _logger.LogInformation("Get user by email requested for {Email}.", email);
-            var user = await _userManager.FindByEmailAsync(email);
+            var normalizedEmail = _userManager.NormalizeEmail(email.Trim());
+            var user = await _userManager.Users
+                .Include(item => item.Addresses)
+                .SingleOrDefaultAsync(item => item.NormalizedEmail == normalizedEmail);
             if (user == null)
             {
                 _logger.LogError("Get user by email failed for {Email}: user was not found.", email);
@@ -44,7 +47,12 @@ namespace FashionStore.API.Features.Users.GetUserByEmail
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 Email = user.Email ?? string.Empty,
-                Roles = roles.ToList()
+                Roles = roles.ToList(),
+                Addresses = user.Addresses
+                    .OrderByDescending(address => address.IsMain)
+                    .ThenBy(address => address.Id)
+                    .Select(UserAddressResponse.From)
+                    .ToList()
             };
         }
     }
