@@ -34,10 +34,10 @@ public sealed class MainCarousel
 
     public void SetDetails(string? title, string? subtitle, string? buttonText, string? linkUrl, int sortOrder, bool isActive)
     {
-        Title = CatalogRules.Optional(title, 150, nameof(title));
-        Subtitle = CatalogRules.Optional(subtitle, 250, nameof(subtitle));
-        ButtonText = CatalogRules.Optional(buttonText, 80, nameof(buttonText));
-        LinkUrl = CatalogRules.Optional(linkUrl, 2048, nameof(linkUrl));
+        Title = Rules.Optional(title, 150, nameof(title));
+        Subtitle = Rules.Optional(subtitle, 250, nameof(subtitle));
+        ButtonText = Rules.Optional(buttonText, 80, nameof(buttonText));
+        LinkUrl = Rules.Optional(linkUrl, 2048, nameof(linkUrl));
         if (sortOrder < 0) throw new ArgumentOutOfRangeException(nameof(sortOrder), "Sort order cannot be negative.");
         SortOrder = sortOrder;
         IsActive = isActive;
@@ -46,7 +46,7 @@ public sealed class MainCarousel
 
     public void SetImageUrl(string imageUrl, string? contentType, string? fileName, long fileSize, int width, int height)
     {
-        ImageUrl = CatalogRules.Required(imageUrl, 2048, nameof(imageUrl));
+        ImageUrl = Rules.Required(imageUrl, 2048, nameof(imageUrl));
         ImageContentType = contentType ?? string.Empty;
         ImageFileName = fileName;
         ImageFileSize = fileSize;

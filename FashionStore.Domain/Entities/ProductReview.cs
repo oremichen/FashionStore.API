@@ -19,7 +19,7 @@ public sealed class ProductReview
     public static ProductReview Create(string productId, string name, short rating, string? title, string? comment)
     {
         if (rating is < 1 or > 5) throw new ArgumentOutOfRangeException(nameof(rating), "Rating must be between 1 and 5.");
-        return new ProductReview { ProductId = CatalogRules.Required(productId, 50, nameof(productId)), ReviewerName = CatalogRules.Required(name, 150, nameof(name)), Rating = rating, Title = CatalogRules.Optional(title, 200, nameof(title)), Comment = string.IsNullOrWhiteSpace(comment) ? null : comment.Trim() };
+        return new ProductReview { ProductId = Rules.Required(productId, 50, nameof(productId)), ReviewerName = Rules.Required(name, 150, nameof(name)), Rating = rating, Title = Rules.Optional(title, 200, nameof(title)), Comment = string.IsNullOrWhiteSpace(comment) ? null : comment.Trim() };
     }
     public void Moderate(ReviewStatus status)
     {

@@ -36,8 +36,8 @@ public sealed class PromotionVideo
 
     public void SetDetails(string title, string slug, bool isActive, DateTimeOffset? expiresAt)
     {
-        Title = CatalogRules.Required(title, 150, nameof(title));
-        Slug = CatalogRules.Required(slug, 180, nameof(slug)).Trim().ToLowerInvariant();
+        Title = Rules.Required(title, 150, nameof(title));
+        Slug = Rules.Required(slug, 180, nameof(slug)).Trim().ToLowerInvariant();
         IsActive = isActive;
         ExpiresAt = expiresAt;
         UpdatedAt = DateTimeOffset.UtcNow;
@@ -45,8 +45,8 @@ public sealed class PromotionVideo
 
     public void UpdateDetails(string title, string slug, bool isActive, DateTimeOffset? expiresAt)
     {
-        Title = CatalogRules.Required(title, 150, nameof(title));
-        Slug = CatalogRules.Required(slug, 180, nameof(slug)).Trim().ToLowerInvariant();
+        Title = Rules.Required(title, 150, nameof(title));
+        Slug = Rules.Required(slug, 180, nameof(slug)).Trim().ToLowerInvariant();
         IsActive = isActive;
         ExpiresAt = expiresAt;
         UpdatedAt = DateTimeOffset.UtcNow;
@@ -54,9 +54,9 @@ public sealed class PromotionVideo
 
     public void SetVideo(string videoUrl, string contentType, string fileName, long fileSize)
     {
-        VideoUrl = CatalogRules.Required(videoUrl, 2048, nameof(videoUrl));
-        VideoContentType = CatalogRules.Required(contentType, 100, nameof(contentType));
-        VideoFileName = CatalogRules.Required(fileName, 255, nameof(fileName));
+        VideoUrl = Rules.Required(videoUrl, 2048, nameof(videoUrl));
+        VideoContentType = Rules.Required(contentType, 100, nameof(contentType));
+        VideoFileName = Rules.Required(fileName, 255, nameof(fileName));
         VideoFileSize = fileSize;
         UpdatedAt = DateTimeOffset.UtcNow;
     }

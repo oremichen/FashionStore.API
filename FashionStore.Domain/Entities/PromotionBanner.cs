@@ -32,10 +32,10 @@ public sealed class PromotionBanner
 
     public void SetDetails(string? title, string? subtitle, string? destinationUrl, string? placement, int slot, bool isActive)
     {
-        Title = CatalogRules.Optional(title, 150, nameof(title));
-        Subtitle = CatalogRules.Optional(subtitle, 250, nameof(subtitle));
-        DestinationUrl = CatalogRules.Optional(destinationUrl, 2048, nameof(destinationUrl));
-        Placement = CatalogRules.Required(string.IsNullOrWhiteSpace(placement) ? "homepage-banner-grid" : placement, 100, nameof(placement));
+        Title = Rules.Optional(title, 150, nameof(title));
+        Subtitle = Rules.Optional(subtitle, 250, nameof(subtitle));
+        DestinationUrl = Rules.Optional(destinationUrl, 2048, nameof(destinationUrl));
+        Placement = Rules.Required(string.IsNullOrWhiteSpace(placement) ? "homepage-banner-grid" : placement, 100, nameof(placement));
         if (slot < 1) throw new ArgumentOutOfRangeException(nameof(slot), "Slot must be greater than zero.");
         Slot = slot;
         IsActive = isActive;
@@ -44,7 +44,7 @@ public sealed class PromotionBanner
 
     public void SetImageUrl(string imageUrl, string? contentType = null, string? fileName = null, long fileSize = 0)
     {
-        ImageUrl = CatalogRules.Required(imageUrl, 2048, nameof(imageUrl));
+        ImageUrl = Rules.Required(imageUrl, 2048, nameof(imageUrl));
         ImageContentType = contentType ?? string.Empty;
         ImageFileName = fileName ?? string.Empty;
         ImageFileSize = fileSize;

@@ -22,7 +22,7 @@ public static class ImageRules
         if (!allowedContentTypes.Contains(normalizedContentType, StringComparer.OrdinalIgnoreCase))
             throw new ArgumentException($"Supported image types are: {string.Join(", ", allowedContentTypes)}.", nameof(contentType));
 
-        var safeFileName = CatalogRules.Required(Path.GetFileName(fileName), 255, nameof(fileName));
+        var safeFileName = Rules.Required(Path.GetFileName(fileName), 255, nameof(fileName));
         return new ValidatedImage(data.ToArray(), normalizedContentType, safeFileName, data.LongLength);
     }
 }

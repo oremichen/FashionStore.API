@@ -30,10 +30,10 @@ public sealed class Brand
 
     public void SetDetails(string name, string slug, string? description, string? websiteUrl, bool isActive)
     {
-        Name = CatalogRules.Required(name, 150, nameof(name));
-        Slug = CatalogRules.Slug(slug, 180);
+        Name = Rules.Required(name, 150, nameof(name));
+        Slug = Rules.Slug(slug, 180);
         Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
-        WebsiteUrl = CatalogRules.Optional(websiteUrl, 2048, nameof(websiteUrl));
+        WebsiteUrl = Rules.Optional(websiteUrl, 2048, nameof(websiteUrl));
         if (WebsiteUrl is not null && (!Uri.TryCreate(WebsiteUrl, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https")))
             throw new ArgumentException("Website URL must be an absolute HTTP or HTTPS URL.", nameof(websiteUrl));
         IsActive = isActive;
@@ -42,7 +42,7 @@ public sealed class Brand
 
     public void SetImageUrl(string imageUrl, string? contentType = null, string? fileName = null)
     {
-        ImageUrl = CatalogRules.Required(imageUrl, 2048, nameof(imageUrl));
+        ImageUrl = Rules.Required(imageUrl, 2048, nameof(imageUrl));
         ImageContentType = contentType;
         ImageFileName = fileName;
         UpdatedAt = DateTimeOffset.UtcNow;

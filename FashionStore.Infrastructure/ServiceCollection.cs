@@ -31,6 +31,8 @@ namespace FashionStore.Infrastructure
                 Repository.CatalogOptionRepo.CatalogOptionRepository>();
             services.AddScoped<FashionStore.Domain.Abstractions.PromotionVideos.IPromotionVideoRepository,
                 Repository.PromotionVideoRepo.PromotionVideoRepository>();
+            services.AddScoped<FashionStore.Domain.Abstractions.Contacts.IContactUsRepository,
+                Repository.ContactUsRepo.ContactUsRepository>();
             services.AddScoped<FashionStore.Domain.Abstractions.Users.IUserRepository,
                 Repository.UserRepo.UserRepository>();
 

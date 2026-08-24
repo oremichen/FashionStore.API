@@ -8,6 +8,6 @@ public sealed class ProductTag
     public DateTimeOffset CreatedAt { get; private set; } = DateTimeOffset.UtcNow;
     public static ProductTag Create(string name, string slug)
     {
-        return new ProductTag { Name = CatalogRules.Required(name, 100, nameof(name)), Slug = CatalogRules.Slug(slug, 120) };
+        return new ProductTag { Name = Rules.Required(name, 100, nameof(name)), Slug = Rules.Slug(slug, 120) };
     }
 }

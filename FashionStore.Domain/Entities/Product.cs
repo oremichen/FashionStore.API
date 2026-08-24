@@ -42,37 +42,37 @@ public sealed class Product
 
     public static Product Create(string categoryId, string? brandId, string name, string slug, decimal newPrice, string currencyCode, int stock)
     {
-        CatalogRules.NonNegative(newPrice, nameof(newPrice));
-        CatalogRules.NonNegative(stock, nameof(stock));
-        var currency = CatalogRules.Required(currencyCode, 3, nameof(currencyCode)).ToUpperInvariant();
+        Rules.NonNegative(newPrice, nameof(newPrice));
+        Rules.NonNegative(stock, nameof(stock));
+        var currency = Rules.Required(currencyCode, 3, nameof(currencyCode)).ToUpperInvariant();
         if (currency.Length != 3) throw new ArgumentException("Currency code must contain exactly three letters.");
-        return new Product { CategoryId = CatalogRules.Required(categoryId, 50, nameof(categoryId)), BrandId = string.IsNullOrWhiteSpace(brandId) ? null : brandId.Trim(), Name = CatalogRules.Required(name, 250, nameof(name)), Slug = CatalogRules.Slug(slug, 280), NewPrice = newPrice, CurrencyCode = currency, AvailabilityCount = stock };
+        return new Product { CategoryId = Rules.Required(categoryId, 50, nameof(categoryId)), BrandId = string.IsNullOrWhiteSpace(brandId) ? null : brandId.Trim(), Name = Rules.Required(name, 250, nameof(name)), Slug = Rules.Slug(slug, 280), NewPrice = newPrice, CurrencyCode = currency, AvailabilityCount = stock };
     }
 
     public void Update(string categoryId, string? brandId, string name, string slug, string? description,
         string? additionalInformation, string? shortDescription, decimal? oldPrice, decimal newPrice, string currencyCode, int stock,
         decimal? weight, string? weightUnit, bool isFeatured, bool isNewArrival)
     {
-        CatalogRules.NonNegative(newPrice, nameof(newPrice));
-        CatalogRules.NonNegative(stock, nameof(stock));
-        if (oldPrice.HasValue) CatalogRules.NonNegative(oldPrice.Value, nameof(oldPrice));
-        if (weight.HasValue) CatalogRules.NonNegative(weight.Value, nameof(weight));
-        CategoryId = CatalogRules.Required(categoryId, 50, nameof(categoryId));
+        Rules.NonNegative(newPrice, nameof(newPrice));
+        Rules.NonNegative(stock, nameof(stock));
+        if (oldPrice.HasValue) Rules.NonNegative(oldPrice.Value, nameof(oldPrice));
+        if (weight.HasValue) Rules.NonNegative(weight.Value, nameof(weight));
+        CategoryId = Rules.Required(categoryId, 50, nameof(categoryId));
         BrandId = string.IsNullOrWhiteSpace(brandId) ? null : brandId.Trim();
-        Name = CatalogRules.Required(name, 250, nameof(name));
-        Slug = CatalogRules.Slug(slug, 280);
-        Description = CatalogRules.Optional(description, 10000, nameof(description));
-        AdditionalInformation = CatalogRules.Optional(additionalInformation, 10000, nameof(additionalInformation));
-        ShortDescription = CatalogRules.Optional(shortDescription, 500, nameof(shortDescription));
+        Name = Rules.Required(name, 250, nameof(name));
+        Slug = Rules.Slug(slug, 280);
+        Description = Rules.Optional(description, 10000, nameof(description));
+        AdditionalInformation = Rules.Optional(additionalInformation, 10000, nameof(additionalInformation));
+        ShortDescription = Rules.Optional(shortDescription, 500, nameof(shortDescription));
         OldPrice = oldPrice;
         NewPrice = newPrice;
         Discount = oldPrice > newPrice && oldPrice > 0 ? decimal.Round((oldPrice.Value - newPrice) / oldPrice.Value * 100, 2) : null;
-        var currency = CatalogRules.Required(currencyCode, 3, nameof(currencyCode)).ToUpperInvariant();
+        var currency = Rules.Required(currencyCode, 3, nameof(currencyCode)).ToUpperInvariant();
         if (currency.Length != 3) throw new ArgumentException("Currency code must contain exactly three letters.");
         CurrencyCode = currency;
         AvailabilityCount = stock;
         Weight = weight;
-        WeightUnit = CatalogRules.Optional(weightUnit, 20, nameof(weightUnit));
+        WeightUnit = Rules.Optional(weightUnit, 20, nameof(weightUnit));
         IsFeatured = isFeatured;
         IsNewArrival = isNewArrival;
         UpdatedAt = DateTimeOffset.UtcNow;

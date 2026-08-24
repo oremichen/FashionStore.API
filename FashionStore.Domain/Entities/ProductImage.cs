@@ -23,12 +23,12 @@ public sealed class ProductImage
     {
         return new ProductImage
         {
-            SmallUrl = CatalogRules.Required(smallUrl, 2048, nameof(smallUrl)),
-            MediumUrl = CatalogRules.Required(mediumUrl, 2048, nameof(mediumUrl)),
-            BigUrl = CatalogRules.Required(bigUrl, 2048, nameof(bigUrl)),
+            SmallUrl = Rules.Required(smallUrl, 2048, nameof(smallUrl)),
+            MediumUrl = Rules.Required(mediumUrl, 2048, nameof(mediumUrl)),
+            BigUrl = Rules.Required(bigUrl, 2048, nameof(bigUrl)),
             ImageContentType = contentType,
             ImageFileName = fileName,
-            AlternativeText = CatalogRules.Optional(alternativeText, 250, nameof(alternativeText)),
+            AlternativeText = Rules.Optional(alternativeText, 250, nameof(alternativeText)),
             SortOrder = sortOrder,
             IsPrimary = isPrimary
         };
