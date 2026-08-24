@@ -1,4 +1,4 @@
-using FashionStore.Application.Abstractions.Brands;
+using FashionStore.Domain.Abstractions.Brands;
 using Microsoft.EntityFrameworkCore;
 
 namespace FashionStore.Infrastructure.Repository.BrandRepo;

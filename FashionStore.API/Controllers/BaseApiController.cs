@@ -1,4 +1,4 @@
-﻿using FashionStore.Shared.Constants;
+using FashionStore.Shared.Constants;
 
 namespace FashionStore.API.Controllers
 {

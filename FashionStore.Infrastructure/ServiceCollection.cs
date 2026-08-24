@@ -8,25 +8,40 @@ namespace FashionStore.Infrastructure
                 .BindConfiguration(Images.CloudinarySettings.SectionName)
                 .ValidateDataAnnotations()
                 .ValidateOnStart();
-            services.AddScoped<FashionStore.Application.Abstractions.Images.ICloudinaryImageService,
+            services.AddScoped<FashionStore.Domain.Abstractions.Images.ICloudinaryImageService,
                 Images.CloudinaryImageService>();
-            services.AddScoped<FashionStore.Application.Abstractions.Videos.ICloudinaryVideoService,
+            services.AddScoped<FashionStore.Domain.Abstractions.Videos.ICloudinaryVideoService,
                 Images.CloudinaryVideoService>();
+            services.AddScoped<FashionStore.Domain.Abstractions.Images.IImageProcessor,
+                Images.ImageProcessor>();
+            services.AddScoped<FashionStore.Domain.Abstractions.Encryption.IRsaEncryptionService,
+                Security.RsaEncryptionService>();
             services.AddScoped<INotificationRepository, NotificationRepository>();
-            services.AddScoped<FashionStore.Application.Abstractions.Categories.ICategoryRepository,
+            services.AddScoped<FashionStore.Domain.Abstractions.Categories.ICategoryRepository,
                 Repository.CategoryRepo.CategoryRepository>();
-            services.AddScoped<FashionStore.Application.Abstractions.Brands.IBrandRepository,
+            services.AddScoped<FashionStore.Domain.Abstractions.Brands.IBrandRepository,
                 Repository.BrandRepo.BrandRepository>();
-            services.AddScoped<FashionStore.Application.Abstractions.MainCarousels.IMainCarouselRepository,
+            services.AddScoped<FashionStore.Domain.Abstractions.MainCarousels.IMainCarouselRepository,
                 Repository.MainCarouselRepo.MainCarouselRepository>();
-            services.AddScoped<FashionStore.Application.Abstractions.Products.IProductRepository,
+            services.AddScoped<FashionStore.Domain.Abstractions.Products.IProductRepository,
                 Repository.ProductRepo.ProductRepository>();
-            services.AddScoped<FashionStore.Application.Abstractions.PromotionBanners.IPromotionBannerRepository,
+            services.AddScoped<FashionStore.Domain.Abstractions.PromotionBanners.IPromotionBannerRepository,
                 Repository.PromotionBannerRepo.PromotionBannerRepository>();
-            services.AddScoped<FashionStore.Application.Abstractions.CatalogOptions.ICatalogOptionRepository,
+            services.AddScoped<FashionStore.Domain.Abstractions.CatalogOptions.ICatalogOptionRepository,
                 Repository.CatalogOptionRepo.CatalogOptionRepository>();
-            services.AddScoped<FashionStore.Application.Abstractions.PromotionVideos.IPromotionVideoRepository,
+            services.AddScoped<FashionStore.Domain.Abstractions.PromotionVideos.IPromotionVideoRepository,
                 Repository.PromotionVideoRepo.PromotionVideoRepository>();
+            services.AddScoped<FashionStore.Domain.Abstractions.Users.IUserRepository,
+                Repository.UserRepo.UserRepository>();
+
+            services.AddScoped<IEmailNotificationService, Notification.EmailNotificationService>();
+            services.AddScoped<IEmailTemplateRenderer, Notification.EmailTemplateRenderer>();
+            services.AddHttpClient<IEmailProvider, Notification.MailgunEmailProvider>();
+            services.AddSingleton<Messages.NotificationQueue.EmailNotificationQueueService>();
+            services.AddSingleton<IEmailNotificationQueueService>(provider =>
+                provider.GetRequiredService<Messages.NotificationQueue.EmailNotificationQueueService>());
+            services.AddHostedService<Messages.NotificationQueue.EmailNotificationProcessorService>();
+            services.AddHostedService<Messages.NotificationQueue.PendingEmailNotificationProcessorService>();
             return services;
         }
     }

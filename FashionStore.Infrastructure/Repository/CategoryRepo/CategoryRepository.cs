@@ -1,19 +1,18 @@
-using FashionStore.Application.Abstractions.Categories;
-using FashionStore.Application.Dtos.Response;
+using FashionStore.Domain.Abstractions.Categories;
 using Microsoft.EntityFrameworkCore;
 
 namespace FashionStore.Infrastructure.Repository.CategoryRepo;
 
 public sealed class CategoryRepository(FashionStoreDbContext dbContext, ILogger<CategoryRepository> logger) : ICategoryRepository
 {
-    public async Task<IReadOnlyList<CategoryResponse>> GetPublicCategoriesAsync(CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<CategoryListItem>> GetPublicCategoriesAsync(CancellationToken cancellationToken)
     {
         logger.LogDebug("Querying public categories.");
         return await Project(dbContext.Categories.Where(category => category.DeletedAt == null && category.IsActive))
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<CategoryResponse>> GetCategoriesWithParentAsync(CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<CategoryListItem>> GetCategoriesWithParentAsync(CancellationToken cancellationToken)
     {
         logger.LogDebug("Querying categories with parents.");
         return await Project(dbContext.Categories.Where(category => category.DeletedAt == null && category.ParentId != null))
@@ -53,15 +52,13 @@ public sealed class CategoryRepository(FashionStoreDbContext dbContext, ILogger<
         return dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    private static IQueryable<CategoryResponse> Project(IQueryable<Category> categories)
+    private static IQueryable<CategoryListItem> Project(IQueryable<Category> categories)
     {
         return categories.AsNoTracking()
             .OrderBy(category => category.SortOrder)
             .ThenBy(category => category.Name)
-            .Select(category => new CategoryResponse
-            {
-                Id = category.Id, Name = category.Name, Slug = category.Slug, ParentId = category.ParentId,
-                HasSubCategory = category.Children.Any(child => child.DeletedAt == null && child.IsActive)
-            });
+            .Select(category => new CategoryListItem(
+                category.Id, category.Name, category.Slug, category.ParentId,
+                category.Children.Any(child => child.DeletedAt == null && child.IsActive)));
     }
 }

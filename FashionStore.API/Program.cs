@@ -10,7 +10,6 @@ using FashionStore.Infrastructure.Data;
 using FashionStore.Infrastructure.Seed;
 using FashionStore.Infrastructure;
 using Serilog;
-using FashionStore.Application;
 using System.IdentityModel.Tokens.Jwt;
 using FashionStore.Shared.Constants;
 using FashionStore.API.Filters;
@@ -249,7 +248,14 @@ builder.Services.AddAuthentication(options =>
 });
 #endregion
 
-builder.Services.AddApplicationServices();
+builder.Services.Scan(scan => scan
+    .FromAssemblyOf<Program>()
+    .AddClasses(classes => classes.Where(type =>
+        type.Name.EndsWith("Service") &&
+        type.Namespace is not null &&
+        type.Namespace.Contains("Features")))
+    .AsMatchingInterface()
+    .WithScopedLifetime());
 builder.Services.AddInfrastructureServices();
 
 var app = builder.Build();

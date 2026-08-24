@@ -1,4 +1,4 @@
-﻿namespace FashionStore.Domain.Enums
+namespace FashionStore.Domain.Enums
 {
     public enum RoleEnums
     {

@@ -1,4 +1,4 @@
-﻿namespace FashionStore.Shared.Constants
+namespace FashionStore.Shared.Constants
 {
     public static class ResponseCodes
     {
