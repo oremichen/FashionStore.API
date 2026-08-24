@@ -1,6 +1,6 @@
 using System;
 using System.Threading.Channels;
-using FashionStore.Infrastructure.Contracts.Abstractions.Notification;
+using FashionStore.Domain.Abstractions.Notification;
 namespace FashionStore.Infrastructure.Messages.NotificationQueue
 {
     public class EmailNotificationQueueService : IEmailNotificationQueueService, IAsyncDisposable

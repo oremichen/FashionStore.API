@@ -1,4 +1,4 @@
-using FashionStore.Infrastructure.Contracts.Abstractions.Auth;
+using FashionStore.Domain.Abstractions.Auth;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.WebUtilities;

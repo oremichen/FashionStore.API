@@ -1,4 +1,4 @@
-using FashionStore.Domain.Repositories.MainCarousels;
+using FashionStore.Domain.Abstractions.MainCarousels;
 using Microsoft.EntityFrameworkCore;
 
 namespace FashionStore.Infrastructure.Repository.MainCarouselRepo;

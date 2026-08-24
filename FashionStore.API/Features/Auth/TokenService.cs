@@ -1,7 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using FashionStore.Infrastructure.Contracts.Abstractions.Auth;
+using FashionStore.Domain.Abstractions.Auth;
 using FashionStore.Domain.Entities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;

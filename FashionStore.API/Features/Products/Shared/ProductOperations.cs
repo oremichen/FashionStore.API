@@ -1,5 +1,5 @@
-using FashionStore.Domain.Repositories.Products;
-using FashionStore.Infrastructure.Contracts.Abstractions.Images;
+using FashionStore.Domain.Abstractions.Products;
+using FashionStore.Domain.Abstractions.Images;
 using FashionStore.API.Features.Products.CreateProduct;
 using FashionStore.API.Features.Products.GetProducts;
 using FashionStore.API.Features.Products.GetStorefront;

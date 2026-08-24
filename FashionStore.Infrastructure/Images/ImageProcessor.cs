@@ -1,4 +1,4 @@
-using FashionStore.Infrastructure.Contracts.Abstractions.Images;
+using FashionStore.Domain.Abstractions.Images;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.Processing;

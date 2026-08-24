@@ -1,4 +1,4 @@
-using FashionStore.Domain.Repositories.CatalogOptions;
+using FashionStore.Domain.Abstractions.CatalogOptions;
 
 namespace FashionStore.API.Features.CatalogOptions;
 

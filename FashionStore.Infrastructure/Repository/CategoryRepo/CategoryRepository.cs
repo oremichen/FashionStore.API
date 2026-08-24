@@ -1,4 +1,4 @@
-using FashionStore.Domain.Repositories.Categories;
+using FashionStore.Domain.Abstractions.Categories;
 using Microsoft.EntityFrameworkCore;
 
 namespace FashionStore.Infrastructure.Repository.CategoryRepo;

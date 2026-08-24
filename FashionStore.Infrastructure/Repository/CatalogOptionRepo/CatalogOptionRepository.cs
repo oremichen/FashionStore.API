@@ -1,4 +1,4 @@
-using FashionStore.Domain.Repositories.CatalogOptions;
+using FashionStore.Domain.Abstractions.CatalogOptions;
 using Microsoft.EntityFrameworkCore;
 
 namespace FashionStore.Infrastructure.Repository.CatalogOptionRepo;

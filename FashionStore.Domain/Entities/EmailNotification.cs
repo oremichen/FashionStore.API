@@ -1,37 +1,37 @@
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace FashionStore.Domain.Entities
 {
     public class EmailNotification
     {
-        [JsonProperty("From")]
+        [JsonPropertyName("From")]
         public string From { get; set; }
 
-        [JsonProperty("To")]
+        [JsonPropertyName("To")]
         public List<string> To { get; set; }
 
-        [JsonProperty("Cc")]
+        [JsonPropertyName("Cc")]
         public List<string> Cc { get; set; }
 
-        [JsonProperty("Bcc")]
+        [JsonPropertyName("Bcc")]
         public List<string> Bcc { get; set; }
 
-        [JsonProperty("Subject")]
+        [JsonPropertyName("Subject")]
         public string Subject { get; set; }
 
-        [JsonProperty("Body")]
+        [JsonPropertyName("Body")]
         public string Body { get; set; }
 
-        [JsonProperty("Attachments")]
+        [JsonPropertyName("Attachments")]
         public List<Attachment> Attchements { get; set; }
     }
 
     public class Attachment
     {
-        [JsonProperty("fileName")]
+        [JsonPropertyName("fileName")]
         public string FileName { get; set; }
 
-        [JsonProperty("attachmentfile")]
+        [JsonPropertyName("attachmentfile")]
         public byte[] Attachmentfile { get; set; }
     }
 }

@@ -1,4 +1,4 @@
-using FashionStore.Domain.Repositories.Categories;
+using FashionStore.Domain.Abstractions.Categories;
 
 namespace FashionStore.API.Features.Categories;
 

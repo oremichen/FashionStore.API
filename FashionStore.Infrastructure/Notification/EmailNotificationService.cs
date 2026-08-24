@@ -26,19 +26,18 @@ namespace FashionStore.Infrastructure.Notification
             _emailNotificationQueueService.Enqueue(queuedNotification.Id, notification);
         }
 
-        public async Task<ResponseResult> SendEmailAsync(EmailNotification notification)
+        public async Task<EmailDeliveryResult> SendEmailAsync(EmailNotification notification)
         {
-            var response = new ResponseResult();
             if (notification.To == null || notification.To.Count == 0)
             {
                 _logger.LogError("Email request rejected because no recipient was provided.");
-                return response.Fail("At least one recipient is required.", ResponseCodes.INVALID_ACTION);
+                return EmailDeliveryResult.Failure("At least one recipient is required.");
             }
 
             if (_providers.Count == 0)
             {
                 _logger.LogError("Email request rejected because no email providers are registered.");
-                return response.Fail("No email provider is configured.", ResponseCodes.SERVICE_UNAVAILABLE);
+                return EmailDeliveryResult.Failure("No email provider is configured.");
             }
 
             var providerErrors = new List<string>();
@@ -56,7 +55,7 @@ namespace FashionStore.Infrastructure.Notification
                         _logger.LogInformation(
                             "Email sent successfully through {Provider}. Subject: {Subject}. First recipient: {Recipient}.",
                             provider.Name, notification.Subject, notification.To[0]);
-                        return response.Success($"Email sent successfully through {provider.Name}.");
+                        return EmailDeliveryResult.Success($"Email sent successfully through {provider.Name}.");
                     }
 
                     providerErrors.Add($"{provider.Name}: {result.Error ?? "Unknown provider error."}");
@@ -76,7 +75,7 @@ namespace FashionStore.Infrastructure.Notification
             _logger.LogError(
                 "All configured email providers failed. Subject: {Subject}. First recipient: {Recipient}. Provider errors: {ProviderErrors}",
                 notification.Subject, notification.To[0], string.Join(" | ", providerErrors));
-            return response.Fail("All configured email providers failed.", ResponseCodes.SERVICE_UNAVAILABLE);
+            return EmailDeliveryResult.Failure("All configured email providers failed.");
         }
 
         private static IReadOnlyList<IEmailProvider> OrderProviders(

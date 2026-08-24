@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
-using FashionStore.Infrastructure.Contracts.Abstractions.Encryption;
+using FashionStore.Domain.Abstractions.Encryption;
 
 namespace FashionStore.Infrastructure.Security
 {

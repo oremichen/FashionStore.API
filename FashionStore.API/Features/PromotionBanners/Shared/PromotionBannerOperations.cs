@@ -1,5 +1,5 @@
-using FashionStore.Domain.Repositories.PromotionBanners;
-using FashionStore.Infrastructure.Contracts.Abstractions.Images;
+using FashionStore.Domain.Abstractions.PromotionBanners;
+using FashionStore.Domain.Abstractions.Images;
 
 namespace FashionStore.API.Features.PromotionBanners;
 

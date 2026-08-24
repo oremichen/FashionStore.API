@@ -1,5 +1,5 @@
-using FashionStore.Domain.Repositories.MainCarousels;
-using FashionStore.Infrastructure.Contracts.Abstractions.Images;
+using FashionStore.Domain.Abstractions.MainCarousels;
+using FashionStore.Domain.Abstractions.Images;
 
 namespace FashionStore.API.Features.MainCarousels;
 

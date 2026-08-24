@@ -1,5 +1,5 @@
-using FashionStore.Domain.Repositories.PromotionVideos;
-using FashionStore.Infrastructure.Contracts.Abstractions.Videos;
+using FashionStore.Domain.Abstractions.PromotionVideos;
+using FashionStore.Domain.Abstractions.Videos;
 
 namespace FashionStore.API.Features.PromotionVideos;
 

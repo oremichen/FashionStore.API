@@ -1,4 +1,4 @@
-using FashionStore.Domain.Repositories.PromotionBanners;
+using FashionStore.Domain.Abstractions.PromotionBanners;
 using Microsoft.EntityFrameworkCore;
 
 namespace FashionStore.Infrastructure.Repository.PromotionBannerRepo;

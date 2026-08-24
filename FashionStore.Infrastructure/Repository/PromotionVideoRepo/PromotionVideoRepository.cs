@@ -1,4 +1,4 @@
-using FashionStore.Domain.Repositories.PromotionVideos;
+using FashionStore.Domain.Abstractions.PromotionVideos;
 using Microsoft.EntityFrameworkCore;
 
 namespace FashionStore.Infrastructure.Repository.PromotionVideoRepo;

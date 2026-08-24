@@ -1,5 +1,5 @@
-using FashionStore.Domain.Repositories.Brands;
-using FashionStore.Infrastructure.Contracts.Abstractions.Images;
+using FashionStore.Domain.Abstractions.Brands;
+using FashionStore.Domain.Abstractions.Images;
 
 namespace FashionStore.API.Features.Brands;
 
