@@ -34,7 +34,9 @@ public sealed class Category
     public DateTimeOffset? DeletedAt { get; private set; }
 
     public static Category Create(string name, string slug, string? description, int sortOrder, bool isActive, bool showInMenu, string? parentId = null)
-        => new(name, slug, description, sortOrder, isActive, showInMenu, parentId);
+    {
+        return new(name, slug, description, sortOrder, isActive, showInMenu, parentId);
+    }
 
     public void AssignParent(string? parentId)
     {

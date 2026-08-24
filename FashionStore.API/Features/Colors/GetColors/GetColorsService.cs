@@ -1,6 +1,23 @@
-namespace FashionStore.API.Features.Colors.GetColors;
+using FashionStore.Domain.Abstractions.CatalogOptions;
 
-public sealed class GetColorsService(FashionStore.API.Features.CatalogOptions.CatalogOptionOperations operations) : IGetColorsService
+namespace FashionStore.API.Features.Colors.GetColors;
+public sealed class GetColorsService(ICatalogOptionRepository repository) : IGetColorsService
 {
-    public Task<ResponseResult<IReadOnlyList<ColorResponse>>> ExecuteAsync(CancellationToken cancellationToken) => operations.GetColorsAsync(cancellationToken);
+    public async Task<ResponseResult<IReadOnlyList<ColorResponse>>> ExecuteAsync(CancellationToken cancellationToken)
+    {
+        var colors = await repository.GetColorsAsync(cancellationToken);
+        return new ResponseResult<IReadOnlyList<ColorResponse>>().Success(colors.Select(MapColor).ToList(), "Colors retrieved successfully.");
+    }
+
+    private static ColorResponse MapColor(Color color)
+    {
+        return new ColorResponse
+        {
+            Id = color.Id,
+            Name = color.Name,
+            HexCode = color.HexCode,
+            SortOrder = color.SortOrder,
+            IsActive = color.IsActive
+        };
+    }
 }

@@ -1,6 +1,32 @@
-namespace FashionStore.API.Features.Brands.GetBrands;
+using FashionStore.Domain.Abstractions.Brands;
+using FashionStore.Domain.Abstractions.Images;
 
-public sealed class GetBrandsService(BrandOperations operations) : IGetBrandsService
+namespace FashionStore.API.Features.Brands.GetBrands;
+public sealed class GetBrandsService(IBrandRepository repository, ICloudinaryImageService cloudinary, ILogger<GetBrandsService> logger) : IGetBrandsService
 {
-    public Task<ResponseResult<IReadOnlyList<BrandResponse>>> ExecuteAsync(CancellationToken cancellationToken) => operations.GetAllAsync(cancellationToken);
+    public async Task<ResponseResult<IReadOnlyList<BrandResponse>>> ExecuteAsync(CancellationToken cancellationToken)
+    {
+        logger.LogInformation("Retrieving brands.");
+        var brands = await repository.GetAllAsync(cancellationToken);
+        var mappedBrands = brands.Select(Map).ToList();
+        return new ResponseResult<IReadOnlyList<BrandResponse>>().Success(mappedBrands, "Brands retrieved successfully.");
+    }
+
+    private static BrandResponse Map(Brand brand)
+    {
+        var hasImage = !string.IsNullOrWhiteSpace(brand.ImageUrl);
+        return new BrandResponse
+        {
+            Id = brand.Id,
+            Name = brand.Name,
+            Slug = brand.Slug,
+            Description = brand.Description,
+            WebsiteUrl = brand.WebsiteUrl,
+            IsActive = brand.IsActive,
+            HasImage = hasImage,
+            ImageUrl = brand.ImageUrl,
+            CreatedAt = brand.CreatedAt,
+            UpdatedAt = brand.UpdatedAt
+        };
+    }
 }

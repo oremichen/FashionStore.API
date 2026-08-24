@@ -5,9 +5,12 @@ namespace FashionStore.Infrastructure.Repository.ProductRepo;
 
 public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProductRepository
 {
-    private IQueryable<Product> StorefrontProducts() => dbContext.Products.AsNoTracking()
+    private IQueryable<Product> StorefrontProducts()
+    {
+        return dbContext.Products.AsNoTracking()
         .Include(x => x.Category).Include(x => x.Brand).Include(x => x.Images)
         .Where(x => !x.IsArchived && x.IsActive && x.PublishedAt != null);
+    }
 
     public async Task<(IReadOnlyList<Product> Items, int TotalCount)> GetStorefrontAsync(
         StorefrontProductFilter request, string? collection, string? excludingProductId, CancellationToken ct)
@@ -89,14 +92,20 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
         return (items, total);
     }
     
-    public Task<Product?> GetBySlugAsync(string slug, CancellationToken ct) => StorefrontProducts()
+    public Task<Product?> GetBySlugAsync(string slug, CancellationToken ct)
+    {
+        return StorefrontProducts()
         .Include(x => x.ProductSizes).ThenInclude(x => x.Size)
         .Include(x => x.ProductColors).ThenInclude(x => x.Color)
         .SingleOrDefaultAsync(x => x.Slug.ToLower() == slug.Trim().ToLower(), ct);
+    }
 
-    private static string[] Split(string? values) => string.IsNullOrWhiteSpace(values) ? [] : values
+    private static string[] Split(string? values)
+    {
+        return string.IsNullOrWhiteSpace(values) ? [] : values
         .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
         .Select(x => x.ToLowerInvariant()).Distinct().ToArray();
+    }
 
     public async Task<(IReadOnlyList<Product> Items, int TotalCount)> GetAsync(ProductFilter request, CancellationToken cancellationToken)
     {

@@ -13,7 +13,13 @@ namespace FashionStore.Domain.Abstractions.Notification
 
     public sealed record EmailDeliveryResult(bool IsSuccessful, string Description)
     {
-        public static EmailDeliveryResult Success(string description) => new(true, description);
-        public static EmailDeliveryResult Failure(string description) => new(false, description);
+        public static EmailDeliveryResult Success(string description)
+        {
+            return new(true, description);
+        }
+        public static EmailDeliveryResult Failure(string description)
+        {
+            return new(false, description);
+        }
     }
 }

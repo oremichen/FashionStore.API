@@ -99,6 +99,8 @@ namespace FashionStore.Infrastructure.Notification
         }
 
         private static void AddString(MultipartFormDataContent content, string fieldName, string value)
-            => content.Add(new StringContent(value), fieldName);
+        {
+            content.Add(new StringContent(value), fieldName);
+        }
     }
 }

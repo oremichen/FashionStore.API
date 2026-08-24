@@ -42,8 +42,13 @@ public sealed class BrandsController(IGetBrandsService getBrandsService, ICreate
         }
         var request = new CreateBrandRequest
         {
-            Name = form.Name, Slug = form.Slug, Description = form.Description, WebsiteUrl = form.WebsiteUrl,
-            IsActive = form.IsActive, ImageData = data, ImageContentType = form.Image?.ContentType,
+            Name = form.Name, 
+            Slug = form.Slug, 
+            Description = form.Description, 
+            WebsiteUrl = form.WebsiteUrl,
+            IsActive = form.IsActive, 
+            ImageData = data, 
+            ImageContentType = form.Image?.ContentType,
             ImageFileName = form.Image?.FileName
         };
         return ProcessResponse(await createBrandService.ExecuteAsync(request, cancellationToken));
