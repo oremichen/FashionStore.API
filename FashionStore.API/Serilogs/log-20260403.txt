@@ -1,6 +1,0 @@
-21:25:42.758 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger" responded 301 in 16.3497 ms
-21:25:43.586 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/swagger-ui.css" responded 200 in 168.4386 ms
-21:25:43.597 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/index.html" responded 200 in 545.6677 ms
-21:25:43.587 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/swagger-ui-standalone-preset.js" responded 200 in 157.9548 ms
-21:25:43.716 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/swagger-ui-bundle.js" responded 200 in 290.9963 ms
-21:25:45.226 +01:00 [Information] [Serilog.AspNetCore.RequestLoggingMiddleware] HTTP "GET" "/swagger/v1/swagger.json" responded 200 in 225.2705 ms
