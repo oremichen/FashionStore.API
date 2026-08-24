@@ -10,7 +10,6 @@ using FashionStore.Infrastructure.Data;
 using FashionStore.Infrastructure.Seed;
 using FashionStore.Infrastructure;
 using Serilog;
-using FashionStore.Application;
 using System.IdentityModel.Tokens.Jwt;
 using FashionStore.Shared.Constants;
 using FashionStore.API.Filters;
@@ -249,7 +248,23 @@ builder.Services.AddAuthentication(options =>
 });
 #endregion
 
-builder.Services.AddApplicationServices();
+builder.Services.Scan(scan => scan
+    .FromAssemblyOf<Program>()
+    .AddClasses(classes => classes.Where(type =>
+        type.Name.EndsWith("Service") &&
+        type.Namespace is not null &&
+        type.Namespace.Contains("Features")))
+    .AsMatchingInterface()
+    .WithScopedLifetime());
+builder.Services.AddScoped<FashionStore.API.Features.Products.ProductOperations>();
+builder.Services.AddScoped<FashionStore.API.Features.Brands.BrandOperations>();
+builder.Services.AddScoped<FashionStore.API.Features.Categories.CategoryOperations>();
+builder.Services.AddScoped<FashionStore.API.Features.CatalogOptions.CatalogOptionOperations>();
+builder.Services.AddScoped<FashionStore.API.Features.MainCarousels.MainCarouselOperations>();
+builder.Services.AddScoped<FashionStore.API.Features.PromotionBanners.PromotionBannerOperations>();
+builder.Services.AddScoped<FashionStore.API.Features.PromotionVideos.PromotionVideoOperations>();
+builder.Services.AddScoped<FashionStore.API.Features.Users.UserOperations>();
+builder.Services.AddScoped<FashionStore.API.Features.Auth.AuthOperations>();
 builder.Services.AddInfrastructureServices();
 
 var app = builder.Build();

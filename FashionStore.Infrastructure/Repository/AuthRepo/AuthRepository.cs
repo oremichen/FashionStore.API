@@ -1,4 +1,4 @@
-﻿namespace FashionStore.Infrastructure.Repositories.AuthRepo
+namespace FashionStore.Infrastructure.Repositories.AuthRepo
 {
     public class AuthRepository
     {

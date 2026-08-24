@@ -1,4 +1,4 @@
-﻿namespace FashionStore.Domain.Entities
+namespace FashionStore.Domain.Entities
 {
     public class Address
     {

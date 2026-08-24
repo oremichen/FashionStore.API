@@ -1,6 +1,6 @@
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
-using FashionStore.Application.Abstractions.Images;
+using FashionStore.Infrastructure.Contracts.Abstractions.Images;
 using Microsoft.Extensions.Options;
 
 namespace FashionStore.Infrastructure.Images;

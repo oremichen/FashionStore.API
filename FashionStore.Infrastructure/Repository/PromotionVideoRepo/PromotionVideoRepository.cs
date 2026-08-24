@@ -1,5 +1,4 @@
-using FashionStore.Application.Abstractions.PromotionVideos;
-using FashionStore.Application.Dtos.Request;
+using FashionStore.Domain.Repositories.PromotionVideos;
 using Microsoft.EntityFrameworkCore;
 
 namespace FashionStore.Infrastructure.Repository.PromotionVideoRepo;
@@ -13,7 +12,7 @@ public sealed class PromotionVideoRepository(FashionStoreDbContext dbContext) : 
     }
 
     public async Task<(IReadOnlyList<PromotionVideo> Items, int TotalCount)> GetPagedAsync(
-        PromotionVideoQuery request, CancellationToken cancellationToken)
+        PromotionVideoFilter request, CancellationToken cancellationToken)
     {
         var query = dbContext.PromotionVideos.AsNoTracking().AsQueryable();
         if (!string.IsNullOrWhiteSpace(request.Search))
@@ -62,3 +61,4 @@ public sealed class PromotionVideoRepository(FashionStoreDbContext dbContext) : 
     }
     public async Task DeleteAsync(PromotionVideo video, CancellationToken cancellationToken) { dbContext.Remove(video); await dbContext.SaveChangesAsync(cancellationToken); }
 }
+

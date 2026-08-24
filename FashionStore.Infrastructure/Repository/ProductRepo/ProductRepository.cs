@@ -1,5 +1,4 @@
-using FashionStore.Application.Abstractions.Products;
-using FashionStore.Application.Dtos.Request;
+using FashionStore.Domain.Repositories.Products;
 using Microsoft.EntityFrameworkCore;
 
 namespace FashionStore.Infrastructure.Repository.ProductRepo;
@@ -11,7 +10,7 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
         .Where(x => !x.IsArchived && x.IsActive && x.PublishedAt != null);
 
     public async Task<(IReadOnlyList<Product> Items, int TotalCount)> GetStorefrontAsync(
-        StorefrontProductQuery request, string? collection, string? excludingProductId, CancellationToken ct)
+        StorefrontProductFilter request, string? collection, string? excludingProductId, CancellationToken ct)
     {
         var query = dbContext.Products.AsNoTracking()
             .Where(x => !x.IsArchived && x.IsActive && x.PublishedAt != null);
@@ -99,7 +98,7 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
         .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
         .Select(x => x.ToLowerInvariant()).Distinct().ToArray();
 
-    public async Task<(IReadOnlyList<Product> Items, int TotalCount)> GetAsync(ProductQuery request, CancellationToken cancellationToken)
+    public async Task<(IReadOnlyList<Product> Items, int TotalCount)> GetAsync(ProductFilter request, CancellationToken cancellationToken)
     {
         var query = dbContext.Products.AsNoTracking().Include(x => x.Category).Include(x => x.Brand).Include(x => x.Images).AsQueryable();
         if (!string.IsNullOrWhiteSpace(request.Search))
@@ -227,3 +226,4 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
         await dbContext.SaveChangesAsync(ct);
     }
 }
+
