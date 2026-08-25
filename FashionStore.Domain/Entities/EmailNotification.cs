@@ -7,6 +7,9 @@ namespace FashionStore.Domain.Entities
         [JsonPropertyName("From")]
         public string From { get; set; }
 
+        [JsonPropertyName("ReplyTo")]
+        public string? ReplyTo { get; set; }
+
         [JsonPropertyName("To")]
         public List<string> To { get; set; }
 

@@ -8,7 +8,7 @@ public interface IUpdateContactService
     Task<ResponseResult<ContactUsResponse>> ExecuteAsync(string id, ContactUsRequest request, CancellationToken cancellationToken);
 }
 
-public sealed class UpdateContactService(IContactUsRepository repository) : IUpdateContactService
+public sealed class UpdateContactService(IContactUsConfigurationRepository repository) : IUpdateContactService
 {
     public async Task<ResponseResult<ContactUsResponse>> ExecuteAsync(string id, ContactUsRequest request, CancellationToken cancellationToken)
     {

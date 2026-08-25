@@ -16,6 +16,7 @@ namespace FashionStore.Infrastructure.Data
         public DbSet<MainCarousel> MainCarousels { get; set; }
         public DbSet<PromotionBanner> PromotionBanners { get; set; }
         public DbSet<PromotionVideo> PromotionVideos { get; set; }
+        public DbSet<ContactUsConfiguration> ContactUsConfigurations { get; set; }
         public DbSet<ContactUs> ContactUs { get; set; }
         public DbSet<Product> Products { get; set; }
         public DbSet<ProductImage> ProductImages { get; set; }

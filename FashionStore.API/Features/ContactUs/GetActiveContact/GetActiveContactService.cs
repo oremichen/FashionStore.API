@@ -8,7 +8,7 @@ public interface IGetActiveContactService
     Task<ResponseResult<ContactUsResponse>> ExecuteAsync(CancellationToken cancellationToken);
 }
 
-public sealed class GetActiveContactService(IContactUsRepository repository) : IGetActiveContactService
+public sealed class GetActiveContactService(IContactUsConfigurationRepository repository) : IGetActiveContactService
 {
     public async Task<ResponseResult<ContactUsResponse>> ExecuteAsync(CancellationToken cancellationToken)
     {

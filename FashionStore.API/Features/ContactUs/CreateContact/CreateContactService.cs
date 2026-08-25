@@ -3,7 +3,7 @@ using FashionStore.Domain.Abstractions.Contacts;
 
 namespace FashionStore.API.Features.ContactUs.CreateContact;
 
-public sealed class CreateContactService(IContactUsRepository repository) : ICreateContactService
+public sealed class CreateContactService(IContactUsConfigurationRepository repository) : ICreateContactService
 {
     public async Task<ResponseResult<ContactUsResponse>> ExecuteAsync(ContactUsRequest request, CancellationToken cancellationToken)
     {
@@ -15,7 +15,7 @@ public sealed class CreateContactService(IContactUsRepository repository) : ICre
                 await DeactivateOtherContactsAsync(null, cancellationToken);
             }
 
-            var contact = FashionStore.Domain.Entities.ContactUs.Create(request.Address, request.ContactPhone, request.BusinessPhone,
+            var contact = FashionStore.Domain.Entities.ContactUsConfiguration.Create(request.Address, request.ContactPhone, request.BusinessPhone,
                 request.ContactEmail, request.BusinessEmail, request.IsActive);
             await repository.AddAsync(contact, cancellationToken);
             await repository.SaveChangesAsync(cancellationToken);

@@ -8,7 +8,7 @@ public interface IGetAllContactsService
     Task<ResponseResult<IReadOnlyList<ContactUsResponse>>> ExecuteAsync(CancellationToken cancellationToken);
 }
 
-public sealed class GetAllContactsService(IContactUsRepository repository) : IGetAllContactsService
+public sealed class GetAllContactsService(IContactUsConfigurationRepository repository) : IGetAllContactsService
 {
     public async Task<ResponseResult<IReadOnlyList<ContactUsResponse>>> ExecuteAsync(CancellationToken cancellationToken)
     {

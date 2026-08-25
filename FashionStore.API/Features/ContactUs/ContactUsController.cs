@@ -4,6 +4,7 @@ using FashionStore.API.Features.ContactUs.GetActiveContact;
 using FashionStore.API.Features.ContactUs.GetAllContacts;
 using FashionStore.API.Features.ContactUs.Shared;
 using FashionStore.API.Features.ContactUs.UpdateContact;
+using FashionStore.API.Features.ContactUs.SubmitContact;
 
 namespace FashionStore.API.Features.ContactUs;
 
@@ -14,7 +15,8 @@ public sealed class ContactUsController(
     ICreateContactService createService,
     IUpdateContactService updateService,
     IDeleteContactService deleteService,
-    IGetActiveContactService getActiveService) : BaseApiController
+    IGetActiveContactService getActiveService,
+    ISubmitContactService submitContactService) : BaseApiController
 {
     [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpGet]
     [Produces("application/json")]
@@ -74,5 +76,16 @@ public sealed class ContactUsController(
     public async Task<IActionResult> GetActiveContact(CancellationToken cancellationToken)
     {
         return ProcessResponse(await getActiveService.ExecuteAsync(cancellationToken));
+    }
+
+    [AllowAnonymous, HttpPost("submit")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status202Accepted)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SubmitContact([FromBody] SubmitContactRequest request, CancellationToken cancellationToken)
+    {
+        return ProcessResponse(await submitContactService.ExecuteAsync(request, cancellationToken));
     }
 }

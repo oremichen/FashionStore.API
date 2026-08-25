@@ -71,6 +71,10 @@ namespace FashionStore.Infrastructure.Notification
             AddAddresses(content, "bcc", notification.Bcc);
             AddString(content, "subject", notification.Subject);
             AddString(content, "html", notification.Body);
+            if (!string.IsNullOrWhiteSpace(notification.ReplyTo))
+            {
+                AddString(content, "h:Reply-To", notification.ReplyTo);
+            }
 
             foreach (var attachment in notification.Attchements ?? [])
             {

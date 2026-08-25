@@ -3,11 +3,11 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace FashionStore.Infrastructure.Data.Configurations;
 
-public sealed class ContactUsConfiguration : IEntityTypeConfiguration<ContactUs>
+public sealed class ContactUsConfigurationEntityConfiguration : IEntityTypeConfiguration<ContactUsConfiguration>
 {
-    public void Configure(EntityTypeBuilder<ContactUs> builder)
+    public void Configure(EntityTypeBuilder<ContactUsConfiguration> builder)
     {
-        builder.ToTable("ContactUs");
+        builder.ToTable("ContactUsConfiguration");
         builder.HasKey(contact => contact.Id);
         builder.Property(contact => contact.Id).HasMaxLength(50).HasDefaultValueSql("gen_random_uuid()::text");
         builder.Property(contact => contact.Address).HasMaxLength(500).IsRequired();

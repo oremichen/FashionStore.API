@@ -7,7 +7,7 @@ public interface IDeleteContactService
     Task<ResponseResult> ExecuteAsync(string id, CancellationToken cancellationToken);
 }
 
-public sealed class DeleteContactService(IContactUsRepository repository) : IDeleteContactService
+public sealed class DeleteContactService(IContactUsConfigurationRepository repository) : IDeleteContactService
 {
     public async Task<ResponseResult> ExecuteAsync(string id, CancellationToken cancellationToken)
     {

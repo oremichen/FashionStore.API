@@ -4,70 +4,24 @@ public sealed class ContactUs
 {
     private ContactUs() { }
 
-    private ContactUs(
-        string address,
-        string contactPhone,
-        string? businessPhone,
-        string contactEmail,
-        string? businessEmail,
-        bool isActive)
+    private ContactUs(string name, string email, string phone, string subject, string message)
     {
-        SetDetails(address, contactPhone, businessPhone, contactEmail, businessEmail, isActive);
-        CreatedAt = UpdatedAt = DateTimeOffset.UtcNow;
+        Name = Rules.Required(name, 200, nameof(name));
+        Email = Rules.RequiredEmail(email, 254, nameof(email));
+        Phone = Rules.RequiredPhone(phone, 50, nameof(phone));
+        Subject = Rules.Required(subject, 250, nameof(subject));
+        Message = Rules.Required(message, 5000, nameof(message));
+        CreatedAt = DateTimeOffset.UtcNow;
     }
 
     public string Id { get; private set; } = null!;
-    public string Address { get; private set; } = string.Empty;
-    public string ContactPhone { get; private set; } = string.Empty;
-    public string? BusinessPhone { get; private set; }
-    public string ContactEmail { get; private set; } = string.Empty;
-    public string? BusinessEmail { get; private set; }
+    public string Name { get; private set; } = string.Empty;
+    public string Email { get; private set; } = string.Empty;
+    public string Phone { get; private set; } = string.Empty;
+    public string Subject { get; private set; } = string.Empty;
+    public string Message { get; private set; } = string.Empty;
     public DateTimeOffset CreatedAt { get; private set; }
-    public DateTimeOffset UpdatedAt { get; private set; }
-    public bool IsActive { get; private set; }
 
-    public static ContactUs Create(
-        string address,
-        string contactPhone,
-        string? businessPhone,
-        string contactEmail,
-        string? businessEmail,
-        bool isActive)
-    {
-        return new ContactUs(address, contactPhone, businessPhone, contactEmail, businessEmail, isActive);
-    }
-
-    public void Update(
-        string address,
-        string contactPhone,
-        string? businessPhone,
-        string contactEmail,
-        string? businessEmail,
-        bool isActive)
-    {
-        SetDetails(address, contactPhone, businessPhone, contactEmail, businessEmail, isActive);
-    }
-
-    public void Deactivate()
-    {
-        IsActive = false;
-        UpdatedAt = DateTimeOffset.UtcNow;
-    }
-
-    private void SetDetails(
-        string address,
-        string contactPhone,
-        string? businessPhone,
-        string contactEmail,
-        string? businessEmail,
-        bool isActive)
-    {
-        Address = Rules.Required(address, 500, nameof(address));
-        ContactPhone = Rules.RequiredPhone(contactPhone, 50, nameof(contactPhone));
-        BusinessPhone = Rules.OptionalPhone(businessPhone, 50, nameof(businessPhone));
-        ContactEmail = Rules.RequiredEmail(contactEmail, 254, nameof(contactEmail));
-        BusinessEmail = Rules.OptionalEmail(businessEmail, 254, nameof(businessEmail));
-        IsActive = isActive;
-        UpdatedAt = DateTimeOffset.UtcNow;
-    }
+    public static ContactUs Create(string name, string email, string phone, string subject, string message) =>
+        new(name, email, phone, subject, message);
 }

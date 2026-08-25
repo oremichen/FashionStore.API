@@ -2,7 +2,7 @@ namespace FashionStore.API.Features.ContactUs.Shared;
 
 internal static class ContactUsMapper
 {
-    internal static ContactUsResponse Map(FashionStore.Domain.Entities.ContactUs contact)
+    internal static ContactUsResponse Map(FashionStore.Domain.Entities.ContactUsConfiguration contact)
     {
         return new ContactUsResponse
         {

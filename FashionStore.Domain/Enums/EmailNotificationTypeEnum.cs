@@ -8,5 +8,7 @@ namespace FashionStore.Domain.Enums
         UserCreation,
         Checkout,
         FeedbackResponse,
+        ContactRecipient,
+        ContactCustomer,
     }
 }
