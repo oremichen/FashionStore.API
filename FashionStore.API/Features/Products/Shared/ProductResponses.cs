@@ -56,6 +56,7 @@ public class ProductResponse
     public decimal? Discount { get; init; }
     public required string CurrencyCode { get; init; }
     public int AvailabilityCount { get; init; }
+    public int ColorCount { get; init; }
     public required string StockStatus { get; init; }
     public decimal? Weight { get; init; }
     public string? WeightUnit { get; init; }

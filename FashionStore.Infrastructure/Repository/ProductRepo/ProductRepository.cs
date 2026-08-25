@@ -8,7 +8,7 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
     private IQueryable<Product> StorefrontProducts()
     {
         return dbContext.Products.AsNoTracking()
-        .Include(x => x.Category).Include(x => x.Brand).Include(x => x.Images)
+        .Include(x => x.Category).Include(x => x.Brand).Include(x => x.Images).Include(x => x.ProductColors)
         .Where(x => !x.IsArchived && x.IsActive && x.PublishedAt != null);
     }
 
@@ -86,6 +86,7 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
             .Include(x => x.Category)
             .Include(x => x.Brand)
             .Include(x => x.Images)
+            .Include(x => x.ProductColors)
             .Skip((request.Page - 1) * request.PageSize)
             .Take(request.PageSize)
             .ToListAsync(ct);
@@ -110,7 +111,7 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
 
     public async Task<(IReadOnlyList<Product> Items, int TotalCount)> GetAsync(ProductFilter request, CancellationToken cancellationToken)
     {
-        var query = dbContext.Products.AsNoTracking().Include(x => x.Category).Include(x => x.Brand).Include(x => x.Images).AsQueryable();
+        var query = dbContext.Products.AsNoTracking().Include(x => x.Category).Include(x => x.Brand).Include(x => x.Images).Include(x => x.ProductColors).AsQueryable();
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
             var term = request.Search.Trim().ToLower();

@@ -175,6 +175,7 @@ public class CreateProductService(IProductRepository repository, IImageProcessor
             Discount = product.Discount,
             CurrencyCode = product.CurrencyCode,
             AvailabilityCount = product.AvailabilityCount,
+            ColorCount = product.ProductColors.Count,
             StockStatus = Stock(product, threshold),
             Weight = product.Weight,
             WeightUnit = product.WeightUnit,
