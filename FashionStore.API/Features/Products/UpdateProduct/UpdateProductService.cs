@@ -31,7 +31,7 @@ public class UpdateProductService(IProductRepository repository, IImageProcessor
             return new ResponseResult<ProductResponse>().Fail(validation.Value.Message, validation.Value.Code);
         }
 
-        var sizeIds = SplitIds(request.Sizes).Concat(request.ProductVariants.Where(x => !string.IsNullOrWhiteSpace(x.Size)).Select(x => x.Size!)).Distinct().ToArray();
+        var sizeIds = SplitIds(request.Sizes).Concat(request.ProductVariants.Where(x => !string.IsNullOrWhiteSpace(x.SizeId)).Select(x => x.SizeId!)).Distinct().ToArray();
         var colorIds = SplitIds(request.Colors).Concat(request.ProductVariants.Where(x => !string.IsNullOrWhiteSpace(x.Color)).Select(x => x.Color!)).Distinct().ToArray();
         var optionValidation = await ValidateOptionsAsync(sizeIds, colorIds, ct);
         if (optionValidation is not null)

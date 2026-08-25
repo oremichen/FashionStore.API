@@ -5,6 +5,7 @@ using FashionStore.API.Features.Products.GetProductById;
 using FashionStore.API.Features.Products.GetProductBySlug;
 using FashionStore.API.Features.Products.GetProductCollection;
 using FashionStore.API.Features.Products.GetProductImages;
+using FashionStore.API.Features.Products.GetProductVarient;
 using FashionStore.API.Features.Products.GetProducts;
 using FashionStore.API.Features.Products.GetRelatedProducts;
 using FashionStore.API.Features.Products.GetStorefront;
@@ -26,6 +27,7 @@ public sealed class ProductsController(
     IUpdateProductService updateProductService,
     IDeleteProductService deleteProductService,
     IGetProductImagesService getProductImagesService,
+    IGetProductVarientService getProductVarientService,
     IDeleteProductImageService deleteProductImageService) : BaseApiController
 {
     #region User product calls
@@ -74,6 +76,19 @@ public sealed class ProductsController(
     public async Task<IActionResult> GetBySlug(string productSlug, CancellationToken cancellationToken)
     {
         return ProcessResponse(await getProductBySlugService.ExecuteAsync(productSlug, cancellationToken));
+    }
+
+    [AllowAnonymous]
+    [HttpGet("{productId}/variants")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(ResponseResult<IReadOnlyList<ProductVariantResponse>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ResponseResult<IReadOnlyList<ProductVariantResponse>>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> GetVariants(string productId, CancellationToken cancellationToken)
+    {
+        return ProcessResponse(await getProductVarientService.ExecuteAsync(productId, cancellationToken));
     }
 
     #endregion

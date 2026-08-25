@@ -42,7 +42,7 @@ public sealed class Product
     public IReadOnlyCollection<ProductSize> ProductSizes { get { return _productSizes; } }
     public IReadOnlyCollection<ProductColor> ProductColors { get { return _productColors; } }
 
-    public static Product Create(string categoryId, string? brandId, string name, string slug, decimal? newPrice, string currencyCode, int stock)
+    public static Product Create(string categoryId, string? brandId, string name, string slug, decimal newPrice, string currencyCode, int stock)
     {
         Rules.NonNegative(newPrice, nameof(newPrice));
         Rules.NonNegative(stock, nameof(stock));
