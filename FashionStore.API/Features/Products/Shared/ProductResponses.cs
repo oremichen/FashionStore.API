@@ -50,6 +50,9 @@ public class ProductResponse
     public string? ShortDescription { get; init; }
     public decimal? OldPrice { get; init; }
     public decimal NewPrice { get; init; }
+    public decimal? MinPrice { get; init; }
+    public decimal? MaxPrice { get; init; }
+    public bool HasPriceRange { get; init; }
     public decimal? Discount { get; init; }
     public required string CurrencyCode { get; init; }
     public int AvailabilityCount { get; init; }
@@ -71,4 +74,16 @@ public sealed class ProductDetailResponse : ProductResponse
 {
     public required IReadOnlyList<SizeResponse> Sizes { get; init; }
     public required IReadOnlyList<ColorResponse> Colors { get; init; }
+    public required IReadOnlyList<ProductVariantResponse> ProductVariants { get; init; }
+}
+
+public sealed class ProductVariantResponse
+{
+    public required string Id { get; init; }
+    public string? SizeId { get; init; }
+    public string? Size { get; init; }
+    public string? ColorId { get; init; }
+    public string? Color { get; init; }
+    public decimal Price { get; init; }
+    public int Quantity { get; init; }
 }

@@ -60,6 +60,9 @@ public class GetProductBySlugService(IProductRepository repository, IImageProces
             ShortDescription = product.ShortDescription,
             OldPrice = product.OldPrice,
             NewPrice = product.NewPrice,
+            MinPrice = product.MinPrice,
+            MaxPrice = product.MaxPrice,
+            HasPriceRange = product.NewPrice == 0 && product.MinPrice.HasValue && product.MaxPrice.HasValue,
             Discount = product.Discount,
             CurrencyCode = product.CurrencyCode,
             AvailabilityCount = product.AvailabilityCount,
@@ -95,6 +98,9 @@ public class GetProductBySlugService(IProductRepository repository, IImageProces
             ShortDescription = response.ShortDescription,
             OldPrice = response.OldPrice,
             NewPrice = response.NewPrice,
+            MinPrice = response.MinPrice,
+            MaxPrice = response.MaxPrice,
+            HasPriceRange = response.HasPriceRange,
             Discount = response.Discount,
             CurrencyCode = response.CurrencyCode,
             AvailabilityCount = response.AvailabilityCount,
@@ -111,9 +117,12 @@ public class GetProductBySlugService(IProductRepository repository, IImageProces
             Ratings = response.Ratings,
             Images = response.Images,
             Sizes = product.ProductSizes.OrderBy(item => item.Size.SortOrder).Select(item => new SizeResponse { Id = item.Size.Id, Name = item.Size.Name, DisplayName = item.Size.DisplayName, SortOrder = item.Size.SortOrder, IsActive = item.Size.IsActive }).ToList(),
-            Colors = product.ProductColors.OrderBy(item => item.Color.SortOrder).Select(item => new ColorResponse { Id = item.Color.Id, Name = item.Color.Name, HexCode = item.Color.HexCode, SortOrder = item.Color.SortOrder, IsActive = item.Color.IsActive }).ToList()
+            Colors = product.ProductColors.OrderBy(item => item.Color.SortOrder).Select(item => new ColorResponse { Id = item.Color.Id, Name = item.Color.Name, HexCode = item.Color.HexCode, SortOrder = item.Color.SortOrder, IsActive = item.Color.IsActive }).ToList(),
+            ProductVariants = product.Variants.Select(MapVariant).ToList()
         };
     }
+
+    private static ProductVariantResponse MapVariant(ProductVariant item) => new() { Id = item.Id, SizeId = item.SizeId, Size = item.Size?.DisplayName, ColorId = item.ColorId, Color = item.Color?.Name, Price = item.NewPrice, Quantity = item.AvailabilityCount };
 
     private static int Star(Product product)
     {

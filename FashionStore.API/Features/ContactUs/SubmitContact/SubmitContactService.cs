@@ -14,7 +14,7 @@ public sealed class SubmitContactService(
     public async Task<ResponseResult> ExecuteAsync(SubmitContactRequest request, CancellationToken cancellationToken)
     {
         var response = new ResponseResult();
-        logger.LogInformation("Contact submission received.");
+        logger.LogInformation("Contact submission received. {request}", request);
 
         try
         {
@@ -22,7 +22,7 @@ public sealed class SubmitContactService(
             if (recipient is null)
             {
                 logger.LogWarning("Contact submission rejected because no active contact recipient is configured.");
-                return response.Fail("No active contact recipient is configured.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
+                return response.Fail("Something went wrong, we are working on resolving the issue.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
             }
 
             var contact = FashionStore.Domain.Entities.ContactUs.Create(

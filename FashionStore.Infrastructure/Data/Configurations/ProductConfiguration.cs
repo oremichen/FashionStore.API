@@ -17,6 +17,8 @@ public sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(product => product.ShortDescription).HasMaxLength(500);
         builder.Property(product => product.OldPrice).HasPrecision(19, 4);
         builder.Property(product => product.NewPrice).HasPrecision(19, 4);
+        builder.Property(product => product.MinPrice).HasPrecision(18, 2);
+        builder.Property(product => product.MaxPrice).HasPrecision(18, 2);
         builder.Property(product => product.Discount).HasPrecision(5, 2);
         builder.Property(product => product.CurrencyCode).HasMaxLength(3);
         builder.Property(product => product.Weight).HasPrecision(12, 3);

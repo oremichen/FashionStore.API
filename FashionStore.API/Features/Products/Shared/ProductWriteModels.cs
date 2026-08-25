@@ -12,7 +12,11 @@ public abstract class ProductWriteRequest
     public string? AdditionalInformation { get; init; }
     [StringLength(500)] public string? ShortDescription { get; init; }
     public decimal? OldPrice { get; init; }
-    public decimal NewPrice { get; init; }
+    public decimal? NewPrice { get; init; }
+    public decimal? MinPrice { get; init; }
+    public decimal? MaxPrice { get; init; }
+    public bool IsOldNewPrice { get; init; }
+    public bool IsMinMaxPrice { get; init; }
     [StringLength(3, MinimumLength = 3)] public string CurrencyCode { get; init; } = "NGN";
     public int AvailabilityCount { get; init; }
     public decimal? Weight { get; init; }
@@ -22,6 +26,16 @@ public abstract class ProductWriteRequest
     public string? Sizes { get; init; }
     public string? Colors { get; init; }
     public string Status { get; init; } = "draft";
+    public List<ProductVariantWriteRequest> ProductVariants { get; init; } = [];
+}
+
+public sealed class ProductVariantWriteRequest
+{
+    public string? SizeId { get; init; } 
+    public string? Size { get; init; }
+    public string? Color { get; init; }
+    public decimal Price { get; init; }
+    public int Quantity { get; init; }
 }
 
 public sealed record ProductImageRequest(byte[] Data, string ContentType, string FileName);

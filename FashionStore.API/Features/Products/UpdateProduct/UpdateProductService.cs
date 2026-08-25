@@ -31,21 +31,29 @@ public class UpdateProductService(IProductRepository repository, IImageProcessor
             return new ResponseResult<ProductResponse>().Fail(validation.Value.Message, validation.Value.Code);
         }
 
-        var sizeIds = SplitIds(request.Sizes);
-        var colorIds = SplitIds(request.Colors);
+        var sizeIds = SplitIds(request.Sizes).Concat(request.ProductVariants.Where(x => !string.IsNullOrWhiteSpace(x.Size)).Select(x => x.Size!)).Distinct().ToArray();
+        var colorIds = SplitIds(request.Colors).Concat(request.ProductVariants.Where(x => !string.IsNullOrWhiteSpace(x.Color)).Select(x => x.Color!)).Distinct().ToArray();
         var optionValidation = await ValidateOptionsAsync(sizeIds, colorIds, ct);
         if (optionValidation is not null)
         {
             return new ResponseResult<ProductResponse>().Fail(optionValidation, ResponseCodes.INVALID_REFERENCE_PROVIDED);
         }
+        var priceValidation = ValidatePricing(request);
+        if (priceValidation is not null) return new ResponseResult<ProductResponse>().Fail(priceValidation, ResponseCodes.INVALID_ACTION);
 
         try
         {
-            product.Update(request.CategoryId, request.BrandId, request.Name, request.Slug, request.Description, request.AdditionalInformation, request.ShortDescription, request.OldPrice, request.NewPrice, request.CurrencyCode, request.AvailabilityCount, request.Weight, request.WeightUnit, request.IsFeatured, request.IsNewArrival);
+            var oldPrice = request.IsMinMaxPrice ? null : request.OldPrice;
+            var newPrice = request.IsMinMaxPrice ? 0 : request.NewPrice ?? 0;
+            var minPrice = request.IsMinMaxPrice ? request.MinPrice : null;
+            var maxPrice = request.IsMinMaxPrice ? request.MaxPrice : null;
+
+            product.Update(request.CategoryId, request.BrandId, request.Name, request.Slug, request.Description, request.AdditionalInformation, request.ShortDescription, oldPrice, newPrice, request.CurrencyCode, request.AvailabilityCount, request.Weight, request.WeightUnit, request.IsFeatured, request.IsNewArrival, request.IsMinMaxPrice, minPrice, maxPrice);
             product.SetStatus(request.Status);
             product.AddImages(await ProcessImagesAsync(request.ImageRequests, ct));
             await repository.SaveChangesAsync(ct);
             await repository.SetSizesAndColorsAsync(product.Id, sizeIds, colorIds, ct);
+            await repository.SetVariantsAsync(product.Id, request.ProductVariants.Select(x => (x.Size, x.Color, x.Price, x.Quantity)).ToArray(), ct);
             var saved = await repository.GetByIdAsync(product.Id, false, ct) ?? product;
             logger.LogInformation("Updated product {ProductId}.", product.Id);
             return new ResponseResult<ProductResponse>().Success(Map(saved, 5), "Product updated successfully.");
@@ -55,6 +63,18 @@ public class UpdateProductService(IProductRepository repository, IImageProcessor
             logger.LogError(ex, "Product {ProductId} update failed validation.", request.ProductId);
             return new ResponseResult<ProductResponse>().Fail(ex.Message, ResponseCodes.INVALID_ACTION);
         }
+    }
+
+    private static string? ValidatePricing(ProductWriteRequest request)
+    {
+        if (request.IsOldNewPrice && request.IsMinMaxPrice) return "IsOldNewPrice and IsMinMaxPrice cannot both be true.";
+        if (request.IsOldNewPrice && !request.NewPrice.HasValue) return "NewPrice is required when IsOldNewPrice is true.";
+        if (request.IsOldNewPrice && (request.NewPrice < 0 || request.OldPrice < 0)) return "OldPrice and NewPrice must be non-negative.";
+        if (request.IsMinMaxPrice && (!request.MinPrice.HasValue || !request.MaxPrice.HasValue)) return "MinPrice and MaxPrice are required when IsMinMaxPrice is true.";
+        if (request.IsMinMaxPrice && (request.MinPrice < 0 || request.MaxPrice < 0 || request.MinPrice > request.MaxPrice)) return "MinPrice and MaxPrice must be non-negative and MinPrice cannot exceed MaxPrice.";
+        if (request.ProductVariants.Any(x => x.Price < 0 || x.Quantity < 0 || (string.IsNullOrWhiteSpace(x.Size) && string.IsNullOrWhiteSpace(x.Color)))) return "Each product variant must have a size or color and non-negative price and quantity.";
+        if (request.ProductVariants.GroupBy(x => new { x.Size, x.Color }).Any(x => x.Count() > 1)) return "Duplicate product variants are not allowed.";
+        return null;
     }
 
     private async Task<(string Message, string Code)?> ValidateReferencesAsync(string categoryId, string? brandId, string slug, string? id, CancellationToken ct)
@@ -155,6 +175,9 @@ public class UpdateProductService(IProductRepository repository, IImageProcessor
             ShortDescription = product.ShortDescription,
             OldPrice = product.OldPrice,
             NewPrice = product.NewPrice,
+            MinPrice = product.MinPrice,
+            MaxPrice = product.MaxPrice,
+            HasPriceRange = product.NewPrice == 0 && product.MinPrice.HasValue && product.MaxPrice.HasValue,
             Discount = product.Discount,
             CurrencyCode = product.CurrencyCode,
             AvailabilityCount = product.AvailabilityCount,

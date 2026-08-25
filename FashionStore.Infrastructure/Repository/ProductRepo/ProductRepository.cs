@@ -51,8 +51,8 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
         var brandIds = Split(request.BrandId);
         if (brandIds.Length > 0)
             query = query.Where(x => x.BrandId != null && brandIds.Contains(x.BrandId.ToLower()));
-        if (request.MinPrice.HasValue) query = query.Where(x => x.NewPrice >= request.MinPrice.Value);
-        if (request.MaxPrice.HasValue) query = query.Where(x => x.NewPrice <= request.MaxPrice.Value);
+        if (request.MinPrice.HasValue) query = query.Where(x => (x.NewPrice == 0 && x.MinPrice.HasValue ? x.MinPrice.Value : x.NewPrice) >= request.MinPrice.Value);
+        if (request.MaxPrice.HasValue) query = query.Where(x => (x.NewPrice == 0 && x.MaxPrice.HasValue ? x.MaxPrice.Value : x.NewPrice) <= request.MaxPrice.Value);
         if (request.InStock.HasValue) query = request.InStock.Value
             ? query.Where(x => x.AvailabilityCount > 0 || x.Variants.Any(v => v.IsActive && v.AvailabilityCount > 0))
             : query.Where(x => x.AvailabilityCount == 0 && !x.Variants.Any(v => v.IsActive && v.AvailabilityCount > 0));
@@ -78,8 +78,8 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
         {
             "popular" => query.OrderByDescending(x => x.RatingsCount).ThenByDescending(x => x.RatingsValue).ThenBy(x => x.Id),
             "rating" => query.OrderByDescending(x => x.RatingsValue).ThenByDescending(x => x.RatingsCount).ThenBy(x => x.Id),
-            "price-asc" => query.OrderBy(x => x.NewPrice).ThenBy(x => x.Id),
-            "price-desc" => query.OrderByDescending(x => x.NewPrice).ThenBy(x => x.Id),
+            "price-asc" => query.OrderBy(x => x.NewPrice == 0 && x.MinPrice.HasValue ? x.MinPrice.Value : x.NewPrice).ThenBy(x => x.Id),
+            "price-desc" => query.OrderByDescending(x => x.NewPrice == 0 && x.MaxPrice.HasValue ? x.MaxPrice.Value : x.NewPrice).ThenBy(x => x.Id),
             _ => query.OrderByDescending(x => x.CreatedAt).ThenBy(x => x.Id)
         };
         var items = await orderedQuery
@@ -97,6 +97,8 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
         return StorefrontProducts()
         .Include(x => x.ProductSizes).ThenInclude(x => x.Size)
         .Include(x => x.ProductColors).ThenInclude(x => x.Color)
+        .Include(x => x.Variants).ThenInclude(x => x.Size)
+        .Include(x => x.Variants).ThenInclude(x => x.Color)
         .SingleOrDefaultAsync(x => x.Slug.ToLower() == slug.Trim().ToLower(), ct);
     }
 
@@ -132,8 +134,8 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
             "out-of-stock" => query.Where(x => x.AvailabilityCount == 0),
             _ => query
         };
-        if (request.MinPrice.HasValue) query = query.Where(x => x.NewPrice >= request.MinPrice.Value);
-        if (request.MaxPrice.HasValue) query = query.Where(x => x.NewPrice <= request.MaxPrice.Value);
+        if (request.MinPrice.HasValue) query = query.Where(x => (x.NewPrice == 0 && x.MinPrice.HasValue ? x.MinPrice.Value : x.NewPrice) >= request.MinPrice.Value);
+        if (request.MaxPrice.HasValue) query = query.Where(x => (x.NewPrice == 0 && x.MaxPrice.HasValue ? x.MaxPrice.Value : x.NewPrice) <= request.MaxPrice.Value);
         query = request.Sort.ToLowerInvariant() switch
         {
             "oldest" => query.OrderBy(x => x.CreatedAt),
@@ -155,6 +157,8 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
         var query = dbContext.Products.Include(x => x.Category).Include(x => x.Brand).Include(x => x.Images)
             .Include(x => x.ProductSizes).ThenInclude(x => x.Size)
             .Include(x => x.ProductColors).ThenInclude(x => x.Color).AsQueryable();
+        query = query.Include(x => x.Variants).ThenInclude(x => x.Size)
+            .Include(x => x.Variants).ThenInclude(x => x.Color);
         if (!trackChanges) query = query.AsNoTracking();
         return query.SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
@@ -200,6 +204,20 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
         dbContext.ProductSizes.AddRange(sizeIds.Select(sizeId => ProductSize.Create(productId, sizeId)));
         dbContext.ProductColors.AddRange(colorIds.Select(colorId => ProductColor.Create(productId, colorId)));
         await dbContext.SaveChangesAsync(ct);
+    }
+
+    public async Task SetVariantsAsync(string productId, IReadOnlyCollection<(string? SizeId, string? ColorId, decimal Price, int Quantity)> variants, CancellationToken ct)
+    {
+        var current = await dbContext.ProductVariants.Where(item => item.ProductId == productId).ToListAsync(ct);
+        dbContext.ProductVariants.RemoveRange(current);
+        dbContext.ProductVariants.AddRange(variants.Select(item => ProductVariant.Create(productId, item.SizeId, item.ColorId, item.Price, item.Quantity)));
+        await dbContext.SaveChangesAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<ProductVariant>> GetVariantsAsync(string productId, CancellationToken ct)
+    {
+        return await dbContext.ProductVariants.AsNoTracking().Where(item => item.ProductId == productId)
+            .Include(item => item.Size).Include(item => item.Color).OrderBy(item => item.Size!.SortOrder).ToListAsync(ct);
     }
 
     public async Task AddAsync(Product product, CancellationToken ct)

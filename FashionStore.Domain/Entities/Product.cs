@@ -20,6 +20,8 @@ public sealed class Product
     public string? ShortDescription { get; private set; }
     public decimal? OldPrice { get; private set; }
     public decimal NewPrice { get; private set; }
+    public decimal? MinPrice { get; private set; }
+    public decimal? MaxPrice { get; private set; }
     public decimal? Discount { get; private set; }
     public string CurrencyCode { get; private set; } = "NGN";
     public int AvailabilityCount { get; private set; }
@@ -40,7 +42,7 @@ public sealed class Product
     public IReadOnlyCollection<ProductSize> ProductSizes { get { return _productSizes; } }
     public IReadOnlyCollection<ProductColor> ProductColors { get { return _productColors; } }
 
-    public static Product Create(string categoryId, string? brandId, string name, string slug, decimal newPrice, string currencyCode, int stock)
+    public static Product Create(string categoryId, string? brandId, string name, string slug, decimal? newPrice, string currencyCode, int stock)
     {
         Rules.NonNegative(newPrice, nameof(newPrice));
         Rules.NonNegative(stock, nameof(stock));
@@ -51,12 +53,21 @@ public sealed class Product
 
     public void Update(string categoryId, string? brandId, string name, string slug, string? description,
         string? additionalInformation, string? shortDescription, decimal? oldPrice, decimal newPrice, string currencyCode, int stock,
-        decimal? weight, string? weightUnit, bool isFeatured, bool isNewArrival)
+        decimal? weight, string? weightUnit, bool isFeatured, bool isNewArrival, bool isMinMaxPrice = false,
+        decimal? minPrice = null, decimal? maxPrice = null)
     {
         Rules.NonNegative(newPrice, nameof(newPrice));
         Rules.NonNegative(stock, nameof(stock));
         if (oldPrice.HasValue) Rules.NonNegative(oldPrice.Value, nameof(oldPrice));
         if (weight.HasValue) Rules.NonNegative(weight.Value, nameof(weight));
+        if (isMinMaxPrice)
+        {
+            if (!minPrice.HasValue || !maxPrice.HasValue) throw new ArgumentException("MinPrice and MaxPrice are required when IsMinMaxPrice is true.");
+            Rules.NonNegative(minPrice.Value, nameof(minPrice));
+            Rules.NonNegative(maxPrice.Value, nameof(maxPrice));
+            if (minPrice.Value > maxPrice.Value) throw new ArgumentException("MinPrice cannot be greater than MaxPrice.");
+            newPrice = 0;
+        }
         CategoryId = Rules.Required(categoryId, 50, nameof(categoryId));
         BrandId = string.IsNullOrWhiteSpace(brandId) ? null : brandId.Trim();
         Name = Rules.Required(name, 250, nameof(name));
@@ -66,6 +77,8 @@ public sealed class Product
         ShortDescription = Rules.Optional(shortDescription, 500, nameof(shortDescription));
         OldPrice = oldPrice;
         NewPrice = newPrice;
+        MinPrice = isMinMaxPrice ? minPrice : null;
+        MaxPrice = isMinMaxPrice ? maxPrice : null;
         Discount = oldPrice > newPrice && oldPrice > 0 ? decimal.Round((oldPrice.Value - newPrice) / oldPrice.Value * 100, 2) : null;
         var currency = Rules.Required(currencyCode, 3, nameof(currencyCode)).ToUpperInvariant();
         if (currency.Length != 3) throw new ArgumentException("Currency code must contain exactly three letters.");

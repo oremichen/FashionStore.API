@@ -128,6 +128,10 @@ public sealed class ProductsController(
             ShortDescription = form.ShortDescription, 
             OldPrice = form.OldPrice, 
             NewPrice = form.NewPrice,
+            MinPrice = form.MinPrice,
+            MaxPrice = form.MaxPrice,
+            IsOldNewPrice = form.IsOldNewPrice,
+            IsMinMaxPrice = form.IsMinMaxPrice,
             CurrencyCode = form.CurrencyCode, 
             AvailabilityCount = form.AvailabilityCount, 
             Weight = form.Weight,
@@ -137,6 +141,7 @@ public sealed class ProductsController(
             Sizes = form.Sizes,
             Colors = form.Colors,
             Status = form.Status, 
+            ProductVariants = form.ProductVariants,
             ImageRequests = images
         };
         return ProcessResponse(await createProductService.ExecuteAsync(request, cancellationToken));
@@ -168,6 +173,10 @@ public sealed class ProductsController(
             ShortDescription = form.ShortDescription, 
             OldPrice = form.OldPrice, 
             NewPrice = form.NewPrice,
+            MinPrice = form.MinPrice,
+            MaxPrice = form.MaxPrice,
+            IsOldNewPrice = form.IsOldNewPrice,
+            IsMinMaxPrice = form.IsMinMaxPrice,
             CurrencyCode = form.CurrencyCode, 
             AvailabilityCount = form.AvailabilityCount, 
             Weight = form.Weight,
@@ -177,6 +186,7 @@ public sealed class ProductsController(
             Sizes = form.Sizes,
             Colors = form.Colors,
             Status = form.Status, 
+            ProductVariants = form.ProductVariants,
             ImageRequests = images
         };
         return ProcessResponse(await updateProductService.ExecuteAsync(request, cancellationToken));
