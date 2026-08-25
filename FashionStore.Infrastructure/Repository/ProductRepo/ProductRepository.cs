@@ -58,7 +58,7 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
             : query.Where(x => x.AvailabilityCount == 0 && !x.Variants.Any(v => v.IsActive && v.AvailabilityCount > 0));
         if (request.MinRating.HasValue) query = query.Where(x => x.RatingsValue >= request.MinRating.Value);
         var colors = Split(request.Colors);
-        if (colors.Length > 0) query = query.Where(x => x.Variants.Any(v => v.IsActive && v.Color != null && colors.Contains(v.Color.Name.ToLower())));
+        if (colors.Length > 0) query = query.Where(x => x.ProductColors.Any(pc => colors.Contains(pc.Color.Name.ToLower())));
         var sizes = Split(request.Sizes);
         if (sizes.Length > 0) query = query.Where(x => x.Variants.Any(v => v.IsActive && v.Size != null && (sizes.Contains(v.Size.Name.ToLower()) || sizes.Contains(v.Size.DisplayName.ToLower()))));
         query = collection switch
@@ -98,7 +98,6 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
         .Include(x => x.ProductSizes).ThenInclude(x => x.Size)
         .Include(x => x.ProductColors).ThenInclude(x => x.Color)
         .Include(x => x.Variants).ThenInclude(x => x.Size)
-        .Include(x => x.Variants).ThenInclude(x => x.Color)
         .SingleOrDefaultAsync(x => x.Slug.ToLower() == slug.Trim().ToLower(), ct);
     }
 
@@ -157,8 +156,7 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
         var query = dbContext.Products.Include(x => x.Category).Include(x => x.Brand).Include(x => x.Images)
             .Include(x => x.ProductSizes).ThenInclude(x => x.Size)
             .Include(x => x.ProductColors).ThenInclude(x => x.Color).AsQueryable();
-        query = query.Include(x => x.Variants).ThenInclude(x => x.Size)
-            .Include(x => x.Variants).ThenInclude(x => x.Color);
+        query = query.Include(x => x.Variants).ThenInclude(x => x.Size);
         if (!trackChanges) query = query.AsNoTracking();
         return query.SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
@@ -206,18 +204,18 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
         await dbContext.SaveChangesAsync(ct);
     }
 
-    public async Task SetVariantsAsync(string productId, IReadOnlyCollection<(string? SizeId, string? ColorId, decimal Price, int Quantity)> variants, CancellationToken ct)
+    public async Task SetVariantsAsync(string productId, IReadOnlyCollection<(string? SizeId, decimal Price, int Quantity)> variants, CancellationToken ct)
     {
         var current = await dbContext.ProductVariants.Where(item => item.ProductId == productId).ToListAsync(ct);
         dbContext.ProductVariants.RemoveRange(current);
-        dbContext.ProductVariants.AddRange(variants.Select(item => ProductVariant.Create(productId, item.SizeId, item.ColorId, item.Price, item.Quantity)));
+        dbContext.ProductVariants.AddRange(variants.Select(item => ProductVariant.Create(productId, item.SizeId, null, item.Price, item.Quantity)));
         await dbContext.SaveChangesAsync(ct);
     }
 
     public async Task<IReadOnlyList<ProductVariant>> GetVariantsAsync(string productId, CancellationToken ct)
     {
         return await dbContext.ProductVariants.AsNoTracking().Where(item => item.ProductId == productId)
-            .Include(item => item.Size).Include(item => item.Color).OrderBy(item => item.Size!.SortOrder).ToListAsync(ct);
+            .Include(item => item.Size).OrderBy(item => item.Size!.SortOrder).ToListAsync(ct);
     }
 
     public async Task AddAsync(Product product, CancellationToken ct)

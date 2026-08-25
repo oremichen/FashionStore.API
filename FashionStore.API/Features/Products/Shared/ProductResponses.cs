@@ -82,8 +82,6 @@ public sealed class ProductVariantResponse
     public required string Id { get; init; }
     public string? SizeId { get; init; }
     public string? Size { get; init; }
-    public string? ColorId { get; init; }
-    public string? Color { get; init; }
     public decimal Price { get; init; }
     public int Quantity { get; init; }
 }

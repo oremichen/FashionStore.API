@@ -32,7 +32,7 @@ public class UpdateProductService(IProductRepository repository, IImageProcessor
         }
 
         var sizeIds = SplitIds(request.Sizes).Concat(request.ProductVariants.Where(x => !string.IsNullOrWhiteSpace(x.SizeId)).Select(x => x.SizeId!)).Distinct().ToArray();
-        var colorIds = SplitIds(request.Colors).Concat(request.ProductVariants.Where(x => !string.IsNullOrWhiteSpace(x.Color)).Select(x => x.Color!)).Distinct().ToArray();
+        var colorIds = SplitIds(request.Colors).ToArray();
         var optionValidation = await ValidateOptionsAsync(sizeIds, colorIds, ct);
         if (optionValidation is not null)
         {
@@ -53,7 +53,7 @@ public class UpdateProductService(IProductRepository repository, IImageProcessor
             product.AddImages(await ProcessImagesAsync(request.ImageRequests, ct));
             await repository.SaveChangesAsync(ct);
             await repository.SetSizesAndColorsAsync(product.Id, sizeIds, colorIds, ct);
-            await repository.SetVariantsAsync(product.Id, request.ProductVariants.Select(x => (x.Size, x.Color, x.Price, x.Quantity)).ToArray(), ct);
+            await repository.SetVariantsAsync(product.Id, request.ProductVariants.Select(x => (x.SizeId, x.Price, x.Quantity)).ToArray(), ct);
             var saved = await repository.GetByIdAsync(product.Id, false, ct) ?? product;
             logger.LogInformation("Updated product {ProductId}.", product.Id);
             return new ResponseResult<ProductResponse>().Success(Map(saved, 5), "Product updated successfully.");
@@ -72,8 +72,8 @@ public class UpdateProductService(IProductRepository repository, IImageProcessor
         if (request.IsOldNewPrice && (request.NewPrice < 0 || request.OldPrice < 0)) return "OldPrice and NewPrice must be non-negative.";
         if (request.IsMinMaxPrice && (!request.MinPrice.HasValue || !request.MaxPrice.HasValue)) return "MinPrice and MaxPrice are required when IsMinMaxPrice is true.";
         if (request.IsMinMaxPrice && (request.MinPrice < 0 || request.MaxPrice < 0 || request.MinPrice > request.MaxPrice)) return "MinPrice and MaxPrice must be non-negative and MinPrice cannot exceed MaxPrice.";
-        if (request.ProductVariants.Any(x => x.Price < 0 || x.Quantity < 0 || (string.IsNullOrWhiteSpace(x.Size) && string.IsNullOrWhiteSpace(x.Color)))) return "Each product variant must have a size or color and non-negative price and quantity.";
-        if (request.ProductVariants.GroupBy(x => new { x.Size, x.Color }).Any(x => x.Count() > 1)) return "Duplicate product variants are not allowed.";
+        if (request.ProductVariants.Any(x => x.Price < 0 || x.Quantity < 0 || string.IsNullOrWhiteSpace(x.SizeId))) return "Each product variant must have a size and non-negative price and quantity.";
+        if (request.ProductVariants.GroupBy(x => x.SizeId, StringComparer.OrdinalIgnoreCase).Any(x => x.Count() > 1)) return "Duplicate product size variants are not allowed.";
         return null;
     }
 

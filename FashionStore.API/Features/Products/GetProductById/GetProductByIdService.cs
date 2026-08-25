@@ -131,7 +131,17 @@ public class GetProductByIdService(IProductRepository repository, IImageProcesso
         };
     }
 
-    private static ProductVariantResponse MapVariant(ProductVariant item) => new() { Id = item.Id, SizeId = item.SizeId, Size = item.Size?.DisplayName, ColorId = item.ColorId, Color = item.Color?.Name, Price = item.NewPrice, Quantity = item.AvailabilityCount };
+    private static ProductVariantResponse MapVariant(ProductVariant item)
+    {
+        return new ProductVariantResponse
+        {
+            Id = item.Id,
+            SizeId = item.SizeId,
+            Size = item.Size?.DisplayName,
+            Price = item.NewPrice,
+            Quantity = item.AvailabilityCount
+        };
+    }
 
     private static int Star(Product product)
     {
