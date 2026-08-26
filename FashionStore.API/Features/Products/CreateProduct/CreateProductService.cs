@@ -24,8 +24,8 @@ public class CreateProductService(IProductRepository repository, IImageProcessor
             return new ResponseResult<ProductResponse>().Fail(validation.Value.Message, validation.Value.Code);
         }
 
-        var sizeIds = SplitIds(request.Sizes).Concat(request.ProductVariants.Where(x => !string.IsNullOrWhiteSpace(x.Size)).Select(x => x.Size!)).Distinct().ToArray();
-        var colorIds = SplitIds(request.Colors).Concat(request.ProductVariants.Where(x => !string.IsNullOrWhiteSpace(x.Color)).Select(x => x.Color!)).Distinct().ToArray();
+        var sizeIds = SplitIds(request.Sizes).Concat(request.ProductVariants.Where(x => !string.IsNullOrWhiteSpace(x.SizeId)).Select(x => x.SizeId!)).Distinct().ToArray();
+        var colorIds = SplitIds(request.Colors).ToArray();
         var optionValidation = await ValidateOptionsAsync(sizeIds, colorIds, ct);
         if (optionValidation is not null)
         {
@@ -47,7 +47,7 @@ public class CreateProductService(IProductRepository repository, IImageProcessor
             product.AddImages(await ProcessImagesAsync(request.ImageRequests, ct));
             await repository.AddAsync(product, ct);
             await repository.SetSizesAndColorsAsync(product.Id, sizeIds, colorIds, ct);
-            await repository.SetVariantsAsync(product.Id, request.ProductVariants.Select(x => (x.Size, x.Color, x.Price, x.Quantity)).ToArray(), ct);
+            await repository.SetVariantsAsync(product.Id, request.ProductVariants.Select(x => (x.SizeId, x.Price, x.Quantity)).ToArray(), ct);
             var saved = await repository.GetByIdAsync(product.Id, false, ct) ?? product;
             logger.LogInformation("Created product {ProductId}.", product.Id);
             return new ResponseResult<ProductResponse>().Success(Map(saved, 5), "Product created successfully.").SetStatusCode(ResponseCodes.CREATED);
@@ -66,8 +66,8 @@ public class CreateProductService(IProductRepository repository, IImageProcessor
         if (request.IsOldNewPrice && (request.NewPrice < 0 || request.OldPrice < 0)) return "OldPrice and NewPrice must be non-negative.";
         if (request.IsMinMaxPrice && (!request.MinPrice.HasValue || !request.MaxPrice.HasValue)) return "MinPrice and MaxPrice are required when IsMinMaxPrice is true.";
         if (request.IsMinMaxPrice && (request.MinPrice < 0 || request.MaxPrice < 0 || request.MinPrice > request.MaxPrice)) return "MinPrice and MaxPrice must be non-negative and MinPrice cannot exceed MaxPrice.";
-        if (request.ProductVariants.Any(x => x.Price < 0 || x.Quantity < 0 || (string.IsNullOrWhiteSpace(x.Size) && string.IsNullOrWhiteSpace(x.Color)))) return "Each product variant must have a size or color and non-negative price and quantity.";
-        if (request.ProductVariants.GroupBy(x => new { x.Size, x.Color }).Any(x => x.Count() > 1)) return "Duplicate product variants are not allowed.";
+        if (request.ProductVariants.Any(x => x.Price < 0 || x.Quantity < 0 || string.IsNullOrWhiteSpace(x.SizeId))) return "Each product variant must have a size and non-negative price and quantity.";
+        if (request.ProductVariants.GroupBy(x => x.SizeId, StringComparer.OrdinalIgnoreCase).Any(x => x.Count() > 1)) return "Duplicate product size variants are not allowed.";
         return null;
     }
 
@@ -175,6 +175,7 @@ public class CreateProductService(IProductRepository repository, IImageProcessor
             Discount = product.Discount,
             CurrencyCode = product.CurrencyCode,
             AvailabilityCount = product.AvailabilityCount,
+            ColorCount = product.ProductColors.Count,
             StockStatus = Stock(product, threshold),
             Weight = product.Weight,
             WeightUnit = product.WeightUnit,
@@ -186,9 +187,14 @@ public class CreateProductService(IProductRepository repository, IImageProcessor
             UpdatedAt = product.UpdatedAt,
             Star = Star(product),
             Ratings = Ratings(product),
-            Images = product.Images.OrderBy(image => image.SortOrder).Select(MapImage).ToList()
+            Images = product.Images.OrderBy(image => image.SortOrder).Select(MapImage).ToList(),
+            Colors = MapColors(product),
+            Sizes = MapSizes(product)
         };
     }
+
+    private static IReadOnlyList<ColorResponse> MapColors(Product product) => product.ProductColors.OrderBy(item => item.Color.SortOrder).Select(item => new ColorResponse { Id = item.Color.Id, Name = item.Color.Name, HexCode = item.Color.HexCode, SortOrder = item.Color.SortOrder, IsActive = item.Color.IsActive }).ToList();
+    private static IReadOnlyList<SizeResponse> MapSizes(Product product) => product.ProductSizes.OrderBy(item => item.Size.SortOrder).Select(item => new SizeResponse { Id = item.Size.Id, Name = item.Size.Name, DisplayName = item.Size.DisplayName, SortOrder = item.Size.SortOrder, IsActive = item.Size.IsActive }).ToList();
 
     private static int Star(Product product)
     {

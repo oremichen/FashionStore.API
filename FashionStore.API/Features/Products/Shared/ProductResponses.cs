@@ -56,6 +56,7 @@ public class ProductResponse
     public decimal? Discount { get; init; }
     public required string CurrencyCode { get; init; }
     public int AvailabilityCount { get; init; }
+    public int ColorCount { get; init; }
     public required string StockStatus { get; init; }
     public decimal? Weight { get; init; }
     public string? WeightUnit { get; init; }
@@ -68,12 +69,12 @@ public class ProductResponse
     public int Star { get; init; }
     public string? Ratings { get; init; }
     public required IReadOnlyList<ProductImageResponse> Images { get; init; }
+    public required IReadOnlyList<ColorResponse> Colors { get; init; }
+    public required IReadOnlyList<SizeResponse> Sizes { get; init; }
 }
 
 public sealed class ProductDetailResponse : ProductResponse
 {
-    public required IReadOnlyList<SizeResponse> Sizes { get; init; }
-    public required IReadOnlyList<ColorResponse> Colors { get; init; }
     public required IReadOnlyList<ProductVariantResponse> ProductVariants { get; init; }
 }
 
@@ -82,8 +83,6 @@ public sealed class ProductVariantResponse
     public required string Id { get; init; }
     public string? SizeId { get; init; }
     public string? Size { get; init; }
-    public string? ColorId { get; init; }
-    public string? Color { get; init; }
     public decimal Price { get; init; }
     public int Quantity { get; init; }
 }

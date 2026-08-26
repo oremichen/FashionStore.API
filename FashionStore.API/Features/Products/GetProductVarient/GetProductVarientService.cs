@@ -23,8 +23,6 @@ public sealed class GetProductVarientService(
                 Id = item.Id,
                 SizeId = item.SizeId,
                 Size = item.Size?.DisplayName,
-                ColorId = item.ColorId,
-                Color = item.Color?.Name,
                 Price = item.NewPrice,
                 Quantity = item.AvailabilityCount
             })

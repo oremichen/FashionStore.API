@@ -46,7 +46,7 @@ public interface IProductRepository
     Task<bool> SizeIdsExistAsync(IReadOnlyCollection<string> ids, CancellationToken cancellationToken);
     Task<bool> ColorIdsExistAsync(IReadOnlyCollection<string> ids, CancellationToken cancellationToken);
     Task SetSizesAndColorsAsync(string productId, IReadOnlyCollection<string> sizeIds, IReadOnlyCollection<string> colorIds, CancellationToken cancellationToken);
-    Task SetVariantsAsync(string productId, IReadOnlyCollection<(string? SizeId, string? ColorId, decimal Price, int Quantity)> variants, CancellationToken cancellationToken);
+    Task SetVariantsAsync(string productId, IReadOnlyCollection<(string? SizeId, decimal Price, int Quantity)> variants, CancellationToken cancellationToken);
     Task<IReadOnlyList<ProductVariant>> GetVariantsAsync(string productId, CancellationToken cancellationToken);
     Task AddAsync(Product product, CancellationToken cancellationToken);
     Task SaveChangesAsync(CancellationToken cancellationToken);

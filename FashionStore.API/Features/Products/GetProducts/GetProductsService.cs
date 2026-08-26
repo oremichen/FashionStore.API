@@ -88,6 +88,7 @@ public class GetProductsService(IProductRepository repository, IImageProcessor i
             Discount = product.Discount,
             CurrencyCode = product.CurrencyCode,
             AvailabilityCount = product.AvailabilityCount,
+            ColorCount = product.ProductColors.Count,
             StockStatus = Stock(product, threshold),
             Weight = product.Weight,
             WeightUnit = product.WeightUnit,
@@ -99,9 +100,14 @@ public class GetProductsService(IProductRepository repository, IImageProcessor i
             UpdatedAt = product.UpdatedAt,
             Star = Star(product),
             Ratings = Ratings(product),
-            Images = product.Images.OrderBy(image => image.SortOrder).Select(MapImage).ToList()
+            Images = product.Images.OrderBy(image => image.SortOrder).Select(MapImage).ToList(),
+            Colors = MapColors(product),
+            Sizes = MapSizes(product)
         };
     }
+
+    private static IReadOnlyList<ColorResponse> MapColors(Product product) => product.ProductColors.OrderBy(item => item.Color.SortOrder).Select(item => new ColorResponse { Id = item.Color.Id, Name = item.Color.Name, HexCode = item.Color.HexCode, SortOrder = item.Color.SortOrder, IsActive = item.Color.IsActive }).ToList();
+    private static IReadOnlyList<SizeResponse> MapSizes(Product product) => product.ProductSizes.OrderBy(item => item.Size.SortOrder).Select(item => new SizeResponse { Id = item.Size.Id, Name = item.Size.Name, DisplayName = item.Size.DisplayName, SortOrder = item.Size.SortOrder, IsActive = item.Size.IsActive }).ToList();
 
     private static int Star(Product product)
     {

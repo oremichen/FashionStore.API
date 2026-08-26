@@ -31,9 +31,7 @@ public abstract class ProductWriteRequest
 
 public sealed class ProductVariantWriteRequest
 {
-    public string? SizeId { get; init; } 
-    public string? Size { get; init; }
-    public string? Color { get; init; }
+    public string? SizeId { get; init; }
     public decimal Price { get; init; }
     public int Quantity { get; init; }
 }
