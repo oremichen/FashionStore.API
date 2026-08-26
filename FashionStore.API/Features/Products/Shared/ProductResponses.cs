@@ -69,12 +69,12 @@ public class ProductResponse
     public int Star { get; init; }
     public string? Ratings { get; init; }
     public required IReadOnlyList<ProductImageResponse> Images { get; init; }
+    public required IReadOnlyList<ColorResponse> Colors { get; init; }
+    public required IReadOnlyList<SizeResponse> Sizes { get; init; }
 }
 
 public sealed class ProductDetailResponse : ProductResponse
 {
-    public required IReadOnlyList<SizeResponse> Sizes { get; init; }
-    public required IReadOnlyList<ColorResponse> Colors { get; init; }
     public required IReadOnlyList<ProductVariantResponse> ProductVariants { get; init; }
 }
 

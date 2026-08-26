@@ -87,7 +87,9 @@ public class GetProductByIdService(IProductRepository repository, IImageProcesso
             UpdatedAt = product.UpdatedAt,
             Star = Star(product),
             Ratings = Ratings(product),
-            Images = product.Images.OrderBy(image => image.SortOrder).Select(MapImage).ToList()
+            Images = product.Images.OrderBy(image => image.SortOrder).Select(MapImage).ToList(),
+            Colors = MapColors(product),
+            Sizes = MapSizes(product)
         };
     }
 
@@ -127,11 +129,14 @@ public class GetProductByIdService(IProductRepository repository, IImageProcesso
             Star = response.Star,
             Ratings = response.Ratings,
             Images = response.Images,
-            Sizes = product.ProductSizes.OrderBy(item => item.Size.SortOrder).Select(item => new SizeResponse { Id = item.Size.Id, Name = item.Size.Name, DisplayName = item.Size.DisplayName, SortOrder = item.Size.SortOrder, IsActive = item.Size.IsActive }).ToList(),
-            Colors = product.ProductColors.OrderBy(item => item.Color.SortOrder).Select(item => new ColorResponse { Id = item.Color.Id, Name = item.Color.Name, HexCode = item.Color.HexCode, SortOrder = item.Color.SortOrder, IsActive = item.Color.IsActive }).ToList(),
+            Sizes = response.Sizes,
+            Colors = response.Colors,
             ProductVariants = product.Variants.Select(MapVariant).ToList()
         };
     }
+
+    private static IReadOnlyList<ColorResponse> MapColors(Product product) => product.ProductColors.OrderBy(item => item.Color.SortOrder).Select(item => new ColorResponse { Id = item.Color.Id, Name = item.Color.Name, HexCode = item.Color.HexCode, SortOrder = item.Color.SortOrder, IsActive = item.Color.IsActive }).ToList();
+    private static IReadOnlyList<SizeResponse> MapSizes(Product product) => product.ProductSizes.OrderBy(item => item.Size.SortOrder).Select(item => new SizeResponse { Id = item.Size.Id, Name = item.Size.Name, DisplayName = item.Size.DisplayName, SortOrder = item.Size.SortOrder, IsActive = item.Size.IsActive }).ToList();
 
     private static ProductVariantResponse MapVariant(ProductVariant item)
     {
