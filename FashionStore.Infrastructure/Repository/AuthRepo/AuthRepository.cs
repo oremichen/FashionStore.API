@@ -1,11 +1,13 @@
-﻿namespace FashionStore.Infrastructure.Repositories.AuthRepo
+namespace FashionStore.Infrastructure.Repositories.AuthRepo
 {
     public class AuthRepository
     {
-        //private FashionStoreDbContext fashionStoreDbContext;
+        private readonly ILogger<AuthRepository> _logger;
 
-        public AuthRepository()
+        public AuthRepository(ILogger<AuthRepository> logger)
         {
+            _logger = logger;
+            _logger.LogDebug("Auth repository initialized.");
         }
 
 

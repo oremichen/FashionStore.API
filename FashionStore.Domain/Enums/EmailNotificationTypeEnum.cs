@@ -1,9 +1,14 @@
-﻿namespace FashionStore.Domain.Enums
+namespace FashionStore.Domain.Enums
 {
     public enum EmailNotificationTypeEnum
     {
         Registration,
+        Confirmation,
+        ForgotPassword,
+        UserCreation,
         Checkout,
         FeedbackResponse,
+        ContactRecipient,
+        ContactCustomer,
     }
 }

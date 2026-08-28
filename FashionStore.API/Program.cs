@@ -10,7 +10,10 @@ using FashionStore.Infrastructure.Data;
 using FashionStore.Infrastructure.Seed;
 using FashionStore.Infrastructure;
 using Serilog;
-using FashionStore.Application;
+using System.IdentityModel.Tokens.Jwt;
+using FashionStore.Shared.Constants;
+using FashionStore.API.Filters;
+using FashionStore.API.Caching;
 
 var builder = WebApplication.CreateBuilder(args);
 const string corsPolicyName = "FrontendCors";
@@ -21,7 +24,8 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
     .ReadFrom.Services(services)
     .Enrich.FromLogContext());
 
-builder.Services.AddControllers();
+builder.Services.AddControllers(options => options.Filters.Add<ActionLoggingFilter>());
+builder.Services.AddRedisResponseCaching(builder.Configuration);
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(corsPolicyName, policy =>
@@ -73,11 +77,11 @@ builder.Services.AddSwaggerGen(options =>
 
 #region Identity & EF Core
 builder.Services.AddDbContext<FashionStoreDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
         options => options.EnableRetryOnFailure(
             maxRetryCount: 3,
             maxRetryDelay: TimeSpan.FromSeconds(30),
-            errorNumbersToAdd: null)));
+            errorCodesToAdd: null)));
 
 builder.Services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
 {
@@ -97,7 +101,7 @@ builder.Services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
 .AddDefaultTokenProviders();
 
 builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
-    options.TokenLifespan = TimeSpan.FromDays(1));
+    options.TokenLifespan = TimeSpan.FromDays(5));
 #endregion
 
 #region JWT Authentication
@@ -138,9 +142,29 @@ builder.Services.AddAuthentication(options =>
 
                 if (user != null)
                 {
+                    var tokenId = context.Principal?.FindFirst(JwtRegisteredClaimNames.Jti)?.Value;
+                    if (string.IsNullOrWhiteSpace(tokenId))
+                    {
+                        logger.LogError("Token validation failed because the token id claim was missing for user {UserId}.", user.Id);
+                        context.Fail("Invalid token.");
+                        return;
+                    }
+
+                    var revokedToken = await userManager.GetAuthenticationTokenAsync(
+                        user,
+                        AuthTokenConstants.JwtLoginProvider,
+                        $"{AuthTokenConstants.RevokedTokenPrefix}{tokenId}");
+
+                    if (!string.IsNullOrWhiteSpace(revokedToken))
+                    {
+                        logger.LogError("Rejected revoked token {TokenId} for user {UserId}.", tokenId, user.Id);
+                        context.Fail("Token has been revoked.");
+                        return;
+                    }
+
                     if (user.IsDeactivated)
                     {
-                        logger.LogWarning("Deactivated user {UserId} attempted access.", user.Id);
+                        logger.LogError("Deactivated user {UserId} attempted access.", user.Id);
                         context.Fail("Account is deactivated.");
                         return;
                     }
@@ -151,6 +175,7 @@ builder.Services.AddAuthentication(options =>
                     var claims = new List<System.Security.Claims.Claim>
                     {
                         new(System.Security.Claims.ClaimTypes.NameIdentifier, user.Id),
+                        new(System.Security.Claims.ClaimTypes.Name, user.UserName ?? user.Email ?? string.Empty),
                         new(System.Security.Claims.ClaimTypes.Email, user.Email!),
                         new(System.Security.Claims.ClaimTypes.GivenName, user.FirstName ?? string.Empty),
                         new(System.Security.Claims.ClaimTypes.Surname, user.LastName ?? string.Empty),
@@ -174,13 +199,13 @@ builder.Services.AddAuthentication(options =>
                 }
                 else
                 {
-                    logger.LogWarning("User {UserId} not found during token validation.", userIdClaim.Value);
+                    logger.LogError("User {UserId} not found during token validation.", userIdClaim.Value);
                     context.Fail("User not found.");
                 }
             }
             else
             {
-                logger.LogWarning("User ID claim not found during token validation.");
+                logger.LogError("User ID claim not found during token validation.");
                 context.Fail("Invalid token claims.");
             }
         },
@@ -189,7 +214,7 @@ builder.Services.AddAuthentication(options =>
         {
             var logger = context.HttpContext.RequestServices
                 .GetRequiredService<ILogger<JwtBearerEvents>>();
-            logger.LogWarning("OnChallenge: {ErrorDescription}. Authentication failed.", context.ErrorDescription);
+            logger.LogError("OnChallenge: {ErrorDescription}. Authentication failed.", context.ErrorDescription);
 
             context.HandleResponse();
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
@@ -208,7 +233,7 @@ builder.Services.AddAuthentication(options =>
         {
             var logger = context.HttpContext.RequestServices
                 .GetRequiredService<ILogger<JwtBearerEvents>>();
-            logger.LogWarning("OnForbidden: Access to {Path} forbidden.", context.HttpContext.Request.Path);
+            logger.LogError("OnForbidden: Access to {Path} forbidden.", context.HttpContext.Request.Path);
 
             context.Response.StatusCode = StatusCodes.Status403Forbidden;
             context.Response.ContentType = "application/json";
@@ -225,21 +250,24 @@ builder.Services.AddAuthentication(options =>
 });
 #endregion
 
-builder.Services.AddApplicationServices();
+builder.Services.Scan(scan => scan
+    .FromAssemblyOf<Program>()
+    .AddClasses(classes => classes.Where(type =>
+        type.Name.EndsWith("Service") &&
+        type.Namespace is not null &&
+        type.Namespace.Contains("Features")))
+    .AsMatchingInterface()
+    .WithScopedLifetime());
 builder.Services.AddInfrastructureServices();
 
 var app = builder.Build();
 
 app.UseSerilogRequestLogging();
 
-using (var scope = app.Services.CreateScope())
-{
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
-    var context = scope.ServiceProvider.GetRequiredService<FashionStoreDbContext>();
-    await Seed.SeedData(context, roleManager, app.Configuration);
-}
+var startupLogger = app.Services.GetRequiredService<ILogger<Program>>();
+await DatabaseInitializer.InitializeAsync(app.Services, app.Configuration, startupLogger);
 
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Docker"))
 {
     app.UseSwagger();
     app.UseSwaggerUI(options =>
@@ -254,5 +282,6 @@ app.UseMiddleware<GlobalErrorMiddleware>();
 app.UseCors(corsPolicyName);               
 app.UseAuthentication();                   
 app.UseAuthorization();                    
+app.UseMiddleware<RedisResponseCacheMiddleware>();
 app.MapControllers();
 app.Run();

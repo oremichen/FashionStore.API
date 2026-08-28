@@ -123,7 +123,7 @@ namespace FashionStore.API.Middleware
 
             if (context.Response.HasStarted)
             {
-                _logger.LogWarning("The response has already started, the global error middleware will not overwrite it.");
+                _logger.LogError("The response has already started, the global error middleware will not overwrite it.");
                 return;
             }
 
