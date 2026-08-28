@@ -14,7 +14,6 @@ WORKDIR /src
 COPY ["NuGet.Config", "."]
 COPY ["FashionStore.API/FashionStore.API.csproj", "FashionStore.API/"]
 COPY ["FashionStore.Infrastructure/FashionStore.Infrastructure.csproj", "FashionStore.Infrastructure/"]
-COPY ["FashionStore.Application/FashionStore.Application.csproj", "FashionStore.Application/"]
 COPY ["FashionStore.Domain/FashionStore.Domain.csproj", "FashionStore.Domain/"]
 COPY ["FashionStore.Shared/FashionStore.Shared.csproj", "FashionStore.Shared/"]
 RUN dotnet restore "./FashionStore.API/FashionStore.API.csproj"
