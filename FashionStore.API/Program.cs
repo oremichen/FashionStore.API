@@ -15,13 +15,28 @@ using FashionStore.Shared.Constants;
 using FashionStore.API.Filters;
 
 var builder = WebApplication.CreateBuilder(args);
+var isVercel = string.Equals(
+    Environment.GetEnvironmentVariable("VERCEL"),
+    "1",
+    StringComparison.OrdinalIgnoreCase);
 const string corsPolicyName = "FrontendCors";
 var allowedCorsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 
-builder.Host.UseSerilog((context, services, configuration) => configuration
-    .ReadFrom.Configuration(context.Configuration)
-    .ReadFrom.Services(services)
-    .Enrich.FromLogContext());
+builder.Host.UseSerilog((context, services, configuration) =>
+{
+    configuration
+        .ReadFrom.Services(services)
+        .Enrich.FromLogContext();
+
+    if (isVercel)
+    {
+        configuration.WriteTo.Console();
+    }
+    else
+    {
+        configuration.ReadFrom.Configuration(context.Configuration);
+    }
+});
 
 builder.Services.AddControllers(options => options.Filters.Add<ActionLoggingFilter>());
 builder.Services.AddCors(options =>
@@ -263,7 +278,14 @@ var app = builder.Build();
 app.UseSerilogRequestLogging();
 
 var startupLogger = app.Services.GetRequiredService<ILogger<Program>>();
-await DatabaseInitializer.InitializeAsync(app.Services, app.Configuration, startupLogger);
+if (isVercel)
+{
+    startupLogger.LogInformation("Skipping database migration and seed initialization on Vercel.");
+}
+else
+{
+    await DatabaseInitializer.InitializeAsync(app.Services, app.Configuration, startupLogger);
+}
 
 if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Docker"))
 {
@@ -281,4 +303,13 @@ app.UseCors(corsPolicyName);
 app.UseAuthentication();                   
 app.UseAuthorization();                    
 app.MapControllers();
+app.MapGet("/", () => Results.Ok(new
+{
+    service = "FashionStore API",
+    status = "running"
+}));
+app.MapGet("/health", () => Results.Ok(new
+{
+    status = "healthy"
+}));
 app.Run();
