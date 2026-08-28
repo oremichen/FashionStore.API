@@ -13,6 +13,7 @@ using Serilog;
 using System.IdentityModel.Tokens.Jwt;
 using FashionStore.Shared.Constants;
 using FashionStore.API.Filters;
+using FashionStore.API.Caching;
 
 var builder = WebApplication.CreateBuilder(args);
 const string corsPolicyName = "FrontendCors";
@@ -24,6 +25,7 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
     .Enrich.FromLogContext());
 
 builder.Services.AddControllers(options => options.Filters.Add<ActionLoggingFilter>());
+builder.Services.AddRedisResponseCaching(builder.Configuration);
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(corsPolicyName, policy =>
@@ -280,5 +282,6 @@ app.UseMiddleware<GlobalErrorMiddleware>();
 app.UseCors(corsPolicyName);               
 app.UseAuthentication();                   
 app.UseAuthorization();                    
+app.UseMiddleware<RedisResponseCacheMiddleware>();
 app.MapControllers();
 app.Run();
