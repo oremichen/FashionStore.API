@@ -40,7 +40,7 @@ namespace FashionStore.Infrastructure
 
             services.AddScoped<IEmailNotificationService, Notification.EmailNotificationService>();
             services.AddScoped<IEmailTemplateRenderer, Notification.EmailTemplateRenderer>();
-            services.AddHttpClient<IEmailProvider, Notification.MailgunEmailProvider>();
+            services.AddScoped<IEmailProvider, Notification.AmazonSesEmailProvider>();
             services.AddSingleton<Messages.NotificationQueue.EmailNotificationQueueService>();
             services.AddSingleton<IEmailNotificationQueueService>(provider =>
                 provider.GetRequiredService<Messages.NotificationQueue.EmailNotificationQueueService>());

@@ -18,7 +18,7 @@ using FashionStore.API.Caching;
 var builder = WebApplication.CreateBuilder(args);
 var isVercel = string.Equals(
     Environment.GetEnvironmentVariable("VERCEL"),
-    "1",
+    "0",
     StringComparison.OrdinalIgnoreCase);
 const string corsPolicyName = "FrontendCors";
 var allowedCorsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
