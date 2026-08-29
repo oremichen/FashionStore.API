@@ -16,12 +16,13 @@ using FashionStore.API.Filters;
 using FashionStore.API.Caching;
 using FashionStore.API.RateLimiting;
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Mvc;
+using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
-var isVercel = string.Equals(
-    Environment.GetEnvironmentVariable("VERCEL"),
-    "0",
-    StringComparison.OrdinalIgnoreCase);
+var vercelEnvironment = Environment.GetEnvironmentVariable("VERCEL");
+var isVercel = string.Equals(vercelEnvironment, "1", StringComparison.OrdinalIgnoreCase)
+    || string.Equals(vercelEnvironment, "true", StringComparison.OrdinalIgnoreCase);
 const string corsPolicyName = "FrontendCors";
 var allowedCorsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 
@@ -33,7 +34,13 @@ builder.Host.UseSerilog((context, services, configuration) =>
 
     if (isVercel)
     {
-        configuration.WriteTo.Console();
+        // Vercel captures process stdout/stderr; its file system is ephemeral.
+        configuration
+            .MinimumLevel.Information()
+            .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+            .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
+            .WriteTo.Console(outputTemplate:
+                "{Timestamp:HH:mm:ss.fff} [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");
     }
     else
     {
@@ -41,7 +48,40 @@ builder.Host.UseSerilog((context, services, configuration) =>
     }
 });
 
-builder.Services.AddControllers(options => options.Filters.Add<ActionLoggingFilter>());
+builder.Services
+    .AddControllers(options => options.Filters.Add<ActionLoggingFilter>())
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        options.InvalidModelStateResponseFactory = context =>
+        {
+            var logger = context.HttpContext.RequestServices
+                .GetRequiredService<ILoggerFactory>()
+                .CreateLogger("ModelValidation");
+            var errors = context.ModelState
+                .Where(entry => entry.Value?.Errors.Count > 0)
+                .ToDictionary(
+                    entry => entry.Key,
+                    entry => entry.Value!.Errors
+                        .Select(error => string.IsNullOrWhiteSpace(error.ErrorMessage)
+                            ? error.Exception?.Message ?? "The supplied value is invalid."
+                            : error.ErrorMessage)
+                        .ToArray());
+
+            logger.LogWarning(
+                "Model validation rejected {Method} {Path}. Errors: {@ValidationErrors}",
+                context.HttpContext.Request.Method,
+                context.HttpContext.Request.Path,
+                errors);
+
+            var problem = new ValidationProblemDetails(context.ModelState)
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "One or more validation errors occurred."
+            };
+            problem.Extensions["traceId"] = context.HttpContext.TraceIdentifier;
+            return new BadRequestObjectResult(problem);
+        };
+    });
 
 #region RATE LIMITING
 builder.Services.AddRateLimiter(options =>
