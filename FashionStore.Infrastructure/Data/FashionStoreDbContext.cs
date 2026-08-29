@@ -30,6 +30,8 @@ namespace FashionStore.Infrastructure.Data
         public DbSet<ProductVariantImage> ProductVariantImages { get; set; }
         public DbSet<ProductSize> ProductSizes { get; set; }
         public DbSet<ProductColor> ProductColors { get; set; }
+        public DbSet<Order> Orders { get; set; }
+        public DbSet<OrderItem> OrderItems { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
