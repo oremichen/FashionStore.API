@@ -23,6 +23,7 @@ public sealed class PromotionBannersController(IGetPromotionBannersService getAl
     }
 
     [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpPost]
+    [EnableRateLimiting(RateLimitPolicies.AdminUpload)]
     [Consumes("multipart/form-data"), RequestSizeLimit(5 * 1024 * 1024)]
     public async Task<IActionResult> Create([FromForm] CreatePromotionBannerForm form, CancellationToken cancellationToken)
     {
@@ -32,6 +33,7 @@ public sealed class PromotionBannersController(IGetPromotionBannersService getAl
     }
 
     [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpPut("{id}")]
+    [EnableRateLimiting(RateLimitPolicies.AdminUpload)]
     [Consumes("multipart/form-data"), RequestSizeLimit(5 * 1024 * 1024)]
     public async Task<IActionResult> Update(string id, [FromForm] UpdatePromotionBannerForm form, CancellationToken cancellationToken)
     {

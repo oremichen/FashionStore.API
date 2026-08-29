@@ -32,6 +32,7 @@ public sealed class MainCarouselsController(IGetMainCarouselsService getMainCaro
     }
 
     [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpPost]
+    [EnableRateLimiting(RateLimitPolicies.AdminUpload)]
     [Consumes("multipart/form-data"), RequestSizeLimit(5 * 1024 * 1024)]
     [Produces("application/json")]
     [ProducesResponseType(typeof(ResponseResult<MainCarouselResponse>), StatusCodes.Status201Created)]
@@ -52,6 +53,7 @@ public sealed class MainCarouselsController(IGetMainCarouselsService getMainCaro
     }
 
     [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpPut("{id}")]
+    [EnableRateLimiting(RateLimitPolicies.AdminUpload)]
     [Consumes("multipart/form-data"), RequestSizeLimit(5 * 1024 * 1024)]
     [Produces("application/json")]
     [ProducesResponseType(typeof(ResponseResult<MainCarouselResponse>), StatusCodes.Status200OK)]

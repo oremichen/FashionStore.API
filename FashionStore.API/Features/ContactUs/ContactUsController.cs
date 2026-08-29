@@ -79,6 +79,7 @@ public sealed class ContactUsController(
     }
 
     [AllowAnonymous, HttpPost("submit")]
+    [EnableRateLimiting(RateLimitPolicies.Submissions)]
     [Consumes("application/json")]
     [Produces("application/json")]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status202Accepted)]

@@ -22,6 +22,7 @@ public sealed class BrandsController(IGetBrandsService getBrandsService, ICreate
 
     [Authorize(Roles = "SuperAdmin,BusinessAdmin")]
     [HttpPost]
+    [EnableRateLimiting(RateLimitPolicies.AdminUpload)]
     [Consumes("multipart/form-data")]
     [Produces("application/json")]
     [RequestSizeLimit(5 * 1024 * 1024)]

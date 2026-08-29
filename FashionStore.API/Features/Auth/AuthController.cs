@@ -32,6 +32,7 @@ namespace FashionStore.API.Features.Auth
         }
 
         [HttpPost("login")]
+        [EnableRateLimiting(RateLimitPolicies.Authentication)]
         [Produces("application/json")]
         [ProducesResponseType(typeof(ResponseResult<LoginResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ResponseResult<LoginResponse>), StatusCodes.Status400BadRequest)]
@@ -64,6 +65,7 @@ namespace FashionStore.API.Features.Auth
         }
 
         [HttpPost("forgot-password")]
+        [EnableRateLimiting(RateLimitPolicies.Authentication)]
         [Produces("application/json")]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
@@ -79,6 +81,7 @@ namespace FashionStore.API.Features.Auth
 
         [Authorize]
         [HttpPost("reset-password")]
+        [EnableRateLimiting(RateLimitPolicies.Authentication)]
         [Produces("application/json")]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
@@ -98,6 +101,7 @@ namespace FashionStore.API.Features.Auth
         }
 
         [HttpPost("register")]
+        [EnableRateLimiting(RateLimitPolicies.Registration)]
         [Produces("application/json")]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
@@ -111,6 +115,7 @@ namespace FashionStore.API.Features.Auth
         }
 
         [HttpPost("confirm-email")]
+        [EnableRateLimiting(RateLimitPolicies.Authentication)]
         [Produces("application/json")]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
@@ -125,6 +130,7 @@ namespace FashionStore.API.Features.Auth
         }
 
         [HttpPost("resend-confirmation-link")]
+        [EnableRateLimiting(RateLimitPolicies.Authentication)]
         [Produces("application/json")]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]

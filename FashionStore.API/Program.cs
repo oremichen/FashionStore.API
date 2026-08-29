@@ -14,6 +14,8 @@ using System.IdentityModel.Tokens.Jwt;
 using FashionStore.Shared.Constants;
 using FashionStore.API.Filters;
 using FashionStore.API.Caching;
+using FashionStore.API.RateLimiting;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 var isVercel = string.Equals(
@@ -40,6 +42,63 @@ builder.Host.UseSerilog((context, services, configuration) =>
 });
 
 builder.Services.AddControllers(options => options.Filters.Add<ActionLoggingFilter>());
+
+#region RATE LIMITING
+builder.Services.AddRateLimiter(options =>
+{
+    static string ClientKey(HttpContext context)
+    {
+        return context.User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? context.Connection.RemoteIpAddress?.ToString()
+            ?? "unknown-client";
+    }
+
+    static RateLimitPartition<string> FixedWindow(HttpContext context, string policy, int permitLimit)
+    {
+        return RateLimitPartition.GetFixedWindowLimiter(
+            $"{policy}:{ClientKey(context)}",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = permitLimit,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            });
+    }
+
+    // A generous safety net for every endpoint without a more specific policy.
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+        FixedWindow(context, "global", 300));
+
+    options.AddPolicy(RateLimitPolicies.Authentication, context => FixedWindow(context, RateLimitPolicies.Authentication, 5));
+    options.AddPolicy(RateLimitPolicies.Registration, context => FixedWindow(context, RateLimitPolicies.Registration, 4));
+    options.AddPolicy(RateLimitPolicies.Submissions, context => FixedWindow(context, RateLimitPolicies.Submissions, 8));
+    options.AddPolicy(RateLimitPolicies.ProductListing, context => FixedWindow(context, RateLimitPolicies.ProductListing, 100));
+    options.AddPolicy(RateLimitPolicies.Cart, context => FixedWindow(context, RateLimitPolicies.Cart, 45));
+    options.AddPolicy(RateLimitPolicies.Checkout, context => FixedWindow(context, RateLimitPolicies.Checkout, 8));
+    options.AddPolicy(RateLimitPolicies.AdminUpload, context => FixedWindow(context, RateLimitPolicies.AdminUpload, 8));
+
+    // Webhooks get an isolated, higher-throughput policy. Signature validation and
+    // idempotency must remain the primary protections when a webhook is introduced.
+    options.AddPolicy(RateLimitPolicies.PaymentWebhook, context =>
+        FixedWindow(context, RateLimitPolicies.PaymentWebhook, 120));
+
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.ContentType = "application/json";
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+            context.HttpContext.Response.Headers.RetryAfter = Math.Ceiling(retryAfter.TotalSeconds).ToString();
+
+        await context.HttpContext.Response.WriteAsJsonAsync(new
+        {
+            StatusCode = StatusCodes.Status429TooManyRequests,
+            Message = "Too many requests. Please try again later."
+        }, cancellationToken);
+    };
+});
+#endregion
+
 builder.Services.AddRedisResponseCaching(builder.Configuration);
 builder.Services.AddCors(options =>
 {
@@ -304,6 +363,7 @@ app.UseMiddleware<GlobalErrorMiddleware>();
 app.UseCors(corsPolicyName);               
 app.UseAuthentication();                   
 app.UseAuthorization();                    
+app.UseRateLimiter();
 app.UseMiddleware<RedisResponseCacheMiddleware>();
 app.MapControllers();
 app.MapGet("/", () => Results.Ok(new
