@@ -8,7 +8,7 @@ public sealed class RequestPayloadLoggingMiddleware(
     RequestDelegate next,
     ILogger<RequestPayloadLoggingMiddleware> logger)
 {
-    private const int MaxLoggedPayloadCharacters = 64 * 1024;
+    private const int MaxLoggedPayloadCharacters = 512 * 1024;
     private const string RedactedValue = "[REDACTED]";
 
     public async Task InvokeAsync(HttpContext context)
@@ -17,7 +17,7 @@ public sealed class RequestPayloadLoggingMiddleware(
         {
             var payload = await ReadSanitizedPayloadAsync(context.Request, context.RequestAborted);
             logger.LogInformation(
-                "Incoming mutation request {Method} {Path}. TraceId: {TraceId}. ContentType: {ContentType}. Payload: {RequestPayload}",
+                "Incoming mutation request {Method} {Path}. TraceId: {TraceId}. ContentType: {ContentType}. Payload: {@RequestPayload}",
                 context.Request.Method,
                 context.Request.Path,
                 context.TraceIdentifier,
