@@ -23,6 +23,7 @@ public class GetRelatedProductsService(IProductRepository repository, IImageProc
         var query = new StorefrontProductQuery
         {
             CategorySlug = product.CategoryId,
+            BrandId = product.BrandId,
             Page = page,
             PageSize = pageSize
         };

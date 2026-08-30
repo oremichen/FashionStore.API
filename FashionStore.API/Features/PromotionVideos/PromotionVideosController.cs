@@ -30,6 +30,7 @@ public sealed class PromotionVideosController(IGetPromotionVideosService getAllS
     }
 
     [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpPost]
+    [EnableRateLimiting(RateLimitPolicies.AdminUpload)]
     [Consumes("multipart/form-data"), RequestSizeLimit(100 * 1024 * 1024)]
     public async Task<IActionResult> Create([FromForm] CreatePromotionVideoForm form, CancellationToken cancellationToken)
     {

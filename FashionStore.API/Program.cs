@@ -14,12 +14,15 @@ using System.IdentityModel.Tokens.Jwt;
 using FashionStore.Shared.Constants;
 using FashionStore.API.Filters;
 using FashionStore.API.Caching;
+using FashionStore.API.RateLimiting;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Mvc;
+using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
-var isVercel = string.Equals(
-    Environment.GetEnvironmentVariable("VERCEL"),
-    "1",
-    StringComparison.OrdinalIgnoreCase);
+var vercelEnvironment = Environment.GetEnvironmentVariable("VERCEL");
+var isVercel = string.Equals(vercelEnvironment, "1", StringComparison.OrdinalIgnoreCase)
+    || string.Equals(vercelEnvironment, "true", StringComparison.OrdinalIgnoreCase);
 const string corsPolicyName = "FrontendCors";
 var allowedCorsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 
@@ -31,7 +34,13 @@ builder.Host.UseSerilog((context, services, configuration) =>
 
     if (isVercel)
     {
-        configuration.WriteTo.Console();
+        // Vercel captures process stdout/stderr; its file system is ephemeral.
+        configuration
+            .MinimumLevel.Information()
+            .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+            .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
+            .WriteTo.Console(outputTemplate:
+                "{Timestamp:HH:mm:ss.fff} [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");
     }
     else
     {
@@ -39,7 +48,97 @@ builder.Host.UseSerilog((context, services, configuration) =>
     }
 });
 
-builder.Services.AddControllers(options => options.Filters.Add<ActionLoggingFilter>());
+builder.Services
+    .AddControllers(options => options.Filters.Add<ActionLoggingFilter>())
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        options.InvalidModelStateResponseFactory = context =>
+        {
+            var logger = context.HttpContext.RequestServices
+                .GetRequiredService<ILoggerFactory>()
+                .CreateLogger("ModelValidation");
+            var errors = context.ModelState
+                .Where(entry => entry.Value?.Errors.Count > 0)
+                .ToDictionary(
+                    entry => entry.Key,
+                    entry => entry.Value!.Errors
+                        .Select(error => string.IsNullOrWhiteSpace(error.ErrorMessage)
+                            ? error.Exception?.Message ?? "The supplied value is invalid."
+                            : error.ErrorMessage)
+                        .ToArray());
+
+            logger.LogWarning(
+                "Model validation rejected {Method} {Path}. Errors: {@ValidationErrors}",
+                context.HttpContext.Request.Method,
+                context.HttpContext.Request.Path,
+                errors);
+
+            var problem = new ValidationProblemDetails(context.ModelState)
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "One or more validation errors occurred."
+            };
+            problem.Extensions["traceId"] = context.HttpContext.TraceIdentifier;
+            return new BadRequestObjectResult(problem);
+        };
+    });
+
+#region RATE LIMITING
+builder.Services.AddRateLimiter(options =>
+{
+    static string ClientKey(HttpContext context)
+    {
+        return context.User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? context.Connection.RemoteIpAddress?.ToString()
+            ?? "unknown-client";
+    }
+
+    static RateLimitPartition<string> FixedWindow(HttpContext context, string policy, int permitLimit)
+    {
+        return RateLimitPartition.GetFixedWindowLimiter(
+            $"{policy}:{ClientKey(context)}",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = permitLimit,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            });
+    }
+
+    // A generous safety net for every endpoint without a more specific policy.
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+        FixedWindow(context, "global", 300));
+
+    options.AddPolicy(RateLimitPolicies.Authentication, context => FixedWindow(context, RateLimitPolicies.Authentication, 5));
+    options.AddPolicy(RateLimitPolicies.Registration, context => FixedWindow(context, RateLimitPolicies.Registration, 4));
+    options.AddPolicy(RateLimitPolicies.Submissions, context => FixedWindow(context, RateLimitPolicies.Submissions, 8));
+    options.AddPolicy(RateLimitPolicies.ProductListing, context => FixedWindow(context, RateLimitPolicies.ProductListing, 100));
+    options.AddPolicy(RateLimitPolicies.Cart, context => FixedWindow(context, RateLimitPolicies.Cart, 45));
+    options.AddPolicy(RateLimitPolicies.Checkout, context => FixedWindow(context, RateLimitPolicies.Checkout, 8));
+    options.AddPolicy(RateLimitPolicies.AdminUpload, context => FixedWindow(context, RateLimitPolicies.AdminUpload, 8));
+
+    // Webhooks get an isolated, higher-throughput policy. Signature validation and
+    // idempotency must remain the primary protections when a webhook is introduced.
+    options.AddPolicy(RateLimitPolicies.PaymentWebhook, context =>
+        FixedWindow(context, RateLimitPolicies.PaymentWebhook, 120));
+
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.ContentType = "application/json";
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+            context.HttpContext.Response.Headers.RetryAfter = Math.Ceiling(retryAfter.TotalSeconds).ToString();
+
+        await context.HttpContext.Response.WriteAsJsonAsync(new
+        {
+            StatusCode = StatusCodes.Status429TooManyRequests,
+            Message = "Too many requests. Please try again later."
+        }, cancellationToken);
+    };
+});
+#endregion
+
 builder.Services.AddRedisResponseCaching(builder.Configuration);
 builder.Services.AddCors(options =>
 {
@@ -304,6 +403,7 @@ app.UseMiddleware<GlobalErrorMiddleware>();
 app.UseCors(corsPolicyName);               
 app.UseAuthentication();                   
 app.UseAuthorization();                    
+app.UseRateLimiter();
 app.UseMiddleware<RedisResponseCacheMiddleware>();
 app.MapControllers();
 app.MapGet("/", () => Results.Ok(new
