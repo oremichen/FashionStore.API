@@ -45,6 +45,12 @@ namespace FashionStore.Infrastructure.Notification
             try
             {
                 using var message = BuildMessage(notification, defaultFromAddress, defaultFromName);
+                var configurationSet = settings["ConfigurationSet"];
+                if (!string.IsNullOrWhiteSpace(configurationSet))
+                {
+                    message.Headers.Add("X-SES-CONFIGURATION-SET", configurationSet);
+                }
+
                 using var smtpClient = new SmtpClient(host, port)
                 {
                     EnableSsl = settings.GetValue("EnableSsl", true),

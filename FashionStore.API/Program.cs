@@ -46,6 +46,16 @@ builder.Host.UseSerilog((context, services, configuration) =>
     {
         configuration.ReadFrom.Configuration(context.Configuration);
     }
+
+    var betterStackSourceToken = context.Configuration["BetterStack:SourceToken"];
+    var betterStackEndpoint = context.Configuration["BetterStack:Endpoint"];
+    if (!string.IsNullOrWhiteSpace(betterStackSourceToken) &&
+        !string.IsNullOrWhiteSpace(betterStackEndpoint))
+    {
+        configuration.WriteTo.BetterStack(
+            sourceToken: betterStackSourceToken,
+            betterStackEndpoint: betterStackEndpoint);
+    }
 });
 
 builder.Services
@@ -375,6 +385,7 @@ builder.Services.Scan(scan => scan
 builder.Services.AddInfrastructureServices();
 
 var app = builder.Build();
+app.Lifetime.ApplicationStopped.Register(Log.CloseAndFlush);
 
 app.UseSerilogRequestLogging();
 
@@ -399,6 +410,7 @@ if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Docker"))
 }
 
 app.UseMiddleware<GlobalErrorMiddleware>(); 
+app.UseMiddleware<RequestPayloadLoggingMiddleware>();
 //app.UseHttpsRedirection();                 
 app.UseCors(corsPolicyName);               
 app.UseAuthentication();                   
