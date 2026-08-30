@@ -46,6 +46,8 @@ global using FashionStore.Shared.Constants;
 global using FashionStore.Domain.Abstractions.Users;
 global using FashionStore.Infrastructure.Data;
 global using Microsoft.EntityFrameworkCore;
+global using FashionStore.API.RateLimiting;
+global using Microsoft.AspNetCore.RateLimiting;
 
 
 

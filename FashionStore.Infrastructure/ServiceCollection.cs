@@ -37,10 +37,18 @@ namespace FashionStore.Infrastructure
                 Repository.ContactRepo.ContactUsRepository>();
             services.AddScoped<FashionStore.Domain.Abstractions.Users.IUserRepository,
                 Repository.UserRepo.UserRepository>();
+            services.AddScoped<FashionStore.Domain.Abstractions.Orders.IOrderRepository,
+                Repository.OrderRepo.OrderRepository>();
+            services.AddOptions<Payments.PaystackSettings>()
+                .BindConfiguration(Payments.PaystackSettings.SectionName)
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
+            services.AddHttpClient<FashionStore.Domain.Abstractions.Payments.IPaystackClient,
+                Payments.PaystackClient>();
 
             services.AddScoped<IEmailNotificationService, Notification.EmailNotificationService>();
             services.AddScoped<IEmailTemplateRenderer, Notification.EmailTemplateRenderer>();
-            services.AddHttpClient<IEmailProvider, Notification.MailgunEmailProvider>();
+            services.AddScoped<IEmailProvider, Notification.AmazonSesEmailProvider>();
             services.AddSingleton<Messages.NotificationQueue.EmailNotificationQueueService>();
             services.AddSingleton<IEmailNotificationQueueService>(provider =>
                 provider.GetRequiredService<Messages.NotificationQueue.EmailNotificationQueueService>());

@@ -51,7 +51,7 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
             else query = query.Where(x => x.Category.Slug.ToLower() == slug);
         }
         var brandIds = Split(request.BrandId);
-        if (brandIds.Length > 0)
+        if (brandIds.Length > 0 && collection != "related")
             query = query.Where(x => x.BrandId != null && brandIds.Contains(x.BrandId.ToLower()));
         if (request.MinPrice.HasValue) query = query.Where(x => (x.NewPrice == 0 && x.MinPrice.HasValue ? x.MinPrice.Value : x.NewPrice) >= request.MinPrice.Value);
         if (request.MaxPrice.HasValue) query = query.Where(x => (x.NewPrice == 0 && x.MaxPrice.HasValue ? x.MaxPrice.Value : x.NewPrice) <= request.MaxPrice.Value);
@@ -68,7 +68,8 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
             "featured" => query.Where(x => x.IsFeatured),
             "new-arrivals" => query.Where(x => x.IsNewArrival),
             "on-sale" => query.Where(x => x.OldPrice.HasValue && x.OldPrice > x.NewPrice),
-            "related" => query.Where(x => x.CategoryId == request.CategorySlug),
+            "related" => query.Where(x => x.CategoryId == request.CategorySlug ||
+                (x.BrandId != null && brandIds.Contains(x.BrandId.ToLower()))),
             _ => query
         };
         // Count the complete filtered result before ordering, eager loading, or paging.
