@@ -3,10 +3,17 @@ using FashionStore.Domain.Abstractions.CatalogOptions;
 namespace FashionStore.API.Features.Sizes.GetSizes;
 public sealed class GetSizesService(ICatalogOptionRepository repository) : IGetSizesService
 {
-    public async Task<ResponseResult<IReadOnlyList<SizeResponse>>> ExecuteAsync(CancellationToken cancellationToken)
+    public async Task<ResponseResult<PagedResponse<SizeResponse>>> ExecuteAsync(int page, int pageSize, CancellationToken cancellationToken)
     {
-        var sizes = await repository.GetSizesAsync(cancellationToken);
-        return new ResponseResult<IReadOnlyList<SizeResponse>>().Success(sizes.Select(MapSize).ToList(), "Sizes retrieved successfully.");
+        var response = new ResponseResult<PagedResponse<SizeResponse>>();
+        if (page < 1 || pageSize is < 1 or > 100)
+            return response.Fail("Page must be at least 1 and pageSize must be between 1 and 100.", ResponseCodes.INVALID_ACTION);
+        var result = await repository.GetSizesAsync(page, pageSize, cancellationToken);
+        return response.Success(new PagedResponse<SizeResponse>
+        {
+            Items = result.Items.Select(MapSize).ToList(), Page = page, PageSize = pageSize,
+            TotalCount = result.TotalCount, TotalPages = result.TotalCount == 0 ? 0 : (int)Math.Ceiling(result.TotalCount / (double)pageSize)
+        }, "Sizes retrieved successfully.");
     }
 
     private static SizeResponse MapSize(Size size)

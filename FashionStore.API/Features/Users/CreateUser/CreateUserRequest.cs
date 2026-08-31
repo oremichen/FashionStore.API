@@ -14,6 +14,6 @@ namespace FashionStore.API.Features.Users.CreateUser
         [EmailAddress]
         public string Email { get; set; } = string.Empty;
 
-        public List<string>? Roles { get; set; }
+        public List<string>? RoleIds { get; set; }
     }
 }

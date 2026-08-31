@@ -7,9 +7,9 @@ using FashionStore.API.Features.Colors.GetColors;
 public sealed class ColorsController(IGetColorsService getColorsService, ICreateColorService createColorService, IDeleteColorService deleteColorService) : BaseApiController
 {
     [AllowAnonymous, HttpGet]
-    public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 25, CancellationToken cancellationToken = default)
     {
-        return ProcessResponse(await getColorsService.ExecuteAsync(cancellationToken));
+        return ProcessResponse(await getColorsService.ExecuteAsync(page, pageSize, cancellationToken));
     }
 
     [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpPost]

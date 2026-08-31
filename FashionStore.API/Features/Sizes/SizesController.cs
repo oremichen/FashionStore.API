@@ -2,14 +2,21 @@ namespace FashionStore.API.Features.Sizes;
 using FashionStore.API.Features.Sizes.CreateSize;
 using FashionStore.API.Features.Sizes.DeleteSize;
 using FashionStore.API.Features.Sizes.GetSizes;
+using FashionStore.API.Features.Sizes.UpdateSize;
 [Route("api/sizes")]
 [ApiController]
-public sealed class SizesController(IGetSizesService getSizesService, ICreateSizeService createSizeService, IDeleteSizeService deleteSizeService) : BaseApiController
+public sealed class SizesController(IGetSizesService getSizesService, ICreateSizeService createSizeService, IUpdateSizeService updateSizeService, IDeleteSizeService deleteSizeService) : BaseApiController
 {
     [AllowAnonymous, HttpGet]
-    public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 25, CancellationToken cancellationToken = default)
     {
-        return ProcessResponse(await getSizesService.ExecuteAsync(cancellationToken));
+        return ProcessResponse(await getSizesService.ExecuteAsync(page, pageSize, cancellationToken));
+    }
+
+    [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpPut("{id}")]
+    public async Task<IActionResult> Update(string id, [FromBody] UpdateSizeRequest request, CancellationToken cancellationToken)
+    {
+        return ProcessResponse(await updateSizeService.ExecuteAsync(id, request, cancellationToken));
     }
 
     [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpPost]

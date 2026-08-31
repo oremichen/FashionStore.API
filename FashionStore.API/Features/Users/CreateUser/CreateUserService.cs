@@ -32,19 +32,36 @@ namespace FashionStore.API.Features.Users.CreateUser
                 return response.Fail("A user with this email already exists.", ResponseCodes.DUPLICATE_RECORD);
             }
 
-            var requestedRoles = request.Roles?.Where(role => !string.IsNullOrWhiteSpace(role)).Select(role => role.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).ToList() ?? [];
-            if (requestedRoles.Count == 0)
+            var requestedRoleIds = request.RoleIds?
+                .Where(roleId => !string.IsNullOrWhiteSpace(roleId))
+                .Select(roleId => roleId.Trim())
+                .Distinct(StringComparer.Ordinal)
+                .ToList() ?? [];
+            var requestedRoles = new List<string>();
+            if (requestedRoleIds.Count == 0)
             {
-                requestedRoles.Add(RoleEnums.User.ToString());
-            }
-
-            foreach (var role in requestedRoles)
-            {
-                var roleExists = await _roleManager.RoleExistsAsync(role);
-                if (!roleExists)
+                var defaultRoleName = RoleEnums.User.ToString();
+                var defaultRole = await _roleManager.FindByNameAsync(defaultRoleName);
+                if (defaultRole?.Name is null)
                 {
-                    _logger.LogError("Create user rejected for email {Email}: role {Role} was not found.", request.Email, role);
-                    return response.Fail($"Role '{role}' does not exist.", ResponseCodes.INVALID_ACTION);
+                    _logger.LogError("Create user rejected for email {Email}: default role {Role} was not found.", request.Email, defaultRoleName);
+                    return response.Fail($"Role '{defaultRoleName}' does not exist.", ResponseCodes.INVALID_ACTION);
+                }
+
+                requestedRoles.Add(defaultRole.Name);
+            }
+            else
+            {
+                foreach (var roleId in requestedRoleIds)
+                {
+                    var role = await _roleManager.FindByIdAsync(roleId);
+                    if (role?.Name is null)
+                    {
+                        _logger.LogError("Create user rejected for email {Email}: role ID {RoleId} was not found.", request.Email, roleId);
+                        return response.Fail($"Role with ID '{roleId}' does not exist.", ResponseCodes.INVALID_ACTION);
+                    }
+
+                    requestedRoles.Add(role.Name);
                 }
             }
 

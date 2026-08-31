@@ -2,5 +2,5 @@ namespace FashionStore.API.Features.Colors.GetColors;
 
 public interface IGetColorsService
 {
-    Task<ResponseResult<IReadOnlyList<ColorResponse>>> ExecuteAsync(CancellationToken cancellationToken);
+    Task<ResponseResult<PagedResponse<ColorResponse>>> ExecuteAsync(int page, int pageSize, CancellationToken cancellationToken);
 }
