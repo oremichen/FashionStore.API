@@ -47,6 +47,9 @@ public sealed class PaymentsController : BaseApiController
 
     [AllowAnonymous]
     [HttpPost("webhook")]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Webhook(CancellationToken cancellationToken)
     {
         var signature = Request.Headers["x-paystack-signature"].ToString();
