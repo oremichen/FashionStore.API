@@ -140,6 +140,7 @@ namespace FashionStore.API.Features.Users
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetAllUserAddresses(string userId, CancellationToken cancellationToken)
         {
+            if (!CanAccessAddresses(userId)) return Forbid();
             return ProcessResponse(await _getAllUserAddressesService.ExecuteAsync(userId, cancellationToken));
         }
 
@@ -151,6 +152,7 @@ namespace FashionStore.API.Features.Users
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> CreateUserAddress(string userId, [FromBody] UserAddressRequest request, CancellationToken cancellationToken)
         {
+            if (!CanAccessAddresses(userId)) return Forbid();
             return ProcessResponse(await _createUserAddressService.ExecuteAsync(userId, request, cancellationToken));
         }
 
@@ -162,6 +164,7 @@ namespace FashionStore.API.Features.Users
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> UpdateUserAddress(string userId, string addressId, [FromBody] UserAddressRequest request, CancellationToken cancellationToken)
         {
+            if (!CanAccessAddresses(userId)) return Forbid();
             return ProcessResponse(await _updateUserAddressService.ExecuteAsync(userId, addressId, request, cancellationToken));
         }
 
@@ -172,7 +175,16 @@ namespace FashionStore.API.Features.Users
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> DeleteUserAddress(string userId, string addressId, CancellationToken cancellationToken)
         {
+            if (!CanAccessAddresses(userId)) return Forbid();
             return ProcessResponse(await _deleteUserAddressService.ExecuteAsync(userId, addressId, cancellationToken));
+        }
+
+        private bool CanAccessAddresses(string userId)
+        {
+            var authenticatedUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return !string.IsNullOrWhiteSpace(authenticatedUserId) &&
+                (string.Equals(authenticatedUserId, userId, StringComparison.Ordinal) ||
+                 User.IsInRole(RoleConstants.SuperAdmin));
         }
     }
 }
