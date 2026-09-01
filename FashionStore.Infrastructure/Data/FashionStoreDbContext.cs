@@ -32,6 +32,7 @@ namespace FashionStore.Infrastructure.Data
         public DbSet<ProductColor> ProductColors { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
+        public DbSet<UserSession> UserSessions { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -58,6 +59,22 @@ namespace FashionStore.Infrastructure.Data
             {
                 entity.ToTable("QueueEmailNotification");
                 entity.Property(item => item.Id).HasDefaultValueSql("gen_random_uuid()");
+            });
+
+            builder.Entity<UserSession>(entity =>
+            {
+                entity.ToTable("UserSessions");
+                entity.HasKey(session => session.Id);
+                entity.Property(session => session.Id).HasMaxLength(50).HasDefaultValueSql("gen_random_uuid()::text");
+                entity.Property(session => session.UserId).HasMaxLength(50).IsRequired();
+                entity.Property(session => session.RefreshTokenHash).IsRequired();
+                entity.Property(session => session.SecurityStamp).HasMaxLength(255).IsRequired();
+                entity.Property(session => session.DeviceName).HasMaxLength(255);
+                entity.Property(session => session.IpAddress).HasMaxLength(50);
+                entity.Property(session => session.LastIpAddress).HasMaxLength(50);
+                entity.HasIndex(session => session.UserId);
+                entity.HasIndex(session => session.RefreshTokenHash).IsUnique();
+                entity.HasOne(session => session.User).WithMany().HasForeignKey(session => session.UserId).OnDelete(DeleteBehavior.Cascade);
             });
         }
     }

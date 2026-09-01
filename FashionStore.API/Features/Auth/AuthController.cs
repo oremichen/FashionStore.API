@@ -5,6 +5,7 @@ using FashionStore.API.Features.Auth.Logout;
 using FashionStore.API.Features.Auth.Register;
 using FashionStore.API.Features.Auth.ResendConfirmationLink;
 using FashionStore.API.Features.Auth.ResetPassword;
+using FashionStore.API.Features.Auth.Refresh;
 
 namespace FashionStore.API.Features.Auth
 {
@@ -19,8 +20,9 @@ namespace FashionStore.API.Features.Auth
         private readonly IRegisterService _registerService;
         private readonly IConfirmEmailService _confirmEmailService;
         private readonly IResendConfirmationLinkService _resendConfirmationLinkService;
+        private readonly IRefreshService _refreshService;
 
-        public AuthController(ILoginService loginService, ILogoutService logoutService, IForgotPasswordService forgotPasswordService, IResetPasswordService resetPasswordService, IRegisterService registerService, IConfirmEmailService confirmEmailService, IResendConfirmationLinkService resendConfirmationLinkService)
+        public AuthController(ILoginService loginService, ILogoutService logoutService, IForgotPasswordService forgotPasswordService, IResetPasswordService resetPasswordService, IRegisterService registerService, IConfirmEmailService confirmEmailService, IResendConfirmationLinkService resendConfirmationLinkService, IRefreshService refreshService)
         {
             _loginService = loginService;
             _logoutService = logoutService;
@@ -29,6 +31,15 @@ namespace FashionStore.API.Features.Auth
             _registerService = registerService;
             _confirmEmailService = confirmEmailService;
             _resendConfirmationLinkService = resendConfirmationLinkService;
+            _refreshService = refreshService;
+        }
+
+        [HttpPost("refresh")]
+        [EnableRateLimiting(RateLimitPolicies.Authentication)]
+        public async Task<IActionResult> Refresh([FromBody] RefreshRequest request)
+        {
+            var response = await _refreshService.ExecuteAsync(request);
+            return ProcessResponse(response);
         }
 
         [HttpPost("login")]
@@ -58,7 +69,7 @@ namespace FashionStore.API.Features.Auth
             var username = User.FindFirst(ClaimTypes.Name)?.Value
                 ?? User.FindFirst(ClaimTypes.Email)?.Value
                 ?? string.Empty;
-            var tokenId = User.FindFirst(JwtRegisteredClaimNames.Jti)?.Value ?? string.Empty;
+            var tokenId = User.FindFirst("sid")?.Value ?? string.Empty;
 
             var response = await _logoutService.ExecuteAsync(username, tokenId);
             return ProcessResponse(response);

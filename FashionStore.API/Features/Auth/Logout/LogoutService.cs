@@ -15,7 +15,8 @@ namespace FashionStore.API.Features.Auth.Logout
         private readonly IEmailTemplateRenderer _emailTemplateRenderer;
         private readonly ILogger<LogoutService> _logger;
         private readonly IConfiguration _configuration;
-        public LogoutService(UserManager<ApplicationUser> userManager, ITokenService tokenService, IEmailNotificationService emailNotificationService, IEmailTemplateRenderer emailTemplateRenderer, ILogger<LogoutService> logger, IConfiguration configuration)
+        private readonly FashionStoreDbContext _dbContext;
+        public LogoutService(UserManager<ApplicationUser> userManager, ITokenService tokenService, IEmailNotificationService emailNotificationService, IEmailTemplateRenderer emailTemplateRenderer, ILogger<LogoutService> logger, IConfiguration configuration, FashionStoreDbContext dbContext)
         {
             _userManager = userManager;
             _tokenService = tokenService;
@@ -23,6 +24,7 @@ namespace FashionStore.API.Features.Auth.Logout
             _emailTemplateRenderer = emailTemplateRenderer;
             _logger = logger;
             _configuration = configuration;
+            _dbContext = dbContext;
         }
 
         public async Task<ResponseResult> ExecuteAsync(string username, string tokenId)
@@ -42,14 +44,15 @@ namespace FashionStore.API.Features.Auth.Logout
                 return response.Fail("No user was found for the current token.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
             }
 
-            await _userManager.SetAuthenticationTokenAsync(user, AuthTokenConstants.JwtLoginProvider, BuildRevokedTokenName(tokenId), DateTimeOffset.UtcNow.ToString("O"));
+            var session = await _dbContext.UserSessions.SingleOrDefaultAsync(item => item.Id == tokenId && item.UserId == user.Id);
+            if (session is not null)
+            {
+                session.RevokedAtUtc = DateTimeOffset.UtcNow;
+                await _dbContext.SaveChangesAsync();
+            }
             _logger.LogInformation("Logout successful for user {UserId} with username {Username}. Token {TokenId} was revoked.", user.Id, username, tokenId);
             return response.Success("Logout successful.");
         }
 
-        private static string BuildRevokedTokenName(string tokenId)
-        {
-            return $"{AuthTokenConstants.RevokedTokenPrefix}{tokenId}";
-        }
     }
 }

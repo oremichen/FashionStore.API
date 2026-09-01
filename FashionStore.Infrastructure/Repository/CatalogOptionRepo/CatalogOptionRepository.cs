@@ -5,25 +5,38 @@ namespace FashionStore.Infrastructure.Repository.CatalogOptionRepo;
 
 public sealed class CatalogOptionRepository(FashionStoreDbContext dbContext) : ICatalogOptionRepository
 {
-    public async Task<IReadOnlyList<Size>> GetSizesAsync(CancellationToken cancellationToken)
+    public async Task<(IReadOnlyList<Size> Items, int TotalCount)> GetSizesAsync(int page, int pageSize, CancellationToken cancellationToken)
     {
-        return await dbContext.Sizes
-            .AsNoTracking()
+        var query = dbContext.Sizes.AsNoTracking();
+        var totalCount = await query.CountAsync(cancellationToken);
+        var items = await query
             .OrderByDescending(item => item.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync(cancellationToken);
+        return (items, totalCount);
     }
 
-    public async Task<IReadOnlyList<Color>> GetColorsAsync(CancellationToken cancellationToken)
+    public async Task<(IReadOnlyList<Color> Items, int TotalCount)> GetColorsAsync(int page, int pageSize, CancellationToken cancellationToken)
     {
-        return await dbContext.Colors
-            .AsNoTracking()
+        var query = dbContext.Colors.AsNoTracking();
+        var totalCount = await query.CountAsync(cancellationToken);
+        var items = await query
             .OrderByDescending(item => item.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync(cancellationToken);
+        return (items, totalCount);
     }
 
     public Task<bool> SizeNameExistsAsync(string name, CancellationToken cancellationToken)
     {
         return dbContext.Sizes.AnyAsync(item => item.Name.ToLower() == name.Trim().ToLower(), cancellationToken);
+    }
+
+    public Task<bool> SizeNameExistsAsync(string name, string excludeId, CancellationToken cancellationToken)
+    {
+        return dbContext.Sizes.AnyAsync(item => item.Id != excludeId && item.Name.ToLower() == name.Trim().ToLower(), cancellationToken);
     }
 
     public Task<bool> ColorNameExistsAsync(string name, CancellationToken cancellationToken)
@@ -63,6 +76,11 @@ public sealed class CatalogOptionRepository(FashionStoreDbContext dbContext) : I
     {
         dbContext.Colors.Add(color);
         await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public Task SaveChangesAsync(CancellationToken cancellationToken)
+    {
+        return dbContext.SaveChangesAsync(cancellationToken);
     }
 
     public async Task DeleteSizeAsync(Size size, CancellationToken cancellationToken)

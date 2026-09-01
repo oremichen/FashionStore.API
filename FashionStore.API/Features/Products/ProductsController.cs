@@ -45,6 +45,8 @@ public sealed class ProductsController(
     [AllowAnonymous]
     [HttpGet("featured")]
     [EnableRateLimiting(RateLimitPolicies.ProductListing)]
+    [ProducesResponseType(typeof(ResponseResult<PagedResponse<ProductResponse>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetFeatured([FromQuery] int page = 1, [FromQuery] int pageSize = 12, CancellationToken cancellationToken = default)
     {
         return ProcessResponse(await getProductCollectionService.ExecuteAsync("featured", page, pageSize, cancellationToken));
@@ -53,6 +55,8 @@ public sealed class ProductsController(
     [AllowAnonymous]
     [HttpGet("new-arrivals")]
     [EnableRateLimiting(RateLimitPolicies.ProductListing)]
+    [ProducesResponseType(typeof(ResponseResult<PagedResponse<ProductResponse>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetNewArrivals([FromQuery] int page = 1, [FromQuery] int pageSize = 12, CancellationToken cancellationToken = default)
     {
         return ProcessResponse(await getProductCollectionService.ExecuteAsync("new-arrivals", page, pageSize, cancellationToken));
@@ -61,6 +65,8 @@ public sealed class ProductsController(
     [AllowAnonymous]
     [HttpGet("on-sale")]
     [EnableRateLimiting(RateLimitPolicies.ProductListing)]
+    [ProducesResponseType(typeof(ResponseResult<PagedResponse<ProductResponse>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetOnSale([FromQuery] int page = 1, [FromQuery] int pageSize = 12, CancellationToken cancellationToken = default)
     {
         return ProcessResponse(await getProductCollectionService.ExecuteAsync("on-sale", page, pageSize, cancellationToken));
@@ -69,6 +75,9 @@ public sealed class ProductsController(
     [AllowAnonymous]
     [HttpGet("{productId}/related")]
     [EnableRateLimiting(RateLimitPolicies.ProductListing)]
+    [ProducesResponseType(typeof(ResponseResult<PagedResponse<ProductResponse>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetRelated(string productId, [FromQuery] int page = 1, [FromQuery] int pageSize = 12, CancellationToken cancellationToken = default)
     {
         return ProcessResponse(await getRelatedProductsService.ExecuteAsync(productId, page, pageSize, cancellationToken));

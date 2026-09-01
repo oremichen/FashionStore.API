@@ -2,5 +2,5 @@ namespace FashionStore.API.Features.Sizes.GetSizes;
 
 public interface IGetSizesService
 {
-    Task<ResponseResult<IReadOnlyList<SizeResponse>>> ExecuteAsync(CancellationToken cancellationToken);
+    Task<ResponseResult<PagedResponse<SizeResponse>>> ExecuteAsync(int page, int pageSize, CancellationToken cancellationToken);
 }
