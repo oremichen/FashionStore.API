@@ -40,6 +40,7 @@ namespace FashionStore.Infrastructure.Notification
                 EmailNotificationTypeEnum.UserCreation => Path.Combine(_environment.WebRootPath, "EmailTemplates", "UserCreationTemplate.html"),
                 EmailNotificationTypeEnum.ContactRecipient => Path.Combine(_environment.WebRootPath, "EmailTemplates", "ContactRecipientTemplate.html"),
                 EmailNotificationTypeEnum.ContactCustomer => Path.Combine(_environment.WebRootPath, "EmailTemplates", "ContactCustomerTemplate.html"),
+                EmailNotificationTypeEnum.UserStatusChanged => Path.Combine(_environment.WebRootPath, "EmailTemplates", "UserStatusChangedTemplate.html"),
                 _ => throw new ArgumentException($"No email template is configured for {templateType}.", nameof(templateType))
             };
         }
