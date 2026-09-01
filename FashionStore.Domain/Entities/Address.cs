@@ -30,19 +30,24 @@ namespace FashionStore.Domain.Entities
             bool isMain, 
             IEnumerable<Address> existingAddresses)
         {
-            Validate(userId, street, city, state, country, phoneNumber);
+            var normalizedUserId = Rules.Required(userId, 50, nameof(userId));
+            var normalizedStreet = Rules.Required(street, 250, nameof(street));
+            var normalizedCity = Rules.Required(city, 100, nameof(city));
+            var normalizedState = Rules.Required(state, 100, nameof(state));
+            var normalizedCountry = Rules.Required(country, 100, nameof(country));
+            var normalizedPhoneNumber = Rules.RequiredPhone(phoneNumber, 50, nameof(phoneNumber));
             DemoteExistingMainAddress(isMain, existingAddresses);
 
             return new Address
             {
-                UserId = userId.Trim(),
-                Street = street.Trim(),
-                City = city.Trim(),
-                State = state.Trim(),
-                Country = country.Trim(),
-                PostalCode = NormalizeOptional(postalCode),
-                PhoneNumber = phoneNumber.Trim(),
-                Landmark = NormalizeOptional(landmark),
+                UserId = normalizedUserId,
+                Street = normalizedStreet,
+                City = normalizedCity,
+                State = normalizedState,
+                Country = normalizedCountry,
+                PostalCode = Rules.Optional(postalCode, 20, nameof(postalCode)),
+                PhoneNumber = normalizedPhoneNumber,
+                Landmark = Rules.Optional(landmark, 250, nameof(landmark)),
                 IsMain = isMain
             };
         }
@@ -51,15 +56,19 @@ namespace FashionStore.Domain.Entities
             string? postalCode, string phoneNumber, string? landmark, bool isMain,
             IEnumerable<Address> otherAddresses)
         {
-            Validate(UserId, street, city, state, country, phoneNumber);
+            var normalizedStreet = Rules.Required(street, 250, nameof(street));
+            var normalizedCity = Rules.Required(city, 100, nameof(city));
+            var normalizedState = Rules.Required(state, 100, nameof(state));
+            var normalizedCountry = Rules.Required(country, 100, nameof(country));
+            var normalizedPhoneNumber = Rules.RequiredPhone(phoneNumber, 50, nameof(phoneNumber));
             DemoteExistingMainAddress(isMain, otherAddresses);
-            Street = street.Trim();
-            City = city.Trim();
-            State = state.Trim();
-            Country = country.Trim();
-            PostalCode = NormalizeOptional(postalCode);
-            PhoneNumber = phoneNumber.Trim();
-            Landmark = NormalizeOptional(landmark);
+            Street = normalizedStreet;
+            City = normalizedCity;
+            State = normalizedState;
+            Country = normalizedCountry;
+            PostalCode = Rules.Optional(postalCode, 20, nameof(postalCode));
+            PhoneNumber = normalizedPhoneNumber;
+            Landmark = Rules.Optional(landmark, 250, nameof(landmark));
             IsMain = isMain;
         }
 
@@ -74,20 +83,5 @@ namespace FashionStore.Domain.Entities
             }
         }
 
-        private static void Validate(string userId, string street, string city, string state,
-            string country, string phoneNumber)
-        {
-            if (string.IsNullOrWhiteSpace(userId)) throw new ArgumentException("User id is required.");
-            if (string.IsNullOrWhiteSpace(street)) throw new ArgumentException("Street is required.");
-            if (string.IsNullOrWhiteSpace(city)) throw new ArgumentException("City is required.");
-            if (string.IsNullOrWhiteSpace(state)) throw new ArgumentException("State is required.");
-            if (string.IsNullOrWhiteSpace(country)) throw new ArgumentException("Country is required.");
-            if (string.IsNullOrWhiteSpace(phoneNumber)) throw new ArgumentException("Phone number is required.");
-        }
-
-        private static string? NormalizeOptional(string? value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-        }
     }
 }
