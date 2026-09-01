@@ -15,7 +15,9 @@ namespace FashionStore.API.Features.Auth.Login
         private readonly IEmailTemplateRenderer _emailTemplateRenderer;
         private readonly ILogger<LoginService> _logger;
         private readonly IConfiguration _configuration;
-        public LoginService(UserManager<ApplicationUser> userManager, ITokenService tokenService, IEmailNotificationService emailNotificationService, IEmailTemplateRenderer emailTemplateRenderer, ILogger<LoginService> logger, IConfiguration configuration)
+        private readonly FashionStoreDbContext _dbContext;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        public LoginService(UserManager<ApplicationUser> userManager, ITokenService tokenService, IEmailNotificationService emailNotificationService, IEmailTemplateRenderer emailTemplateRenderer, ILogger<LoginService> logger, IConfiguration configuration, FashionStoreDbContext dbContext, IHttpContextAccessor httpContextAccessor)
         {
             _userManager = userManager;
             _tokenService = tokenService;
@@ -23,6 +25,8 @@ namespace FashionStore.API.Features.Auth.Login
             _emailTemplateRenderer = emailTemplateRenderer;
             _logger = logger;
             _configuration = configuration;
+            _dbContext = dbContext;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<ResponseResult<LoginResponse>> ExecuteAsync(LoginRequest login)
@@ -57,12 +61,29 @@ namespace FashionStore.API.Features.Auth.Login
             }
 
             var roles = await _userManager.GetRolesAsync(user);
-            var tokenExpiry = DateTimeOffset.UtcNow.AddHours(1);
-            var token = _tokenService.GenerateJwtToken(user, roles, tokenExpiry);
+            var now = DateTimeOffset.UtcNow;
+            var isAdmin = roles.Any(SessionPolicy.IsAdminRole);
+            var tokenExpiry = now.Add(isAdmin ? SessionPolicy.AdminAccessLifetime : SessionPolicy.CustomerAccessLifetime);
+            var refreshToken = SessionPolicy.CreateRefreshToken();
+            var session = new UserSession
+            {
+                UserId = user.Id,
+                RefreshTokenHash = SessionPolicy.HashRefreshToken(refreshToken),
+                CreatedAtUtc = now,
+                LastUsedAtUtc = now,
+                IdleExpiresAtUtc = isAdmin ? now.Add(SessionPolicy.AdminIdleLifetime) : now.Add(SessionPolicy.CustomerRollingLifetime),
+                AbsoluteExpiresAtUtc = now.Add(isAdmin ? SessionPolicy.AdminAbsoluteLifetime : SessionPolicy.CustomerAbsoluteLifetime),
+                SecurityStamp = user.SecurityStamp ?? string.Empty,
+                UserAgent = _httpContextAccessor.HttpContext?.Request.Headers.UserAgent.ToString(),
+                IpAddress = _httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString()
+            };
+            _dbContext.UserSessions.Add(session);
+            await _dbContext.SaveChangesAsync();
+            var token = _tokenService.GenerateJwtToken(user, roles, tokenExpiry, session.Id);
             user.LastLoginDate = DateTimeOffset.UtcNow;
             await _userManager.UpdateAsync(user);
             _logger.LogInformation("Login successful for user {UserId} with email {Email}. Roles: {Roles}. Token expires at {TokenExpiryUtc}.", user.Id, user.Email, string.Join(", ", roles), tokenExpiry);
-            return response.Success(new LoginResponse { AccessToken = token, ExpiresAtUtc = tokenExpiry, TokenType = "Bearer", UserFirstName = user.FirstName ?? string.Empty, UserName = user.Email ?? string.Empty, UserRoles = roles.ToList() }, "Login successful.");
+            return response.Success(new LoginResponse { AccessToken = token, RefreshToken = refreshToken, ExpiresAtUtc = tokenExpiry, TokenType = "Bearer", UserFirstName = user.FirstName ?? string.Empty, UserName = user.Email ?? string.Empty, UserRoles = roles.ToList(), IsAdminSession = isAdmin }, "Login successful.");
         }
 
         private async Task SendConfirmationMail(ApplicationUser user)

@@ -15,11 +15,13 @@ using FashionStore.Shared.Constants;
 using FashionStore.API.Filters;
 using FashionStore.API.Caching;
 using FashionStore.API.RateLimiting;
+using FashionStore.API.Features.Auth;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Mvc;
 using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddHttpContextAccessor();
 var vercelEnvironment = Environment.GetEnvironmentVariable("VERCEL");
 var isVercel = string.Equals(vercelEnvironment, "1", StringComparison.OrdinalIgnoreCase)
     || string.Equals(vercelEnvironment, "true", StringComparison.OrdinalIgnoreCase);
@@ -254,6 +256,8 @@ builder.Services.AddAuthentication(options =>
         {
             var userManager = context.HttpContext.RequestServices
                 .GetRequiredService<UserManager<ApplicationUser>>();
+            var dbContext = context.HttpContext.RequestServices
+                .GetRequiredService<FashionStoreDbContext>();
             var logger = context.HttpContext.RequestServices
                 .GetRequiredService<ILogger<JwtBearerEvents>>();
 
@@ -271,6 +275,19 @@ builder.Services.AddAuthentication(options =>
                     {
                         logger.LogError("Token validation failed because the token id claim was missing for user {UserId}.", user.Id);
                         context.Fail("Invalid token.");
+                        return;
+                    }
+
+                    var sessionId = context.Principal?.FindFirst("sid")?.Value;
+                    var session = string.IsNullOrWhiteSpace(sessionId)
+                        ? null
+                        : await dbContext.UserSessions.SingleOrDefaultAsync(item => item.Id == sessionId && item.UserId == user.Id);
+                    var now = DateTimeOffset.UtcNow;
+                    if (session is null || session.RevokedAtUtc is not null || session.AbsoluteExpiresAtUtc <= now ||
+                        session.IdleExpiresAtUtc <= now || session.SecurityStamp != (user.SecurityStamp ?? string.Empty))
+                    {
+                        logger.LogWarning("Rejected access token for inactive session {SessionId}.", sessionId);
+                        context.Fail("Session is no longer active.");
                         return;
                     }
 
@@ -295,6 +312,13 @@ builder.Services.AddAuthentication(options =>
 
                     // ── Fetch roles from Identity ──────────────────────────
                     var roles = await userManager.GetRolesAsync(user);
+
+                    if (roles.Any(SessionPolicy.IsAdminRole))
+                    {
+                        session.LastUsedAtUtc = now;
+                        session.IdleExpiresAtUtc = now.Add(SessionPolicy.AdminIdleLifetime);
+                        await dbContext.SaveChangesAsync();
+                    }
 
                     var claims = new List<System.Security.Claims.Claim>
                     {
