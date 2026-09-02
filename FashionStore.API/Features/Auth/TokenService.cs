@@ -20,7 +20,7 @@ namespace FashionStore.API.Features.Auth
             _logger = logger;
         }
 
-        public string GenerateJwtToken(ApplicationUser user, IEnumerable<string> roles, DateTimeOffset expiresAtUtc)
+        public string GenerateJwtToken(ApplicationUser user, IEnumerable<string> roles, DateTimeOffset expiresAtUtc, string sessionId)
         {
             _logger.LogInformation("Generating JWT for user {UserId} expiring at {ExpiresAtUtc}.", user.Id, expiresAtUtc);
             var secret = _configuration["JwtSettings:Secret"]
@@ -38,6 +38,7 @@ namespace FashionStore.API.Features.Auth
                 new(ClaimTypes.GivenName, user.FirstName ?? string.Empty),
                 new(ClaimTypes.Surname, user.LastName ?? string.Empty),
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N"))
+                ,new("sid", sessionId)
             };
 
             claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));

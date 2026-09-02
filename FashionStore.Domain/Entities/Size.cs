@@ -13,4 +13,12 @@ public sealed class Size
         Rules.NonNegative(sortOrder, nameof(sortOrder));
         return new Size { Name = Rules.Required(name, 50, nameof(name)), DisplayName = Rules.Required(displayName, 100, nameof(displayName)), SortOrder = sortOrder };
     }
+
+    public void Update(string name, string displayName, int sortOrder)
+    {
+        Rules.NonNegative(sortOrder, nameof(sortOrder));
+        Name = Rules.Required(name, 50, nameof(name));
+        DisplayName = Rules.Required(displayName, 100, nameof(displayName));
+        SortOrder = sortOrder;
+    }
 }

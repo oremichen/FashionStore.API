@@ -3,6 +3,7 @@ namespace FashionStore.API.Features.Auth.Shared
     public class LoginResponse
     {
         public string AccessToken { get; set; } = string.Empty;
+        public string RefreshToken { get; set; } = string.Empty;
 
         public DateTimeOffset ExpiresAtUtc { get; set; }
 
@@ -13,5 +14,6 @@ namespace FashionStore.API.Features.Auth.Shared
         public string UserName { get; set; } = string.Empty;
 
         public List<string> UserRoles { get; set; } = [];
+        public bool IsAdminSession { get; set; }
     }
 }

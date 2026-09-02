@@ -10,5 +10,6 @@ namespace FashionStore.Domain.Enums
         FeedbackResponse,
         ContactRecipient,
         ContactCustomer,
+        UserStatusChanged,
     }
 }
