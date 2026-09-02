@@ -15,7 +15,8 @@ namespace FashionStore.API.Features.Auth.ResetPassword
         private readonly IEmailTemplateRenderer _emailTemplateRenderer;
         private readonly ILogger<ResetPasswordService> _logger;
         private readonly IConfiguration _configuration;
-        public ResetPasswordService(UserManager<ApplicationUser> userManager, ITokenService tokenService, IEmailNotificationService emailNotificationService, IEmailTemplateRenderer emailTemplateRenderer, ILogger<ResetPasswordService> logger, IConfiguration configuration)
+        private readonly FashionStoreDbContext _dbContext;
+        public ResetPasswordService(UserManager<ApplicationUser> userManager, ITokenService tokenService, IEmailNotificationService emailNotificationService, IEmailTemplateRenderer emailTemplateRenderer, ILogger<ResetPasswordService> logger, IConfiguration configuration, FashionStoreDbContext dbContext)
         {
             _userManager = userManager;
             _tokenService = tokenService;
@@ -23,28 +24,23 @@ namespace FashionStore.API.Features.Auth.ResetPassword
             _emailTemplateRenderer = emailTemplateRenderer;
             _logger = logger;
             _configuration = configuration;
+            _dbContext = dbContext;
         }
 
-        public async Task<ResponseResult> ExecuteAsync(string username, ResetPasswordRequest request)
+        public async Task<ResponseResult> ExecuteAsync(string userId, ResetPasswordRequest request, CancellationToken cancellationToken)
         {
             var response = new ResponseResult();
-            _logger.LogInformation("Reset password request received for username {Username}.", username);
-            if (string.IsNullOrWhiteSpace(username))
-            {
-                _logger.LogError("Reset password rejected because the authenticated username claim was missing.");
-                return response.Fail("The current token is invalid.", ResponseCodes.INVALID_TOKEN);
-            }
-
-            var user = await _userManager.FindByNameAsync(username);
+            _logger.LogInformation("Reset password request received for user {UserId}.", userId);
+            var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
             {
-                _logger.LogError("Reset password failed for username {Username}: user was not found.", username);
+                _logger.LogError("Reset password failed for user {UserId}: user was not found.", userId);
                 return response.Fail("No user was found for the current token.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
             }
 
             if (user.IsDeleted || user.IsDeactivated)
             {
-                _logger.LogError("Reset password blocked for user {UserId} with username {Username}: account is inactive. Deleted: {IsDeleted}, Deactivated: {IsDeactivated}.", user.Id, username, user.IsDeleted, user.IsDeactivated);
+                _logger.LogError("Reset password blocked for user {UserId}: account is inactive. Deleted: {IsDeleted}, Deactivated: {IsDeactivated}.", user.Id, user.IsDeleted, user.IsDeactivated);
                 return response.Fail("This account is not active.", ResponseCodes.ACTION_NOT_PERMITTED);
             }
 
@@ -52,7 +48,7 @@ namespace FashionStore.API.Features.Auth.ResetPassword
             if (!changePasswordResult.Succeeded)
             {
                 var errors = changePasswordResult.Errors.Select(error => error.Description).ToArray();
-                _logger.LogError("Reset password failed for user {UserId} with username {Username}. Errors: {Errors}.", user.Id, username, string.Join(" | ", errors));
+                _logger.LogError("Reset password failed for user {UserId}. Errors: {Errors}.", user.Id, string.Join(" | ", errors));
                 return response.Fail(string.Join(" ", errors), ResponseCodes.ACTION_FAILED, errors);
             }
 
@@ -67,8 +63,12 @@ namespace FashionStore.API.Features.Auth.ResetPassword
                 return response.Fail("Password was updated, but the account could not be fully updated.", ResponseCodes.ACTION_FAILED, errors);
             }
 
-            _logger.LogInformation("Password reset successful for user {UserId} with username {Username}.", user.Id, username);
-            return response.Success("Password updated successfully.");
+            await _userManager.UpdateSecurityStampAsync(user);
+            var now = DateTimeOffset.UtcNow;
+            await _dbContext.UserSessions.Where(session => session.UserId == user.Id && session.RevokedAtUtc == null)
+                .ExecuteUpdateAsync(setters => setters.SetProperty(session => session.RevokedAtUtc, now), cancellationToken);
+            _logger.LogInformation("Password reset successful and all sessions revoked for user {UserId}.", user.Id);
+            return response.Success("Password updated successfully. Sign in again on your devices.");
         }
     }
 }

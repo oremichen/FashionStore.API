@@ -103,11 +103,9 @@ namespace FashionStore.API.Features.Auth
         [EndpointSummary("Reset password for authenticated user")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
         {
-            var username = User.FindFirst(ClaimTypes.Name)?.Value
-                ?? User.FindFirst(ClaimTypes.Email)?.Value
-                ?? string.Empty;
-
-            var response = await _resetPasswordService.ExecuteAsync(username, request);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
+            var response = await _resetPasswordService.ExecuteAsync(userId, request, HttpContext.RequestAborted);
             return ProcessResponse(response);
         }
 

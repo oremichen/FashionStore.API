@@ -93,19 +93,21 @@ namespace FashionStore.API.Features.Users
         public async Task<IActionResult> UpdateAdminUser(string userId, [FromBody] UpdateAdminUserRequest request)
             => ProcessResponse(await _updateAdminUserService.ExecuteAsync(userId, request));
 
-        [HttpGet("by-email")]
+        [HttpGet("me")]
         [Produces("application/json")]
         [ProducesResponseType(typeof(ResponseResult<UserDetailsResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ResponseResult<UserDetailsResponse>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ResponseResult<UserDetailsResponse>), StatusCodes.Status500InternalServerError)]
-        [EndpointSummary("Get user by email")]
-        public async Task<IActionResult> GetByEmail([FromQuery] string email)
+        [EndpointSummary("Get the authenticated user")]
+        public async Task<IActionResult> GetCurrentUser()
         {
-            var response = await _getUserByEmailService.ExecuteAsync(email);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
+            var response = await _getUserByEmailService.ExecuteAsync(userId);
             return ProcessResponse(response);
         }
 
-        [HttpPut]
+        [HttpPut("me")]
         [Produces("application/json")]
         [ProducesResponseType(typeof(ResponseResult<UserDetailsResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ResponseResult<UserDetailsResponse>), StatusCodes.Status400BadRequest)]
@@ -113,9 +115,11 @@ namespace FashionStore.API.Features.Users
         [ProducesResponseType(typeof(ResponseResult<UserDetailsResponse>), StatusCodes.Status409Conflict)]
         [ProducesResponseType(typeof(ResponseResult<UserDetailsResponse>), StatusCodes.Status500InternalServerError)]
         [EndpointSummary("Update user details")]
-        public async Task<IActionResult> Update([FromBody] UpdateUserDetailsRequest request)
+        public async Task<IActionResult> Update([FromBody] UpdateUserDetailsRequest request, CancellationToken cancellationToken)
         {
-            var response = await _updateUserService.ExecuteAsync(request);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
+            var response = await _updateUserService.ExecuteAsync(userId, request, cancellationToken);
             return ProcessResponse(response);
         }
 
@@ -133,58 +137,54 @@ namespace FashionStore.API.Features.Users
             return ProcessResponse(response);
         }
 
-        [HttpGet("{userId}/addresses")]
+        [HttpGet("me/addresses")]
         [ProducesResponseType(typeof(ResponseResult<IReadOnlyList<UserAddressResponse>>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetAllUserAddresses(string userId, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetAllUserAddresses(CancellationToken cancellationToken)
         {
-            if (!CanAccessAddresses(userId)) return Forbid();
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
             return ProcessResponse(await _getAllUserAddressesService.ExecuteAsync(userId, cancellationToken));
         }
 
-        [HttpPost("{userId}/addresses")]
+        [HttpPost("me/addresses")]
         [ProducesResponseType(typeof(ResponseResult<UserAddressResponse>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> CreateUserAddress(string userId, [FromBody] UserAddressRequest request, CancellationToken cancellationToken)
+        public async Task<IActionResult> CreateUserAddress([FromBody] UserAddressRequest request, CancellationToken cancellationToken)
         {
-            if (!CanAccessAddresses(userId)) return Forbid();
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
             return ProcessResponse(await _createUserAddressService.ExecuteAsync(userId, request, cancellationToken));
         }
 
-        [HttpPut("{userId}/addresses/{addressId}")]
+        [HttpPut("me/addresses/{addressId}")]
         [ProducesResponseType(typeof(ResponseResult<UserAddressResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> UpdateUserAddress(string userId, string addressId, [FromBody] UserAddressRequest request, CancellationToken cancellationToken)
+        public async Task<IActionResult> UpdateUserAddress(string addressId, [FromBody] UserAddressRequest request, CancellationToken cancellationToken)
         {
-            if (!CanAccessAddresses(userId)) return Forbid();
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
             return ProcessResponse(await _updateUserAddressService.ExecuteAsync(userId, addressId, request, cancellationToken));
         }
 
-        [HttpDelete("{userId}/addresses/{addressId}")]
+        [HttpDelete("me/addresses/{addressId}")]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> DeleteUserAddress(string userId, string addressId, CancellationToken cancellationToken)
+        public async Task<IActionResult> DeleteUserAddress(string addressId, CancellationToken cancellationToken)
         {
-            if (!CanAccessAddresses(userId)) return Forbid();
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
             return ProcessResponse(await _deleteUserAddressService.ExecuteAsync(userId, addressId, cancellationToken));
-        }
-
-        private bool CanAccessAddresses(string userId)
-        {
-            var authenticatedUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            return !string.IsNullOrWhiteSpace(authenticatedUserId) &&
-                (string.Equals(authenticatedUserId, userId, StringComparison.Ordinal) ||
-                 User.IsInRole(RoleConstants.SuperAdmin));
         }
     }
 }
