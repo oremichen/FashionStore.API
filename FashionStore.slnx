@@ -2,5 +2,6 @@
   <Project Path="FashionStore.API/FashionStore.API.csproj" />
   <Project Path="FashionStore.Domain/FashionStore.Domain.csproj" />
   <Project Path="FashionStore.Infrastructure/FashionStore.Infrastructure.csproj" />
+  <Project Path="FashionStore.IntegrationTests/FashionStore.IntegrationTests.csproj" />
   <Project Path="FashionStore.Shared/FashionStore.Shared.csproj" />
 </Solution>

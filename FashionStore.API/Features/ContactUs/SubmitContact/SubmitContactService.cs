@@ -11,6 +11,16 @@ public sealed class SubmitContactService(
     IConfiguration configuration,
     ILogger<SubmitContactService> logger) : ISubmitContactService
 {
+    private static readonly HashSet<string> EnquiryTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Order enquiry",
+        "Delivery information",
+        "Product availability",
+        "Returns or complaints",
+        "Payment issue",
+        "Partnership or wholesale"
+    };
+
     public async Task<ResponseResult> ExecuteAsync(SubmitContactRequest request, CancellationToken cancellationToken)
     {
         var response = new ResponseResult();
@@ -25,8 +35,13 @@ public sealed class SubmitContactService(
                 return response.Fail("Something went wrong, we are working on resolving the issue.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
             }
 
+            var enquiryType = request.EnquiryType?.Trim();
+            var subject = EnquiryTypes.TryGetValue(enquiryType ?? string.Empty, out var recognisedType)
+                ? $"New Contact Enquiry – {ToSubjectCase(recognisedType)} – {request.Name.Trim()}"
+                : "New Contact Message from MaisonDeLola Website";
+
             var contact = FashionStore.Domain.Entities.ContactUs.Create(
-                request.Name, request.Email, request.Phone, request.Subject, request.Message);
+                request.Name, request.Email, request.Phone, subject, request.Message);
             await contactRepository.AddAsync(contact, cancellationToken);
             await contactRepository.SaveChangesAsync(cancellationToken);
             logger.LogInformation("Contact submission {ContactId} persisted successfully.", contact.Id);
@@ -43,7 +58,7 @@ public sealed class SubmitContactService(
 
             var recipientBody = await templateRenderer.RenderAsync(EmailNotificationTypeEnum.ContactRecipient, tokens);
             var customerBody = await templateRenderer.RenderAsync(EmailNotificationTypeEnum.ContactCustomer, tokens);
-            await emailService.QueueEmailAsync(new EmailNotification { To = [recipient.ContactEmail], ReplyTo = contact.Email, Subject = $"Contact Message – {contact.Name}", Body = recipientBody }, cancellationToken);
+            await emailService.QueueEmailAsync(new EmailNotification { To = [recipient.ContactEmail], ReplyTo = contact.Email, Subject = contact.Subject, Body = recipientBody }, cancellationToken);
             logger.LogInformation("Recipient notification queued for contact submission {ContactId}.", contact.Id);
 
             await emailService.QueueEmailAsync(new EmailNotification { To = [contact.Email], Subject = $"We’ve Received Your Message – {appName}", Body = customerBody }, cancellationToken);
@@ -67,4 +82,8 @@ public sealed class SubmitContactService(
     }
 
     private static string Encode(string value) => HtmlEncoder.Default.Encode(value);
+
+    private static string ToSubjectCase(string value) =>
+        string.Join(' ', value.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Select(word => char.ToUpperInvariant(word[0]) + word[1..].ToLowerInvariant()));
 }

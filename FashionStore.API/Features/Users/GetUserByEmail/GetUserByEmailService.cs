@@ -21,18 +21,17 @@ namespace FashionStore.API.Features.Users.GetUserByEmail
             _logger = logger;
         }
 
-        public async Task<ResponseResult<UserDetailsResponse>> ExecuteAsync(string email)
+        public async Task<ResponseResult<UserDetailsResponse>> ExecuteAsync(string userId)
         {
             var response = new ResponseResult<UserDetailsResponse>();
-            _logger.LogInformation("Get user by email requested for {Email}.", email);
-            var normalizedEmail = _userManager.NormalizeEmail(email.Trim());
+            _logger.LogInformation("Get current user requested for {UserId}.", userId);
             var user = await _userManager.Users
                 .Include(item => item.Addresses)
-                .SingleOrDefaultAsync(item => item.NormalizedEmail == normalizedEmail);
+                .SingleOrDefaultAsync(item => item.Id == userId);
             if (user == null)
             {
-                _logger.LogError("Get user by email failed for {Email}: user was not found.", email);
-                return response.Fail("No user was found for the supplied email address.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
+                _logger.LogError("Get current user failed for {UserId}: user was not found.", userId);
+                return response.Fail("No user was found for the current token.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
             }
 
             return response.Success(await BuildUserDetailsResponse(user), "User retrieved successfully.");
