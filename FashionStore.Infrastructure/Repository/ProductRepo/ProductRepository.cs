@@ -1,5 +1,6 @@
 using FashionStore.Domain.Abstractions.Products;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace FashionStore.Infrastructure.Repository.ProductRepo;
 
@@ -55,6 +56,8 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
             query = query.Where(x => x.BrandId != null && brandIds.Contains(x.BrandId.ToLower()));
         if (request.MinPrice.HasValue) query = query.Where(x => (x.NewPrice == 0 && x.MinPrice.HasValue ? x.MinPrice.Value : x.NewPrice) >= request.MinPrice.Value);
         if (request.MaxPrice.HasValue) query = query.Where(x => (x.NewPrice == 0 && x.MaxPrice.HasValue ? x.MaxPrice.Value : x.NewPrice) <= request.MaxPrice.Value);
+        if (PriceRangeParser.TryParse(request.PriceRanges, out var priceRanges) && priceRanges.Count > 0)
+            query = query.Where(BuildPriceRangePredicate(priceRanges));
         if (request.InStock.HasValue) query = request.InStock.Value
             ? query.Where(x => x.AvailabilityCount > 0 || x.Variants.Any(v => v.IsActive && v.AvailabilityCount > 0))
             : query.Where(x => x.AvailabilityCount == 0 && !x.Variants.Any(v => v.IsActive && v.AvailabilityCount > 0));
@@ -113,6 +116,34 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
         return string.IsNullOrWhiteSpace(values) ? [] : values
         .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
         .Select(x => x.ToLowerInvariant()).Distinct().ToArray();
+    }
+
+    private static Expression<Func<Product, bool>> BuildPriceRangePredicate(IReadOnlyList<PriceRange> ranges)
+    {
+        var product = Expression.Parameter(typeof(Product), "product");
+        var newPrice = Expression.Property(product, nameof(Product.NewPrice));
+        var minPrice = Expression.Property(product, nameof(Product.MinPrice));
+        var maxPrice = Expression.Property(product, nameof(Product.MaxPrice));
+        var hasRange = Expression.AndAlso(
+            Expression.Equal(newPrice, Expression.Constant(0m)),
+            Expression.AndAlso(
+                Expression.Property(minPrice, nameof(Nullable<decimal>.HasValue)),
+                Expression.Property(maxPrice, nameof(Nullable<decimal>.HasValue))));
+        var effectiveMinimum = Expression.Condition(hasRange, Expression.Property(minPrice, nameof(Nullable<decimal>.Value)), newPrice);
+        var effectiveMaximum = Expression.Condition(hasRange, Expression.Property(maxPrice, nameof(Nullable<decimal>.Value)), newPrice);
+        Expression predicate = Expression.Constant(false);
+
+        foreach (var range in ranges)
+        {
+            Expression matches = Expression.Constant(true);
+            if (range.Minimum.HasValue)
+                matches = Expression.AndAlso(matches, Expression.GreaterThanOrEqual(effectiveMaximum, Expression.Constant(range.Minimum.Value)));
+            if (range.Maximum.HasValue)
+                matches = Expression.AndAlso(matches, Expression.LessThan(effectiveMinimum, Expression.Constant(range.Maximum.Value)));
+            predicate = Expression.OrElse(predicate, matches);
+        }
+
+        return Expression.Lambda<Func<Product, bool>>(predicate, product);
     }
 
     public async Task<(IReadOnlyList<Product> Items, int TotalCount)> GetAsync(ProductFilter request, CancellationToken cancellationToken)
