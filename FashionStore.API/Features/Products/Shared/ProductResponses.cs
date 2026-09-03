@@ -27,6 +27,7 @@ public sealed class SizeResponse
     public required string DisplayName { get; init; }
     public int SortOrder { get; init; }
     public bool IsActive { get; init; }
+    public int ProductCount { get; init; }
 }
 public sealed class ColorResponse
 {
@@ -35,6 +36,7 @@ public sealed class ColorResponse
     public string? HexCode { get; init; }
     public int SortOrder { get; init; }
     public bool IsActive { get; init; }
+    public int ProductCount { get; init; }
 }
 public class ProductResponse
 {

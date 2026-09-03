@@ -4,8 +4,10 @@ namespace FashionStore.Domain.Abstractions.CatalogOptions;
 
 public interface ICatalogOptionRepository
 {
-    Task<(IReadOnlyList<Size> Items, int TotalCount)> GetSizesAsync(int page, int pageSize, CancellationToken cancellationToken);
-    Task<(IReadOnlyList<Color> Items, int TotalCount)> GetColorsAsync(int page, int pageSize, CancellationToken cancellationToken);
+    Task<(IReadOnlyList<Size> Items, int TotalCount)> GetSizesAsync(int page, int pageSize, bool availableOnly, CancellationToken cancellationToken);
+    Task<(IReadOnlyList<Color> Items, int TotalCount)> GetColorsAsync(int page, int pageSize, bool availableOnly, CancellationToken cancellationToken);
+    Task<IReadOnlyDictionary<string, int>> GetSizeProductCountsAsync(CancellationToken cancellationToken);
+    Task<IReadOnlyDictionary<string, int>> GetColorProductCountsAsync(CancellationToken cancellationToken);
     Task<bool> SizeNameExistsAsync(string name, CancellationToken cancellationToken);
     Task<bool> SizeNameExistsAsync(string name, string excludeId, CancellationToken cancellationToken);
     Task<bool> ColorNameExistsAsync(string name, CancellationToken cancellationToken);

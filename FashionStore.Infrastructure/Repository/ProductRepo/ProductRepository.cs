@@ -62,7 +62,9 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
         var colors = Split(request.Colors);
         if (colors.Length > 0) query = query.Where(x => x.ProductColors.Any(pc => colors.Contains(pc.Color.Name.ToLower())));
         var sizes = Split(request.Sizes);
-        if (sizes.Length > 0) query = query.Where(x => x.Variants.Any(v => v.IsActive && v.Size != null && (sizes.Contains(v.Size.Name.ToLower()) || sizes.Contains(v.Size.DisplayName.ToLower()))));
+        if (sizes.Length > 0) query = query.Where(x =>
+            x.ProductSizes.Any(ps => sizes.Contains(ps.Size.Name.ToLower()) || sizes.Contains(ps.Size.DisplayName.ToLower())) ||
+            x.Variants.Any(v => v.IsActive && v.Size != null && (sizes.Contains(v.Size.Name.ToLower()) || sizes.Contains(v.Size.DisplayName.ToLower()))));
         query = collection switch
         {
             "featured" => query.Where(x => x.IsFeatured),

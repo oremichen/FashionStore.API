@@ -4,10 +4,10 @@ using FashionStore.Domain.Abstractions.Images;
 namespace FashionStore.API.Features.Brands.GetBrands;
 public sealed class GetBrandsService(IBrandRepository repository, ICloudinaryImageService cloudinary, ILogger<GetBrandsService> logger) : IGetBrandsService
 {
-    public async Task<ResponseResult<IReadOnlyList<BrandResponse>>> ExecuteAsync(CancellationToken cancellationToken)
+    public async Task<ResponseResult<IReadOnlyList<BrandResponse>>> ExecuteAsync(bool availableOnly, CancellationToken cancellationToken)
     {
         logger.LogInformation("Retrieving brands.");
-        var brands = await repository.GetAllAsync(cancellationToken);
+        var brands = await repository.GetAllAsync(availableOnly, cancellationToken);
         var mappedBrands = brands.Select(Map).ToList();
         return new ResponseResult<IReadOnlyList<BrandResponse>>().Success(mappedBrands, "Brands retrieved successfully.");
     }
@@ -26,7 +26,8 @@ public sealed class GetBrandsService(IBrandRepository repository, ICloudinaryIma
             HasImage = hasImage,
             ImageUrl = brand.ImageUrl,
             CreatedAt = brand.CreatedAt,
-            UpdatedAt = brand.UpdatedAt
+            UpdatedAt = brand.UpdatedAt,
+            ProductCount = brand.Products.Count(product => !product.IsArchived && product.IsActive && product.PublishedAt != null)
         };
     }
 }
