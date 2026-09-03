@@ -8,7 +8,10 @@ public sealed class GetBrandsService(IBrandRepository repository, ICloudinaryIma
     {
         logger.LogInformation("Retrieving brands.");
         var brands = await repository.GetAllAsync(availableOnly, cancellationToken);
-        var mappedBrands = brands.Select(Map).ToList();
+        var mappedBrands = brands
+            .Select(Map)
+            .Where(brand => !availableOnly || brand.ProductCount > 0)
+            .ToList();
         return new ResponseResult<IReadOnlyList<BrandResponse>>().Success(mappedBrands, "Brands retrieved successfully.");
     }
 

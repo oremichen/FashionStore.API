@@ -10,9 +10,13 @@ public sealed class GetSizesService(ICatalogOptionRepository repository) : IGetS
             return response.Fail("Page must be at least 1 and pageSize must be between 1 and 100.", ResponseCodes.INVALID_ACTION);
         var result = await repository.GetSizesAsync(page, pageSize, availableOnly, cancellationToken);
         var productCounts = await repository.GetSizeProductCountsAsync(cancellationToken);
+        var items = result.Items
+            .Select(size => MapSize(size, productCounts.GetValueOrDefault(size.Id)))
+            .Where(size => !availableOnly || size.ProductCount > 0)
+            .ToList();
         return response.Success(new PagedResponse<SizeResponse>
         {
-            Items = result.Items.Select(size => MapSize(size, productCounts.GetValueOrDefault(size.Id))).ToList(), Page = page, PageSize = pageSize,
+            Items = items, Page = page, PageSize = pageSize,
             TotalCount = result.TotalCount, TotalPages = result.TotalCount == 0 ? 0 : (int)Math.Ceiling(result.TotalCount / (double)pageSize)
         }, "Sizes retrieved successfully.");
     }

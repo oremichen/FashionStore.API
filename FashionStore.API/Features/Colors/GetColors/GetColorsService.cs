@@ -10,9 +10,13 @@ public sealed class GetColorsService(ICatalogOptionRepository repository) : IGet
             return response.Fail("Page must be at least 1 and pageSize must be between 1 and 100.", ResponseCodes.INVALID_ACTION);
         var result = await repository.GetColorsAsync(page, pageSize, availableOnly, cancellationToken);
         var productCounts = await repository.GetColorProductCountsAsync(cancellationToken);
+        var items = result.Items
+            .Select(color => MapColor(color, productCounts.GetValueOrDefault(color.Id)))
+            .Where(color => !availableOnly || color.ProductCount > 0)
+            .ToList();
         return response.Success(new PagedResponse<ColorResponse>
         {
-            Items = result.Items.Select(color => MapColor(color, productCounts.GetValueOrDefault(color.Id))).ToList(), Page = page, PageSize = pageSize,
+            Items = items, Page = page, PageSize = pageSize,
             TotalCount = result.TotalCount, TotalPages = result.TotalCount == 0 ? 0 : (int)Math.Ceiling(result.TotalCount / (double)pageSize)
         }, "Colors retrieved successfully.");
     }
