@@ -21,9 +21,23 @@ public sealed class OrderRepository : IOrderRepository
 
     public Task<Order?> GetByPaymentReferenceAsync(string reference, bool trackChanges, CancellationToken cancellationToken)
     {
-        IQueryable<Order> query = _dbContext.Orders.Include(item => item.Items);
+        IQueryable<Order> query = _dbContext.Orders.Include(item => item.Items).Include(item => item.InventoryReservations);
         if (!trackChanges) query = query.AsNoTracking();
         return query.SingleOrDefaultAsync(item => item.PaymentReference == reference, cancellationToken);
+    }
+
+    public Task<Order?> GetByIdempotencyKeyAsync(string userId, string idempotencyKey, bool trackChanges, CancellationToken cancellationToken)
+    {
+        IQueryable<Order> query = _dbContext.Orders.Include(item => item.Items).Include(item => item.InventoryReservations);
+        if (!trackChanges) query = query.AsNoTracking();
+        return query.SingleOrDefaultAsync(item => item.UserId == userId && item.IdempotencyKey == idempotencyKey, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<InventoryReservation>> GetExpiredReservationsAsync(DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        return await _dbContext.InventoryReservations.Where(item =>
+            item.Status == FashionStore.Domain.Constants.InventoryReservationStatuses.Reserved && item.ExpiresAt <= now)
+            .ToListAsync(cancellationToken);
     }
 
     public async Task AddAsync(Order order, CancellationToken cancellationToken)

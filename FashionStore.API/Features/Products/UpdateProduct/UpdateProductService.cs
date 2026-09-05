@@ -53,7 +53,10 @@ public class UpdateProductService(IProductRepository repository, IImageProcessor
             product.AddImages(await ProcessImagesAsync(request.ImageRequests, ct));
             await repository.SaveChangesAsync(ct);
             await repository.SetSizesAndColorsAsync(product.Id, sizeIds, colorIds, ct);
-            await repository.SetVariantsAsync(product.Id, request.ProductVariants.Select(x => (x.SizeId, x.Price, x.Quantity)).ToArray(), ct);
+            var variants = request.ProductVariants.Count == 0
+                ? new[] { (SizeId: (string?)null, Price: newPrice, Quantity: request.AvailabilityCount) }
+                : request.ProductVariants.Select(x => (x.SizeId, x.Price, x.Quantity)).ToArray();
+            await repository.SetVariantsAsync(product.Id, variants, ct);
             var saved = await repository.GetByIdAsync(product.Id, false, ct) ?? product;
             logger.LogInformation("Updated product {ProductId}.", product.Id);
             return new ResponseResult<ProductResponse>().Success(Map(saved, 5), "Product updated successfully.");

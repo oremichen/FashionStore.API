@@ -12,6 +12,7 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.HasKey(item => item.Id);
         builder.Property(item => item.Id).HasMaxLength(50).HasDefaultValueSql("gen_random_uuid()::text");
         builder.Property(item => item.UserId).HasMaxLength(450).IsRequired();
+        builder.Property(item => item.IdempotencyKey).HasMaxLength(100).IsRequired();
         builder.Property(item => item.AddressId).HasMaxLength(50).IsRequired();
         builder.Property(item => item.Email).HasMaxLength(320).IsRequired();
         builder.Property(item => item.DeliveryMethod).HasMaxLength(30).IsRequired();
@@ -23,8 +24,12 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.Property(item => item.PaymentReference).HasMaxLength(100).IsRequired();
         builder.Property(item => item.PaymentStatus).HasMaxLength(30).IsRequired();
         builder.HasIndex(item => item.PaymentReference).IsUnique();
+        builder.HasIndex(item => new { item.UserId, item.IdempotencyKey }).IsUnique()
+            .HasDatabaseName("ux_orders_userid_idempotencykey");
         builder.HasOne(item => item.User).WithMany().HasForeignKey(item => item.UserId).OnDelete(DeleteBehavior.Restrict);
         builder.HasMany(item => item.Items).WithOne(item => item.Order).HasForeignKey(item => item.OrderId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasMany(item => item.InventoryReservations).WithOne(item => item.Order).HasForeignKey(item => item.OrderId).OnDelete(DeleteBehavior.Restrict);
         builder.Navigation(item => item.Items).UsePropertyAccessMode(PropertyAccessMode.Field);
+        builder.Navigation(item => item.InventoryReservations).UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }

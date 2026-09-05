@@ -55,6 +55,7 @@ namespace FashionStore.Infrastructure
                 provider.GetRequiredService<Messages.NotificationQueue.EmailNotificationQueueService>());
             services.AddHostedService<Messages.NotificationQueue.EmailNotificationProcessorService>();
             services.AddHostedService<Messages.NotificationQueue.PendingEmailNotificationProcessorService>();
+            services.AddHostedService<Messages.Inventory.ExpiredInventoryReservationProcessorService>();
             return services;
         }
     }

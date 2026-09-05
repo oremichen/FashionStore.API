@@ -59,8 +59,8 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
         if (PriceRangeParser.TryParse(request.PriceRanges, out var priceRanges) && priceRanges.Count > 0)
             query = query.Where(BuildPriceRangePredicate(priceRanges));
         if (request.InStock.HasValue) query = request.InStock.Value
-            ? query.Where(x => x.AvailabilityCount > 0 || x.Variants.Any(v => v.IsActive && v.AvailabilityCount > 0))
-            : query.Where(x => x.AvailabilityCount == 0 && !x.Variants.Any(v => v.IsActive && v.AvailabilityCount > 0));
+            ? query.Where(x => x.AvailabilityCount > 0)
+            : query.Where(x => x.AvailabilityCount == 0);
         if (request.MinRating.HasValue) query = query.Where(x => x.RatingsValue >= request.MinRating.Value);
         var colors = Split(request.Colors);
         if (colors.Length > 0) query = query.Where(x => x.ProductColors.Any(pc => colors.Contains(pc.Color.Name.ToLower())));
@@ -252,7 +252,7 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
     {
         var current = await dbContext.ProductVariants.Where(item => item.ProductId == productId).ToListAsync(ct);
         dbContext.ProductVariants.RemoveRange(current);
-        dbContext.ProductVariants.AddRange(variants.Select(item => ProductVariant.Create(productId, item.SizeId, null, item.Price, item.Quantity)));
+        dbContext.ProductVariants.AddRange(variants.Select(item => ProductVariant.Create(productId, item.SizeId, null, item.Price, 0)));
         await dbContext.SaveChangesAsync(ct);
     }
 

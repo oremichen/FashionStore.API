@@ -9,6 +9,7 @@ public sealed class CheckoutItemRequest
 
 public sealed class InitializePaystackRequest
 {
+    public string IdempotencyKey { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string AddressId { get; set; } = string.Empty;
     public string DeliveryMethod { get; set; } = string.Empty;
