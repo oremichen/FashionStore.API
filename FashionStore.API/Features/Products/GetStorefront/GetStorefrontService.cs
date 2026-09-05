@@ -34,6 +34,8 @@ public class GetStorefrontService(IProductRepository repository, IImageProcessor
             return "The sort value is invalid.";
         if (query.MinPrice < 0 || query.MaxPrice < 0 || query.MinPrice > query.MaxPrice)
             return "The price range is invalid.";
+        if (!PriceRangeParser.TryParse(query.PriceRanges, out _))
+            return "The selected price ranges are invalid.";
         return null;
     }
 

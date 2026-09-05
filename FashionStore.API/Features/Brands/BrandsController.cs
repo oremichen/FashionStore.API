@@ -16,8 +16,16 @@ public sealed class BrandsController(IGetBrandsService getBrandsService, ICreate
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
-        var response = await getBrandsService.ExecuteAsync(cancellationToken);
+        var response = await getBrandsService.ExecuteAsync(true, cancellationToken);
         return ProcessResponse(response);
+    }
+
+    [Authorize(Roles = "SuperAdmin,BusinessAdmin")]
+    [HttpGet("~/api/admin/brands")]
+    [ProducesResponseType(typeof(ResponseResult<IReadOnlyList<BrandResponse>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAllAdmin(CancellationToken cancellationToken)
+    {
+        return ProcessResponse(await getBrandsService.ExecuteAsync(false, cancellationToken));
     }
 
     [Authorize(Roles = "SuperAdmin,BusinessAdmin")]

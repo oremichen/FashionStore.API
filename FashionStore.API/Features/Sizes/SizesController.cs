@@ -13,7 +13,14 @@ public sealed class SizesController(IGetSizesService getSizesService, ICreateSiz
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 25, CancellationToken cancellationToken = default)
     {
-        return ProcessResponse(await getSizesService.ExecuteAsync(page, pageSize, cancellationToken));
+        return ProcessResponse(await getSizesService.ExecuteAsync(page, pageSize, true, cancellationToken));
+    }
+
+    [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpGet("~/api/admin/sizes")]
+    [ProducesResponseType(typeof(ResponseResult<PagedResponse<SizeResponse>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAllAdmin([FromQuery] int page = 1, [FromQuery] int pageSize = 25, CancellationToken cancellationToken = default)
+    {
+        return ProcessResponse(await getSizesService.ExecuteAsync(page, pageSize, false, cancellationToken));
     }
 
     [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpPut("{id}")]
