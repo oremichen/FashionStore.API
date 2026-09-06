@@ -1,7 +1,6 @@
 using FashionStore.API.Features.Payments.Shared;
 using FashionStore.Domain.Abstractions.Orders;
 using FashionStore.Domain.Abstractions.Payments;
-using FashionStore.Domain.Abstractions.Products;
 using FashionStore.Domain.Constants;
 
 namespace FashionStore.API.Features.Payments.VerifyPaystack;
@@ -10,15 +9,12 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
 {
     private readonly IOrderRepository _orderRepository;
     private readonly IPaystackClient _paystackClient;
-    private readonly IProductRepository _productRepository;
     private readonly ILogger<VerifyPaystackService> _logger;
 
-    public VerifyPaystackService(IOrderRepository orderRepository, IPaystackClient paystackClient,
-        IProductRepository productRepository, ILogger<VerifyPaystackService> logger)
+    public VerifyPaystackService(IOrderRepository orderRepository, IPaystackClient paystackClient, ILogger<VerifyPaystackService> logger)
     {
         _orderRepository = orderRepository;
         _paystackClient = paystackClient;
-        _productRepository = productRepository;
         _logger = logger;
     }
 
@@ -54,16 +50,14 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
             {
                 order.MarkPaid(transaction.PaidAt ?? DateTimeOffset.UtcNow);
                 foreach (var reservation in order.InventoryReservations.Where(item => item.Status == InventoryReservationStatuses.Reserved))
-                    reservation.Consume(transaction.PaidAt ?? DateTimeOffset.UtcNow);
+                    await _orderRepository.ConsumeInventoryReservationAsync(reservation.Id, cancellationToken);
             }
             else
             {
                 order.MarkPaymentFailed(transaction.Status);
                 foreach (var reservation in order.InventoryReservations.Where(item => item.Status == InventoryReservationStatuses.Reserved))
                 {
-                    reservation.Release(DateTimeOffset.UtcNow);
-                    var product = await _productRepository.GetByIdAsync(reservation.ProductId, true, cancellationToken);
-                    product?.ReleaseStock(reservation.Quantity);
+                    await _orderRepository.ReleaseInventoryReservationAsync(reservation.Id, "released", cancellationToken);
                 }
             }
             await _orderRepository.SaveChangesAsync(cancellationToken);

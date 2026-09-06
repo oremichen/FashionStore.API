@@ -21,6 +21,7 @@ public sealed class Order
     public string Currency { get; private set; } = "NGN";
     public string Status { get; private set; } = OrderStatuses.PendingPayment;
     public string PaymentReference { get; private set; } = null!;
+    public string? AuthorizationUrl { get; private set; }
     public string PaymentStatus { get; private set; } = PaymentStatuses.Pending;
     public DateTimeOffset CreatedAt { get; private set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? PaidAt { get; private set; }
@@ -60,6 +61,14 @@ public sealed class Order
         PaymentStatus = PaymentStatuses.Success;
         Status = OrderStatuses.Processing;
         PaidAt = paidAt;
+    }
+
+    public void SetAuthorizationUrl(string authorizationUrl)
+    {
+        if (!Uri.TryCreate(authorizationUrl, UriKind.Absolute, out var uri) ||
+            (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp))
+            throw new ArgumentException("A valid payment authorization URL is required.", nameof(authorizationUrl));
+        AuthorizationUrl = uri.ToString();
     }
 
     public void MarkPaymentFailed(string status)

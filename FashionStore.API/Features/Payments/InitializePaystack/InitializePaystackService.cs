@@ -2,6 +2,7 @@ using FashionStore.API.Features.Payments.Shared;
 using FashionStore.Domain.Abstractions.Orders;
 using FashionStore.Domain.Abstractions.Payments;
 using FashionStore.Domain.Abstractions.Products;
+using Npgsql;
 
 namespace FashionStore.API.Features.Payments.InitializePaystack;
 
@@ -42,8 +43,12 @@ public sealed class InitializePaystackService : IInitializePaystackService
         var idempotencyKey = request.IdempotencyKey.Trim();
         if (idempotencyKey.Length > 100)
             return response.Fail("Idempotency key cannot exceed 100 characters.", ResponseCodes.INVALID_ACTION);
-        if (await _orderRepository.GetByIdempotencyKeyAsync(userId, idempotencyKey, false, cancellationToken) is not null)
-            return response.Fail("This checkout has already been initialized. Complete payment using the existing payment session.", ResponseCodes.DUPLICATE_RECORD);
+        var existingOrder = await _orderRepository.GetByIdempotencyKeyAsync(userId, idempotencyKey, false, cancellationToken);
+        if (existingOrder?.AuthorizationUrl is not null)
+            return response.Success(new PaystackInitializationResponse(existingOrder.AuthorizationUrl, string.Empty, existingOrder.PaymentReference),
+                "Returning the existing payment session.");
+        if (existingOrder is not null)
+            return response.Fail("This checkout is already being initialized. Please try again shortly.", ResponseCodes.REQUEST_IN_PROGRESS);
         var deliveryMethod = request.DeliveryMethod?.Trim().ToLowerInvariant() ?? string.Empty;
         
         if (!DeliveryFees.TryGetValue(deliveryMethod, out var deliveryFee))
@@ -60,7 +65,7 @@ public sealed class InitializePaystackService : IInitializePaystackService
             if (requestedItem.Quantity <= 0)
                 return response.Fail("Every item quantity must be greater than zero.", ResponseCodes.INVALID_ACTION);
 
-            var product = await _productRepository.GetByIdAsync(requestedItem.ProductId, true, cancellationToken);
+            var product = await _productRepository.GetByIdAsync(requestedItem.ProductId, false, cancellationToken);
             if (product is null || !product.IsActive || product.IsArchived)
                 return response.Fail("One or more products are unavailable.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
 
@@ -81,7 +86,6 @@ public sealed class InitializePaystackService : IInitializePaystackService
 
             if (!string.Equals(product.CurrencyCode, "NGN", StringComparison.OrdinalIgnoreCase))
                 return response.Fail("Only NGN products can be paid for with this checkout.", ResponseCodes.INVALID_ACTION);
-            product.ReserveStock(requestedItem.Quantity);
             orderItems.Add(OrderItem.Create(product.Id, requestedItem.VariantId, product.Name, unitPrice, requestedItem.Quantity));
         }
 
@@ -96,9 +100,15 @@ public sealed class InitializePaystackService : IInitializePaystackService
         }
         var order = Order.Create(userId, idempotencyKey, request.AddressId, request.Email, deliveryMethod,
             subtotal, deliveryFee, reference, orderItems);
-        foreach (var item in orderItems)
-            order.ReserveInventory(item.ProductId, item.Quantity, DateTimeOffset.UtcNow.Add(ReservationLifetime));
-        await _orderRepository.AddAsync(order, cancellationToken);
+        try
+        {
+            await _orderRepository.CreateWithInventoryReservationsAsync(order, DateTimeOffset.UtcNow.Add(ReservationLifetime), cancellationToken);
+        }
+        catch (PostgresException exception) when (exception.SqlState == "P0001")
+        {
+            _logger.LogInformation(exception, "Inventory reservation was rejected for checkout {IdempotencyKey}.", idempotencyKey);
+            return response.Fail(exception.MessageText, ResponseCodes.INVALID_ACTION);
+        }
 
         try
         {
@@ -116,6 +126,9 @@ public sealed class InitializePaystackService : IInitializePaystackService
                 initialized.AccessCode, 
                 initialized.Reference);
 
+            order.SetAuthorizationUrl(initialized.AuthorizationUrl);
+            await _orderRepository.SaveChangesAsync(cancellationToken);
+
             _logger.LogInformation("Order {OrderId} initialized on Paystack with reference {Reference} and total {Total} NGN.",
                 order.Id, reference, order.Total);
             return response.Success(result, "Payment initialized successfully.");
@@ -124,12 +137,11 @@ public sealed class InitializePaystackService : IInitializePaystackService
         {
             _logger.LogError(exception, "Paystack initialization failed for order {OrderId} and reference {Reference}.", order.Id, reference);
             order.MarkPaymentFailed("initialization_failed");
-            foreach (var reservation in order.InventoryReservations)
-            {
-                reservation.Release(DateTimeOffset.UtcNow);
-                var product = await _productRepository.GetByIdAsync(reservation.ProductId, true, cancellationToken);
-                product?.ReleaseStock(reservation.Quantity);
-            }
+            var savedOrder = await _orderRepository.GetByPaymentReferenceAsync(reference, true, cancellationToken);
+            
+            foreach (var reservation in savedOrder?.InventoryReservations ?? [])
+                await _orderRepository.ReleaseInventoryReservationAsync(reservation.Id, "released", cancellationToken);
+            
             await _orderRepository.SaveChangesAsync(cancellationToken);
             return response.Fail("Payment could not be initialized. Please try again.", ResponseCodes.SERVICE_UNAVAILABLE);
         }

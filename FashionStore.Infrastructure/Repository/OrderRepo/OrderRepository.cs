@@ -2,6 +2,7 @@ using FashionStore.Domain.Abstractions.Orders;
 using FashionStore.Domain.Entities;
 using FashionStore.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace FashionStore.Infrastructure.Repository.OrderRepo;
 
@@ -44,6 +45,48 @@ public sealed class OrderRepository : IOrderRepository
     {
         _dbContext.Orders.Add(order);
         await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public Task CreateWithInventoryReservationsAsync(Order order, DateTimeOffset expiresAt, CancellationToken cancellationToken)
+    {
+        var reservationJson = JsonSerializer.Serialize(order.Items
+            .GroupBy(item => item.ProductId)
+            .Select(group => new { productId = group.Key, quantity = group.Sum(item => item.Quantity) }));
+
+        return _dbContext.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
+        {
+            await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+            try
+            {
+                _dbContext.Orders.Add(order);
+                await _dbContext.SaveChangesAsync(cancellationToken);
+                await _dbContext.Database.ExecuteSqlInterpolatedAsync($"""
+                    SELECT reserve_order_inventory(
+                        {order.Id},
+                        CAST({reservationJson} AS jsonb),
+                        {expiresAt});
+                    """, cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+            }
+            catch
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                _dbContext.ChangeTracker.Clear();
+                throw;
+            }
+        });
+    }
+
+    public Task ReleaseInventoryReservationAsync(string reservationId, string status, CancellationToken cancellationToken)
+    {
+        return _dbContext.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT release_inventory_reservation({reservationId}, {status});", cancellationToken);
+    }
+
+    public Task ConsumeInventoryReservationAsync(string reservationId, CancellationToken cancellationToken)
+    {
+        return _dbContext.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT consume_inventory_reservation({reservationId});", cancellationToken);
     }
 
     public Task SaveChangesAsync(CancellationToken cancellationToken)

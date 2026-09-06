@@ -22,6 +22,7 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.Property(item => item.Currency).HasMaxLength(3).IsRequired();
         builder.Property(item => item.Status).HasMaxLength(30).IsRequired();
         builder.Property(item => item.PaymentReference).HasMaxLength(100).IsRequired();
+        builder.Property(item => item.AuthorizationUrl);
         builder.Property(item => item.PaymentStatus).HasMaxLength(30).IsRequired();
         builder.HasIndex(item => item.PaymentReference).IsUnique();
         builder.HasIndex(item => new { item.UserId, item.IdempotencyKey }).IsUnique()
