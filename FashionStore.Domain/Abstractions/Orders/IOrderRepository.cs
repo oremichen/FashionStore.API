@@ -9,8 +9,8 @@ public interface IOrderRepository
     Task<Order?> GetByIdempotencyKeyAsync(string userId, string idempotencyKey, bool trackChanges, CancellationToken cancellationToken);
     Task<IReadOnlyList<InventoryReservation>> GetExpiredReservationsAsync(DateTimeOffset now, CancellationToken cancellationToken);
     Task CreateWithInventoryReservationsAsync(Order order, DateTimeOffset expiresAt, CancellationToken cancellationToken);
-    Task ReleaseInventoryReservationAsync(string reservationId, string status, CancellationToken cancellationToken);
-    Task ConsumeInventoryReservationAsync(string reservationId, CancellationToken cancellationToken);
+    Task<bool> ReleaseInventoryReservationAsync(string reservationId, string status, CancellationToken cancellationToken);
+    Task<bool> ConsumeInventoryReservationAsync(string reservationId, CancellationToken cancellationToken);
     Task AddAsync(Order order, CancellationToken cancellationToken);
     Task SaveChangesAsync(CancellationToken cancellationToken);
 

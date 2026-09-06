@@ -7,6 +7,8 @@ namespace FashionStore.API.Features.Payments.VerifyPaystack;
 
 public sealed class VerifyPaystackService : IVerifyPaystackService
 {
+    private static readonly TimeSpan ReservationVerificationGrace = TimeSpan.FromSeconds(5);
+
     private readonly IOrderRepository _orderRepository;
     private readonly IPaystackClient _paystackClient;
     private readonly ILogger<VerifyPaystackService> _logger;
@@ -32,6 +34,19 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
         }
         if (order.PaymentStatus == PaymentStatuses.Success)
             return response.Success(new PaymentVerificationResponse(reference, order.Id, PaymentStatuses.Success), "Payment already verified.");
+
+        var cutoff = DateTimeOffset.UtcNow.Add(ReservationVerificationGrace);
+        var expiringReservation = order.InventoryReservations.FirstOrDefault(item =>
+            item.Status == InventoryReservationStatuses.Reserved && item.ExpiresAt <= cutoff);
+        if (expiringReservation is not null)
+        {
+            _logger.LogWarning(
+                "Payment verification skipped for order {OrderId} (reference {Reference}): reservation {ReservationId} " +
+                "expires at {ExpiresAt} which is within the {Grace} grace window of now. " +
+                "Avoiding a race with the expiry worker; caller should start a fresh checkout.",
+                order.Id, reference, expiringReservation.Id, expiringReservation.ExpiresAt, ReservationVerificationGrace);
+            return response.Fail("This checkout has expired or is about to expire. Please start a new order.", ResponseCodes.INVALID_ACTION);
+        }
 
         PaystackVerificationResult transaction;
         try
@@ -66,7 +81,13 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
                 order.MarkPaid(paidAt);
                 foreach (var reservation in order.InventoryReservations.Where(item => item.Status == InventoryReservationStatuses.Reserved))
                 {
-                    await _orderRepository.ConsumeInventoryReservationAsync(reservation.Id, cancellationToken);
+                    var consumed = await _orderRepository.ConsumeInventoryReservationAsync(reservation.Id, cancellationToken);
+                    if (!consumed)
+                    {
+                        throw new InvalidOperationException(
+                            $"Inventory reservation {reservation.Id} for order {order.Id} could not be consumed. " +
+                            "It was likely released or expired");
+                    }
                 }
             }
             else
@@ -74,7 +95,13 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
                 order.MarkPaymentFailed(failedStatus);
                 foreach (var reservation in order.InventoryReservations.Where(item => item.Status == InventoryReservationStatuses.Reserved))
                 {
-                    await _orderRepository.ReleaseInventoryReservationAsync(reservation.Id, InventoryReservationStatuses.Released, cancellationToken);
+                    var released = await _orderRepository.ReleaseInventoryReservationAsync(reservation.Id, InventoryReservationStatuses.Released, cancellationToken);
+                    if (!released)
+                    {
+                        throw new InvalidOperationException(
+                            $"Inventory reservation {reservation.Id} for order {order.Id} could not be released. " +
+                            "It was likely consumed or expired");
+                    }
                 }
             }
 

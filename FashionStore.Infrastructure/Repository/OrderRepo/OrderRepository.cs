@@ -98,16 +98,47 @@ public sealed class OrderRepository : IOrderRepository
         });
     }
 
-    public Task ReleaseInventoryReservationAsync(string reservationId, string status, CancellationToken cancellationToken)
+    public async Task<bool> ReleaseInventoryReservationAsync(string reservationId, string status, CancellationToken cancellationToken)
     {
-        return _dbContext.Database.ExecuteSqlInterpolatedAsync(
-            $"SELECT release_inventory_reservation({reservationId}, {status});", cancellationToken);
+        var connection = _dbContext.Database.GetDbConnection();
+        if (connection.State != System.Data.ConnectionState.Open)
+            await connection.OpenAsync(cancellationToken);
+
+        await using var command = connection.CreateCommand();
+        command.Transaction = _dbContext.Database.CurrentTransaction?.GetDbTransaction();
+        command.CommandText = "SELECT release_inventory_reservation(@reservationId, @status);";
+
+        var pId = command.CreateParameter();
+        pId.ParameterName = "reservationId";
+        pId.Value = reservationId;
+        command.Parameters.Add(pId);
+
+        var pStatus = command.CreateParameter();
+        pStatus.ParameterName = "status";
+        pStatus.Value = status;
+        command.Parameters.Add(pStatus);
+
+        var result = await command.ExecuteScalarAsync(cancellationToken);
+        return result is bool boolResult && boolResult;
     }
 
-    public Task ConsumeInventoryReservationAsync(string reservationId, CancellationToken cancellationToken)
+    public async Task<bool> ConsumeInventoryReservationAsync(string reservationId, CancellationToken cancellationToken)
     {
-        return _dbContext.Database.ExecuteSqlInterpolatedAsync(
-            $"SELECT consume_inventory_reservation({reservationId});", cancellationToken);
+        var connection = _dbContext.Database.GetDbConnection();
+        if (connection.State != System.Data.ConnectionState.Open)
+            await connection.OpenAsync(cancellationToken);
+
+        await using var command = connection.CreateCommand();
+        command.Transaction = _dbContext.Database.CurrentTransaction?.GetDbTransaction();
+        command.CommandText = "SELECT consume_inventory_reservation(@reservationId);";
+
+        var pId = command.CreateParameter();
+        pId.ParameterName = "reservationId";
+        pId.Value = reservationId;
+        command.Parameters.Add(pId);
+
+        var result = await command.ExecuteScalarAsync(cancellationToken);
+        return result is bool boolResult && boolResult;
     }
 
     public Task SaveChangesAsync(CancellationToken cancellationToken)
