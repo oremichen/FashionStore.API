@@ -49,17 +49,22 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
             if (string.Equals(transaction.Status, PaymentStatuses.Success, StringComparison.OrdinalIgnoreCase))
             {
                 order.MarkPaid(transaction.PaidAt ?? DateTimeOffset.UtcNow);
+
                 foreach (var reservation in order.InventoryReservations.Where(item => item.Status == InventoryReservationStatuses.Reserved))
+                {
                     await _orderRepository.ConsumeInventoryReservationAsync(reservation.Id, cancellationToken);
+                }
             }
             else
             {
                 order.MarkPaymentFailed(transaction.Status);
+
                 foreach (var reservation in order.InventoryReservations.Where(item => item.Status == InventoryReservationStatuses.Reserved))
                 {
                     await _orderRepository.ReleaseInventoryReservationAsync(reservation.Id, "released", cancellationToken);
                 }
             }
+
             await _orderRepository.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation("Payment reference {Reference} for order {OrderId} verified with status {Status}.", reference, order.Id, order.PaymentStatus);

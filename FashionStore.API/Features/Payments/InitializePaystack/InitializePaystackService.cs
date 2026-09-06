@@ -40,15 +40,21 @@ public sealed class InitializePaystackService : IInitializePaystackService
 
         if (string.IsNullOrWhiteSpace(request.IdempotencyKey) || string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.AddressId) || request.Items.Count == 0)
             return response.Fail("Idempotency key, email, address and at least one order item are required.", ResponseCodes.INVALID_ACTION);
+       
         var idempotencyKey = request.IdempotencyKey.Trim();
+        
         if (idempotencyKey.Length > 100)
             return response.Fail("Idempotency key cannot exceed 100 characters.", ResponseCodes.INVALID_ACTION);
+        
         var existingOrder = await _orderRepository.GetByIdempotencyKeyAsync(userId, idempotencyKey, false, cancellationToken);
+        
         if (existingOrder?.AuthorizationUrl is not null)
             return response.Success(new PaystackInitializationResponse(existingOrder.AuthorizationUrl, string.Empty, existingOrder.PaymentReference),
                 "Returning the existing payment session.");
+        
         if (existingOrder is not null)
             return response.Fail("This checkout is already being initialized. Please try again shortly.", ResponseCodes.REQUEST_IN_PROGRESS);
+        
         var deliveryMethod = request.DeliveryMethod?.Trim().ToLowerInvariant() ?? string.Empty;
         
         if (!DeliveryFees.TryGetValue(deliveryMethod, out var deliveryFee))
