@@ -60,9 +60,10 @@ public sealed class InitializePaystackService : IInitializePaystackService
         
         if (!DeliveryFees.TryGetValue(deliveryMethod, out var deliveryFee))
             return response.Fail("The selected delivery method is invalid.", ResponseCodes.INVALID_ACTION);
+
         if (!await _orderRepository.AddressBelongsToUserAsync(request.AddressId, userId, cancellationToken))
         {
-            _logger.LogWarning("User {UserId} attempted checkout with unavailable address {AddressId}.", userId, request.AddressId);
+            _logger.LogError("User {UserId} attempted checkout with unavailable address {AddressId}.", userId, request.AddressId);
             return response.Fail("The selected address was not found.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
         }
 
@@ -113,7 +114,7 @@ public sealed class InitializePaystackService : IInitializePaystackService
         }
         catch (PostgresException exception) when (exception.SqlState == "P0001")
         {
-            _logger.LogInformation(exception, "Inventory reservation was rejected for checkout {IdempotencyKey}.", idempotencyKey);
+            _logger.LogError(exception, "Inventory reservation was rejected for checkout {IdempotencyKey}.", idempotencyKey);
             return response.Fail(exception.MessageText, ResponseCodes.INVALID_ACTION);
         }
 
