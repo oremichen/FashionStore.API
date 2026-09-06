@@ -2,6 +2,7 @@ using FashionStore.Domain.Abstractions.Orders;
 using FashionStore.Domain.Entities;
 using FashionStore.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using System.Text.Json;
 
 namespace FashionStore.Infrastructure.Repository.OrderRepo;
@@ -13,6 +14,26 @@ public sealed class OrderRepository : IOrderRepository
     public OrderRepository(FashionStoreDbContext dbContext)
     {
         _dbContext = dbContext;
+    }
+
+    public async Task<IOrderTransaction> BeginTransactionAsync(CancellationToken cancellationToken)
+    {
+        var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+        return new EfCoreOrderTransaction(transaction);
+    }
+
+    private sealed class EfCoreOrderTransaction : IOrderTransaction
+    {
+        private readonly IDbContextTransaction _transaction;
+
+        public EfCoreOrderTransaction(IDbContextTransaction transaction)
+        {
+            _transaction = transaction;
+        }
+
+        public Task CommitAsync(CancellationToken cancellationToken) => _transaction.CommitAsync(cancellationToken);
+        public Task RollbackAsync(CancellationToken cancellationToken) => _transaction.RollbackAsync(cancellationToken);
+        public ValueTask DisposeAsync() => _transaction.DisposeAsync();
     }
 
     public Task<bool> AddressBelongsToUserAsync(string addressId, string userId, CancellationToken cancellationToken)

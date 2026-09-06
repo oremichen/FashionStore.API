@@ -33,23 +33,37 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
         if (order.PaymentStatus == PaymentStatuses.Success)
             return response.Success(new PaymentVerificationResponse(reference, order.Id, PaymentStatuses.Success), "Payment already verified.");
 
+        PaystackVerificationResult transaction;
         try
         {
-            var transaction = await _paystackClient.VerifyAsync(reference, cancellationToken);
-            var expectedAmount = checked(decimal.ToInt64(order.Total * 100m));
-            var detailsMatch = transaction.Reference == order.PaymentReference &&
-                transaction.Amount == expectedAmount && string.Equals(transaction.Currency, order.Currency, StringComparison.OrdinalIgnoreCase);
-            if (!detailsMatch)
-            {
-                _logger.LogError("Paystack verification mismatch for order {OrderId}. Expected {Amount} {Currency}; received {PaidAmount} {PaidCurrency}.",
-                    order.Id, expectedAmount, order.Currency, transaction.Amount, transaction.Currency);
-                return response.Fail("Payment details did not match the order.", ResponseCodes.SECURITY_VIOLATION);
-            }
+            transaction = await _paystackClient.VerifyAsync(reference, cancellationToken);
+        }
+        catch (Exception exception) when (exception is HttpRequestException or InvalidOperationException or OverflowException)
+        {
+            _logger.LogError(exception, "Paystack verify API call failed for order {OrderId} and reference {Reference}.", order.Id, reference);
+            return response.Fail("Payment verification is temporarily unavailable.", ResponseCodes.SERVICE_UNAVAILABLE);
+        }
 
-            if (string.Equals(transaction.Status, PaymentStatuses.Success, StringComparison.OrdinalIgnoreCase))
-            {
-                order.MarkPaid(transaction.PaidAt ?? DateTimeOffset.UtcNow);
+        var expectedAmount = checked(decimal.ToInt64(order.Total * 100m));
+        var detailsMatch = transaction.Reference == order.PaymentReference &&
+            transaction.Amount == expectedAmount && string.Equals(transaction.Currency, order.Currency, StringComparison.OrdinalIgnoreCase);
+        if (!detailsMatch)
+        {
+            _logger.LogError("Paystack verification mismatch for order {OrderId}. Expected {Amount} {Currency}; received {PaidAmount} {PaidCurrency}.",
+                order.Id, expectedAmount, order.Currency, transaction.Amount, transaction.Currency);
+            return response.Fail("Payment details did not match the order.", ResponseCodes.SECURITY_VIOLATION);
+        }
 
+        var paymentSucceeded = string.Equals(transaction.Status, PaymentStatuses.Success, StringComparison.OrdinalIgnoreCase);
+        var paidAt = transaction.PaidAt ?? DateTimeOffset.UtcNow;
+        var failedStatus = paymentSucceeded ? PaymentStatuses.Failed : (transaction.Status ?? PaymentStatuses.Failed);
+
+        await using var orderTransaction = await _orderRepository.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            if (paymentSucceeded)
+            {
+                order.MarkPaid(paidAt);
                 foreach (var reservation in order.InventoryReservations.Where(item => item.Status == InventoryReservationStatuses.Reserved))
                 {
                     await _orderRepository.ConsumeInventoryReservationAsync(reservation.Id, cancellationToken);
@@ -57,23 +71,23 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
             }
             else
             {
-                order.MarkPaymentFailed(transaction.Status);
-
+                order.MarkPaymentFailed(failedStatus);
                 foreach (var reservation in order.InventoryReservations.Where(item => item.Status == InventoryReservationStatuses.Reserved))
                 {
-                    await _orderRepository.ReleaseInventoryReservationAsync(reservation.Id, "released", cancellationToken);
+                    await _orderRepository.ReleaseInventoryReservationAsync(reservation.Id, InventoryReservationStatuses.Released, cancellationToken);
                 }
             }
 
             await _orderRepository.SaveChangesAsync(cancellationToken);
-
-            _logger.LogInformation("Payment reference {Reference} for order {OrderId} verified with status {Status}.", reference, order.Id, order.PaymentStatus);
-            return response.Success(new PaymentVerificationResponse(reference, order.Id, order.PaymentStatus), "Payment verification completed.");
+            await orderTransaction.CommitAsync(cancellationToken);
         }
-        catch (Exception exception) when (exception is HttpRequestException or InvalidOperationException or OverflowException)
+        catch
         {
-            _logger.LogError(exception, "Payment verification failed for order {OrderId} and reference {Reference}.", order.Id, reference);
-            return response.Fail("Payment verification is temporarily unavailable.", ResponseCodes.SERVICE_UNAVAILABLE);
+            await orderTransaction.RollbackAsync(cancellationToken);
+            throw;
         }
+
+        _logger.LogInformation("Payment reference {Reference} for order {OrderId} verified with status {Status}.", reference, order.Id, order.PaymentStatus);
+        return response.Success(new PaymentVerificationResponse(reference, order.Id, order.PaymentStatus), "Payment verification completed.");
     }
 }

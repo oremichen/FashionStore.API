@@ -1,4 +1,5 @@
 using FashionStore.Domain.Abstractions.Orders;
+using FashionStore.Domain.Constants;
 
 namespace FashionStore.Infrastructure.Messages.Inventory;
 
@@ -17,7 +18,7 @@ public sealed class ExpiredInventoryReservationProcessorService(
                 var orders = scope.ServiceProvider.GetRequiredService<IOrderRepository>();
                 var expired = await orders.GetExpiredReservationsAsync(DateTimeOffset.UtcNow, stoppingToken);
                 foreach (var reservation in expired)
-                    await orders.ReleaseInventoryReservationAsync(reservation.Id, "expired", stoppingToken);
+                    await orders.ReleaseInventoryReservationAsync(reservation.Id, InventoryReservationStatuses.Expired, stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { }
             catch (Exception exception)

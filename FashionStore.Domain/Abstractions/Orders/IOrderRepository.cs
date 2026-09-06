@@ -13,4 +13,12 @@ public interface IOrderRepository
     Task ConsumeInventoryReservationAsync(string reservationId, CancellationToken cancellationToken);
     Task AddAsync(Order order, CancellationToken cancellationToken);
     Task SaveChangesAsync(CancellationToken cancellationToken);
+
+    Task<IOrderTransaction> BeginTransactionAsync(CancellationToken cancellationToken);
+}
+
+public interface IOrderTransaction : IAsyncDisposable
+{
+    Task CommitAsync(CancellationToken cancellationToken);
+    Task RollbackAsync(CancellationToken cancellationToken);
 }

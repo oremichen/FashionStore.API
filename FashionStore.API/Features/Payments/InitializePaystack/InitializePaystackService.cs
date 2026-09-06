@@ -2,6 +2,7 @@ using FashionStore.API.Features.Payments.Shared;
 using FashionStore.Domain.Abstractions.Orders;
 using FashionStore.Domain.Abstractions.Payments;
 using FashionStore.Domain.Abstractions.Products;
+using FashionStore.Domain.Constants;
 using Npgsql;
 
 namespace FashionStore.API.Features.Payments.InitializePaystack;
@@ -141,14 +142,25 @@ public sealed class InitializePaystackService : IInitializePaystackService
         }
         catch (Exception exception) when (exception is HttpRequestException or InvalidOperationException or OverflowException)
         {
-            _logger.LogError(exception, "Paystack initialization failed for order {OrderId} and reference {Reference}.", order.Id, reference);
-            order.MarkPaymentFailed("initialization_failed");
-            var savedOrder = await _orderRepository.GetByPaymentReferenceAsync(reference, true, cancellationToken);
-            
-            foreach (var reservation in savedOrder?.InventoryReservations ?? [])
-                await _orderRepository.ReleaseInventoryReservationAsync(reservation.Id, "released", cancellationToken);
-            
-            await _orderRepository.SaveChangesAsync(cancellationToken);
+            _logger.LogError(exception,
+                "Paystack initialization network call failed for order {OrderId} and reference {Reference}. " +
+                "Inventory reservations will NOT be released here: the 20-minute expiry worker will reclaim them, and " +
+                "if Paystack actually charged the user, the incoming charge.success webhook will rescue payment.",
+                order.Id, reference);
+
+            await using var orderTransaction = await _orderRepository.BeginTransactionAsync(cancellationToken);
+            try
+            {
+                order.MarkPaymentFailed(PaymentStatuses.InitializationFailed);
+                await _orderRepository.SaveChangesAsync(cancellationToken);
+                await orderTransaction.CommitAsync(cancellationToken);
+            }
+            catch
+            {
+                await orderTransaction.RollbackAsync(cancellationToken);
+                throw;
+            }
+
             return response.Fail("Payment could not be initialized. Please try again.", ResponseCodes.SERVICE_UNAVAILABLE);
         }
     }
