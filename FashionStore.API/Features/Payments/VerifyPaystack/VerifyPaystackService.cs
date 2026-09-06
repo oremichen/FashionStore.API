@@ -76,6 +76,7 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
         await using var orderTransaction = await _orderRepository.BeginTransactionAsync(cancellationToken);
         try
         {
+            string? reservationConflictMessage = null;
             if (paymentSucceeded)
             {
                 order.MarkPaid(paidAt);
@@ -84,9 +85,10 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
                     var consumed = await _orderRepository.ConsumeInventoryReservationAsync(reservation.Id, cancellationToken);
                     if (!consumed)
                     {
-                        throw new InvalidOperationException(
+                        reservationConflictMessage =
                             $"Inventory reservation {reservation.Id} for order {order.Id} could not be consumed. " +
-                            "It was likely released or expired");
+                            "It was likely released or expired concurrently.";
+                        break;
                     }
                 }
             }
@@ -98,11 +100,21 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
                     var released = await _orderRepository.ReleaseInventoryReservationAsync(reservation.Id, InventoryReservationStatuses.Released, cancellationToken);
                     if (!released)
                     {
-                        throw new InvalidOperationException(
+                        reservationConflictMessage =
                             $"Inventory reservation {reservation.Id} for order {order.Id} could not be released. " +
-                            "It was likely consumed or expired");
+                            "It was likely consumed or expired concurrently.";
+                        break;
                     }
                 }
+            }
+
+            if (reservationConflictMessage is not null)
+            {
+                _logger.LogError("{Message} Rolling back order state change and returning an error.", reservationConflictMessage);
+                await orderTransaction.RollbackAsync(cancellationToken);
+                return response.Fail(
+                    "Your payment could not be finalized because the reserved inventory expired or changed just as we were confirming it. " +
+                    "Please start a new checkout.", ResponseCodes.INVALID_ACTION);
             }
 
             await _orderRepository.SaveChangesAsync(cancellationToken);
