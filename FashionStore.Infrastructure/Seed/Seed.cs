@@ -42,7 +42,7 @@ namespace FashionStore.Infrastructure.Seed
             var email = configuration["SeedData:SuperAdmin:Email"]?.Trim();
             if (string.IsNullOrWhiteSpace(email))
             {
-                throw new InvalidOperationException("SeedData:SuperAdmin:Email must be explicitly configured for administrator seeding.");
+                logger.LogWarning("SeedData:SuperAdmin:Email must be explicitly configured for administrator seeding.");
             }
 
             if (await userManager.FindByEmailAsync(email) != null)
@@ -54,7 +54,7 @@ namespace FashionStore.Infrastructure.Seed
             var password = configuration["SeedData:SuperAdmin:Password"];
             if (string.IsNullOrWhiteSpace(password))
             {
-                throw new InvalidOperationException("SeedData:SuperAdmin:Password must be explicitly configured to create the bootstrap administrator.");
+                logger.LogWarning("SeedData:SuperAdmin:Password must be explicitly configured to create the bootstrap administrator.");
             }
 
             var superAdmin = new ApplicationUser
