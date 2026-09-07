@@ -2,11 +2,14 @@ using FashionStore.API.Features.Payments.Shared;
 using FashionStore.Domain.Abstractions.Orders;
 using FashionStore.Domain.Abstractions.Payments;
 using FashionStore.Domain.Abstractions.Products;
+using FashionStore.Domain.Constants;
+using Npgsql;
 
 namespace FashionStore.API.Features.Payments.InitializePaystack;
 
 public sealed class InitializePaystackService : IInitializePaystackService
 {
+    private static readonly TimeSpan ReservationLifetime = TimeSpan.FromMinutes(20);
     private static readonly IReadOnlyDictionary<string, decimal> DeliveryFees = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase)
     {
         ["free"] = 0m,
@@ -36,15 +39,34 @@ public sealed class InitializePaystackService : IInitializePaystackService
         var response = new ResponseResult<PaystackInitializationResponse>();
         _logger.LogInformation("Paystack checkout initialization started for user {UserId} with {ItemCount} items.", userId, request.Items.Count);
 
-        if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.AddressId) || request.Items.Count == 0)
-            return response.Fail("Email, address and at least one order item are required.", ResponseCodes.INVALID_ACTION);
+        if (string.IsNullOrWhiteSpace(request.IdempotencyKey) || string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.AddressId) || request.Items.Count == 0)
+            return response.Fail("Idempotency key, email, address and at least one order item are required.", ResponseCodes.INVALID_ACTION);
+       
+        var idempotencyKey = request.IdempotencyKey.Trim();
+        
+        if (idempotencyKey.Length > 100)
+        {
+            _logger.LogError("Idempotency key exceeds 100 characters for user {UserId}.", userId);
+            return response.Fail("Idempotency key cannot exceed 100 characters.", ResponseCodes.INVALID_ACTION);
+        }
+
+        var existingOrder = await _orderRepository.GetByIdempotencyKeyAsync(userId, idempotencyKey, false, cancellationToken);
+        
+        if (existingOrder?.AuthorizationUrl is not null)
+            return response.Success(new PaystackInitializationResponse(existingOrder.AuthorizationUrl, string.Empty, existingOrder.PaymentReference),
+                "Returning the existing payment session.");
+        
+        if (existingOrder is not null)
+            return response.Fail("This checkout is already being initialized. Please try again shortly.", ResponseCodes.REQUEST_IN_PROGRESS);
+        
         var deliveryMethod = request.DeliveryMethod?.Trim().ToLowerInvariant() ?? string.Empty;
         
         if (!DeliveryFees.TryGetValue(deliveryMethod, out var deliveryFee))
             return response.Fail("The selected delivery method is invalid.", ResponseCodes.INVALID_ACTION);
+
         if (!await _orderRepository.AddressBelongsToUserAsync(request.AddressId, userId, cancellationToken))
         {
-            _logger.LogWarning("User {UserId} attempted checkout with unavailable address {AddressId}.", userId, request.AddressId);
+            _logger.LogError("User {UserId} attempted checkout with unavailable address {AddressId}.", userId, request.AddressId);
             return response.Fail("The selected address was not found.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
         }
 
@@ -62,7 +84,7 @@ public sealed class InitializePaystackService : IInitializePaystackService
             if (!string.IsNullOrWhiteSpace(requestedItem.VariantId))
             {
                 var variant = product.Variants.FirstOrDefault(item => item.Id == requestedItem.VariantId && item.IsActive);
-                if (variant is null || variant.AvailabilityCount < requestedItem.Quantity)
+                if (variant is null || product.AvailabilityCount < requestedItem.Quantity)
                     return response.Fail("A selected product variant is unavailable or out of stock.", ResponseCodes.INVALID_ACTION);
                 unitPrice = variant.NewPrice;
             }
@@ -80,16 +102,23 @@ public sealed class InitializePaystackService : IInitializePaystackService
 
         var subtotal = orderItems.Sum(item => item.LineTotal);
         var reference = "FS-" + Guid.NewGuid().ToString("N").ToUpperInvariant();
-        var order = Order.Create(userId, request.AddressId, request.Email, deliveryMethod,
-            subtotal, deliveryFee, reference, orderItems);
-        await _orderRepository.AddAsync(order, cancellationToken);
-
         var callbackUrl = _configuration["Frontend:PaymentCallbackUrl"];
         if (!Uri.TryCreate(callbackUrl, UriKind.Absolute, out var callbackUri) ||
             (callbackUri.Scheme != Uri.UriSchemeHttps && callbackUri.Scheme != Uri.UriSchemeHttp))
         {
             _logger.LogCritical("Frontend:PaymentCallbackUrl is missing or invalid.");
             return response.Fail("Payment callback configuration is unavailable.", ResponseCodes.SERVICE_UNAVAILABLE);
+        }
+        var order = Order.Create(userId, idempotencyKey, request.AddressId, request.Email, deliveryMethod,
+            subtotal, deliveryFee, reference, orderItems);
+        try
+        {
+            await _orderRepository.CreateWithInventoryReservationsAsync(order, DateTimeOffset.UtcNow.Add(ReservationLifetime), cancellationToken);
+        }
+        catch (PostgresException exception) when (exception.SqlState == "P0001")
+        {
+            _logger.LogError(exception, "Inventory reservation was rejected for checkout {IdempotencyKey}.", idempotencyKey);
+            return response.Fail(exception.MessageText, ResponseCodes.INVALID_ACTION);
         }
 
         try
@@ -108,15 +137,34 @@ public sealed class InitializePaystackService : IInitializePaystackService
                 initialized.AccessCode, 
                 initialized.Reference);
 
+            order.SetAuthorizationUrl(initialized.AuthorizationUrl);
+            await _orderRepository.SaveChangesAsync(cancellationToken);
+
             _logger.LogInformation("Order {OrderId} initialized on Paystack with reference {Reference} and total {Total} NGN.",
                 order.Id, reference, order.Total);
             return response.Success(result, "Payment initialized successfully.");
         }
         catch (Exception exception) when (exception is HttpRequestException or InvalidOperationException or OverflowException)
         {
-            _logger.LogError(exception, "Paystack initialization failed for order {OrderId} and reference {Reference}.", order.Id, reference);
-            order.MarkPaymentFailed("initialization_failed");
-            await _orderRepository.SaveChangesAsync(cancellationToken);
+            _logger.LogError(exception,
+                "Paystack initialization network call failed for order {OrderId} and reference {Reference}. " +
+                "Inventory reservations will NOT be released here: the 20-minute expiry worker will reclaim them, and " +
+                "if Paystack actually charged the user, the incoming charge.success webhook will rescue payment.",
+                order.Id, reference);
+
+            await using var orderTransaction = await _orderRepository.BeginTransactionAsync(cancellationToken);
+            try
+            {
+                order.MarkPaymentFailed(PaymentStatuses.InitializationFailed);
+                await _orderRepository.SaveChangesAsync(cancellationToken);
+                await orderTransaction.CommitAsync(cancellationToken);
+            }
+            catch
+            {
+                await orderTransaction.RollbackAsync(cancellationToken);
+                throw;
+            }
+
             return response.Fail("Payment could not be initialized. Please try again.", ResponseCodes.SERVICE_UNAVAILABLE);
         }
     }

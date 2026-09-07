@@ -27,8 +27,6 @@ public sealed class ProductVariant
     {
         Rules.NonNegative(price, nameof(price));
         Rules.NonNegative(quantity, nameof(quantity));
-        if (string.IsNullOrWhiteSpace(sizeId) && string.IsNullOrWhiteSpace(colorId))
-            throw new ArgumentException("A product variant must have a size or color.");
         return new ProductVariant
         {
             ProductId = Rules.Required(productId, 50, nameof(productId)),

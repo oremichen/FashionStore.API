@@ -23,7 +23,7 @@ public sealed class ProcessPaystackWebhookService : IProcessPaystackWebhookServi
         var response = new ResponseResult();
         if (!_paystackClient.IsValidWebhookSignature(payload, signature))
         {
-            _logger.LogWarning("Rejected Paystack webhook with an invalid signature.");
+            _logger.LogError("Rejected Paystack webhook with an invalid signature.");
             return response.Fail("Invalid webhook signature.", ResponseCodes.SECURITY_VIOLATION);
         }
 
