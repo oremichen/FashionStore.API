@@ -39,15 +39,22 @@ namespace FashionStore.Infrastructure.Seed
             IConfiguration configuration,
             ILogger logger)
         {
-            var email = configuration["SeedData:SuperAdmin:Email"]
-                ?? "superadmin@fashionstore.com";
-            var password = configuration["SeedData:SuperAdmin:Password"]
-                ?? "SuperAdmin@123";
+            var email = configuration["SeedData:SuperAdmin:Email"]?.Trim();
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                throw new InvalidOperationException("SeedData:SuperAdmin:Email must be explicitly configured for administrator seeding.");
+            }
 
             if (await userManager.FindByEmailAsync(email) != null)
             {
                 logger.LogInformation("SuperAdmin seed user {Email} already exists. Skipping.", email);
                 return;
+            }
+
+            var password = configuration["SeedData:SuperAdmin:Password"];
+            if (string.IsNullOrWhiteSpace(password))
+            {
+                throw new InvalidOperationException("SeedData:SuperAdmin:Password must be explicitly configured to create the bootstrap administrator.");
             }
 
             var superAdmin = new ApplicationUser
