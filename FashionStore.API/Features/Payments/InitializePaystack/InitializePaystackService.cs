@@ -45,8 +45,11 @@ public sealed class InitializePaystackService : IInitializePaystackService
         var idempotencyKey = request.IdempotencyKey.Trim();
         
         if (idempotencyKey.Length > 100)
+        {
+            _logger.LogError("Idempotency key exceeds 100 characters for user {UserId}.", userId);
             return response.Fail("Idempotency key cannot exceed 100 characters.", ResponseCodes.INVALID_ACTION);
-        
+        }
+
         var existingOrder = await _orderRepository.GetByIdempotencyKeyAsync(userId, idempotencyKey, false, cancellationToken);
         
         if (existingOrder?.AuthorizationUrl is not null)
