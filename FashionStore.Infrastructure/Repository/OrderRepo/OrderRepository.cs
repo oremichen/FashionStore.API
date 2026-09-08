@@ -48,6 +48,23 @@ public sealed class OrderRepository : IOrderRepository
         return query.SingleOrDefaultAsync(item => item.PaymentReference == reference, cancellationToken);
     }
 
+    public async Task<(Order Order, Address? Address, ApplicationUser? User)> GetByPaymentReferenceWithDetailsAsync(string reference, bool trackChanges, CancellationToken cancellationToken)
+    {
+        IQueryable<Order> query = _dbContext.Orders
+            .Include(item => item.Items)
+            .Include(item => item.InventoryReservations)
+            .Include(item => item.User);
+        if (!trackChanges) query = query.AsNoTracking();
+
+        var order = await query.SingleOrDefaultAsync(item => item.PaymentReference == reference, cancellationToken);
+        if (order is null) return (null!, null, null);
+
+        var address = await _dbContext.Addresses.AsNoTracking()
+            .SingleOrDefaultAsync(a => a.Id == order.AddressId, cancellationToken);
+
+        return (order, address, order.User);
+    }
+
     public Task<Order?> GetByIdempotencyKeyAsync(string userId, string idempotencyKey, bool trackChanges, CancellationToken cancellationToken)
     {
         IQueryable<Order> query = _dbContext.Orders.Include(item => item.Items).Include(item => item.InventoryReservations);
