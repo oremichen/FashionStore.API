@@ -162,4 +162,29 @@ public sealed class OrderRepository : IOrderRepository
     {
         return _dbContext.SaveChangesAsync(cancellationToken);
     }
+
+    public Task<TResult> ExecuteInRetriableTransactionAsync<TResult>(
+        Func<IOrderTransaction, CancellationToken, Task<TResult>> operation,
+        CancellationToken cancellationToken)
+    {
+        return _dbContext.Database.CreateExecutionStrategy().ExecuteAsync(async (ct) =>
+        {
+            await using var transaction = await _dbContext.Database.BeginTransactionAsync(ct);
+            var orderTransaction = new EfCoreOrderTransaction(transaction);
+            try
+            {
+                var result = await operation(orderTransaction, ct);
+                return result;
+            }
+            catch
+            {
+                if (transaction.GetDbTransaction()?.Connection is not null)
+                {
+                    try { await transaction.RollbackAsync(ct); } catch { /* best-effort rollback; strategy will retry */ }
+                }
+                _dbContext.ChangeTracker.Clear();
+                throw;
+            }
+        }, cancellationToken);
+    }
 }
