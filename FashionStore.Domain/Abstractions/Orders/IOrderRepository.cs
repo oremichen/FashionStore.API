@@ -16,6 +16,10 @@ public interface IOrderRepository
     Task SaveChangesAsync(CancellationToken cancellationToken);
 
     Task<IOrderTransaction> BeginTransactionAsync(CancellationToken cancellationToken);
+
+    Task<TResult> ExecuteInRetriableTransactionAsync<TResult>(
+        Func<IOrderTransaction, CancellationToken, Task<TResult>> operation,
+        CancellationToken cancellationToken);
 }
 
 public interface IOrderTransaction : IAsyncDisposable

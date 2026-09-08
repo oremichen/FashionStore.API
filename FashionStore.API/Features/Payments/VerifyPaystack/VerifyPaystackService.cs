@@ -98,8 +98,7 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
         var paidAt = transaction.PaidAt ?? DateTimeOffset.UtcNow;
         var failedStatus = paymentSucceeded ? PaymentStatuses.Failed : (transaction.Status ?? PaymentStatuses.Failed);
 
-        await using var orderTransaction = await _orderRepository.BeginTransactionAsync(cancellationToken);
-        try
+        var (commitSucceeded, conflictMessage) = await _orderRepository.ExecuteInRetriableTransactionAsync(async (orderTransaction, ct) =>
         {
             string? reservationConflictMessage = null;
             if (paymentSucceeded)
@@ -107,7 +106,7 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
                 order.MarkPaid(paidAt);
                 foreach (var reservation in order.InventoryReservations.Where(item => item.Status == InventoryReservationStatuses.Reserved))
                 {
-                    var consumed = await _orderRepository.ConsumeInventoryReservationAsync(reservation.Id, cancellationToken);
+                    var consumed = await _orderRepository.ConsumeInventoryReservationAsync(reservation.Id, ct);
                     if (!consumed)
                     {
                         reservationConflictMessage =
@@ -122,7 +121,7 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
                 order.MarkPaymentFailed(failedStatus);
                 foreach (var reservation in order.InventoryReservations.Where(item => item.Status == InventoryReservationStatuses.Reserved))
                 {
-                    var released = await _orderRepository.ReleaseInventoryReservationAsync(reservation.Id, InventoryReservationStatuses.Released, cancellationToken);
+                    var released = await _orderRepository.ReleaseInventoryReservationAsync(reservation.Id, InventoryReservationStatuses.Released, ct);
                     if (!released)
                     {
                         reservationConflictMessage =
@@ -136,20 +135,22 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
             if (reservationConflictMessage is not null)
             {
                 _logger.LogError("{Message} Rolling back order state change and returning an error.", reservationConflictMessage);
-                await orderTransaction.RollbackAsync(cancellationToken);
-                return response.Fail(
-                    "Your payment could not be finalized because the reserved inventory expired or changed just as we were confirming it. " +
-                    "Please start a new checkout.", ResponseCodes.INVALID_ACTION);
+                await orderTransaction.RollbackAsync(ct);
+                return (Success: false, ConflictMessage: reservationConflictMessage);
             }
 
-            await _orderRepository.SaveChangesAsync(cancellationToken);
-            await orderTransaction.CommitAsync(cancellationToken);
-        }
-        catch
+            await _orderRepository.SaveChangesAsync(ct);
+            await orderTransaction.CommitAsync(ct);
+            return (Success: true, ConflictMessage: (string?)null);
+        }, cancellationToken);
+
+        if (!commitSucceeded)
         {
-            await orderTransaction.RollbackAsync(cancellationToken);
-            throw;
+            return response.Fail(
+                "Your payment could not be finalized because the reserved inventory expired or changed just as we were confirming it. " +
+                "Please start a new checkout.", ResponseCodes.INVALID_ACTION);
         }
+        _ = conflictMessage;
 
         if (paymentSucceeded)
         {
