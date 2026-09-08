@@ -14,6 +14,9 @@ public sealed class OrderItemConfiguration : IEntityTypeConfiguration<OrderItem>
         builder.Property(item => item.OrderId).HasMaxLength(50).IsRequired();
         builder.Property(item => item.ProductId).HasMaxLength(50).IsRequired();
         builder.Property(item => item.VariantId).HasMaxLength(50);
+        builder.Property(item => item.ColorId).HasMaxLength(50);
+        builder.Property(item => item.ColorName).HasMaxLength(100);
+        builder.Property(item => item.SizeName).HasMaxLength(100);
         builder.Property(item => item.ProductName).HasMaxLength(250).IsRequired();
         builder.Property(item => item.UnitPrice).HasPrecision(18, 2);
         builder.Property(item => item.LineTotal).HasPrecision(18, 2);

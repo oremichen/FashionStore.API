@@ -11,5 +11,7 @@ namespace FashionStore.Domain.Enums
         ContactRecipient,
         ContactCustomer,
         UserStatusChanged,
+        OrderCustomerConfirmation,
+        OrderInternalNotification,
     }
 }

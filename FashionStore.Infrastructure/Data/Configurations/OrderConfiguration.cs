@@ -11,6 +11,7 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.ToTable("Orders");
         builder.HasKey(item => item.Id);
         builder.Property(item => item.Id).HasMaxLength(50).HasDefaultValueSql("gen_random_uuid()::text");
+        builder.Property(item => item.TrackOrderId).HasMaxLength(50).IsRequired();
         builder.Property(item => item.UserId).HasMaxLength(450).IsRequired();
         builder.Property(item => item.IdempotencyKey).HasMaxLength(100).IsRequired();
         builder.Property(item => item.AddressId).HasMaxLength(50).IsRequired();
@@ -24,6 +25,7 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.Property(item => item.PaymentReference).HasMaxLength(100).IsRequired();
         builder.Property(item => item.AuthorizationUrl);
         builder.Property(item => item.PaymentStatus).HasMaxLength(30).IsRequired();
+        builder.HasIndex(item => item.TrackOrderId).IsUnique();
         builder.HasIndex(item => item.PaymentReference).IsUnique();
         builder.HasIndex(item => new { item.UserId, item.IdempotencyKey }).IsUnique()
             .HasDatabaseName("ux_orders_userid_idempotencykey");

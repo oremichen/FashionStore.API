@@ -4,11 +4,13 @@ namespace FashionStore.Domain.Entities;
 
 public sealed class Order
 {
+    private static readonly Random _random = new();
     private readonly List<OrderItem> _items = [];
     private readonly List<InventoryReservation> _inventoryReservations = [];
     private Order() { }
 
     public string Id { get; private set; } = null!;
+    public string TrackOrderId { get; private set; } = null!;
     public string UserId { get; private set; } = null!;
     public string IdempotencyKey { get; private set; } = null!;
     public ApplicationUser User { get; private set; } = null!;
@@ -28,6 +30,16 @@ public sealed class Order
     public IReadOnlyCollection<OrderItem> Items { get { return _items; } }
     public IReadOnlyCollection<InventoryReservation> InventoryReservations { get { return _inventoryReservations; } }
 
+    private static string GenerateTrackOrderId()
+    {
+        int number;
+        lock (_random)
+        {
+            number = _random.Next(1000000, 10000000);
+        }
+        return $"#order{number}";
+    }
+
     public static Order Create(string userId, string idempotencyKey, string addressId, string email, string deliveryMethod,
         decimal subtotal, decimal deliveryFee, string paymentReference, IEnumerable<OrderItem> items)
     {
@@ -39,9 +51,17 @@ public sealed class Order
 
         var order = new Order
         {
-            Id = Guid.NewGuid().ToString(), UserId = userId.Trim(), IdempotencyKey = idempotencyKey.Trim(), AddressId = addressId.Trim(), Email = email.Trim(),
-            DeliveryMethod = deliveryMethod, Subtotal = subtotal, DeliveryFee = deliveryFee,
-            Total = subtotal + deliveryFee, PaymentReference = paymentReference
+            Id = Guid.NewGuid().ToString(),
+            TrackOrderId = GenerateTrackOrderId(),
+            UserId = userId.Trim(),
+            IdempotencyKey = idempotencyKey.Trim(),
+            AddressId = addressId.Trim(),
+            Email = email.Trim(),
+            DeliveryMethod = deliveryMethod,
+            Subtotal = subtotal,
+            DeliveryFee = deliveryFee,
+            Total = subtotal + deliveryFee,
+            PaymentReference = paymentReference
         };
         order._items.AddRange(items);
         if (order._items.Count == 0) throw new ArgumentException("An order must contain at least one item.");
