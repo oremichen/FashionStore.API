@@ -11,7 +11,7 @@ namespace FashionStore.API.Features.Payments.InitializePaystack;
 
 public sealed class InitializePaystackService : IInitializePaystackService
 {
-    private static readonly TimeSpan ReservationLifetime = TimeSpan.FromMinutes(20);
+    private const double DefaultReservationExpiryHours = 24.0;
     private static readonly IReadOnlyDictionary<string, decimal> DeliveryFees = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase)
     {
         ["free"] = 0m,
@@ -25,6 +25,7 @@ public sealed class InitializePaystackService : IInitializePaystackService
     private readonly IConfiguration _configuration;
     private readonly FashionStoreDbContext _dbContext;
     private readonly ILogger<InitializePaystackService> _logger;
+    private readonly TimeSpan _reservationLifetime;
 
     public InitializePaystackService(IProductRepository productRepository, IOrderRepository orderRepository,
         IPaystackClient paystackClient, IConfiguration configuration, FashionStoreDbContext dbContext,
@@ -36,6 +37,18 @@ public sealed class InitializePaystackService : IInitializePaystackService
         _configuration = configuration;
         _dbContext = dbContext;
         _logger = logger;
+
+        if (!double.TryParse(_configuration["AppSettings:Inventory:ReservationExpiryHours"], out var configuredHours)
+            || configuredHours <= 0)
+        {
+            configuredHours = DefaultReservationExpiryHours;
+        }
+        else if (configuredHours > 24 * 14)
+        {
+            configuredHours = 24 * 14;
+            _logger.LogWarning("AppSettings:Inventory:ReservationExpiryHours capped at 14 days (336h).");
+        }
+        _reservationLifetime = TimeSpan.FromHours(configuredHours);
     }
 
     public async Task<ResponseResult<PaystackInitializationResponse>> ExecuteAsync(string userId,
@@ -156,7 +169,7 @@ public sealed class InitializePaystackService : IInitializePaystackService
             subtotal, deliveryFee, reference, orderItems);
         try
         {
-            await _orderRepository.CreateWithInventoryReservationsAsync(order, DateTimeOffset.UtcNow.Add(ReservationLifetime), cancellationToken);
+            await _orderRepository.CreateWithInventoryReservationsAsync(order, DateTimeOffset.UtcNow.Add(_reservationLifetime), cancellationToken);
         }
         catch (PostgresException exception) when (exception.SqlState == "P0001")
         {

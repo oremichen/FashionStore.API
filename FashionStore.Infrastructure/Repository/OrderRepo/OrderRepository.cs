@@ -74,8 +74,11 @@ public sealed class OrderRepository : IOrderRepository
 
     public async Task<IReadOnlyList<InventoryReservation>> GetExpiredReservationsAsync(DateTimeOffset now, CancellationToken cancellationToken)
     {
-        return await _dbContext.InventoryReservations.Where(item =>
-            item.Status == FashionStore.Domain.Constants.InventoryReservationStatuses.Reserved && item.ExpiresAt <= now)
+        return await _dbContext.InventoryReservations
+            .Include(item => item.Order)
+            .Where(item =>
+                item.Status == FashionStore.Domain.Constants.InventoryReservationStatuses.Reserved && item.ExpiresAt <= now)
+            .AsNoTracking()
             .ToListAsync(cancellationToken);
     }
 
