@@ -70,8 +70,11 @@ public sealed class Order
 
     public void ReserveInventory(string productId, int quantity, DateTimeOffset expiresAt)
     {
-        if (_inventoryReservations.Any(reservation => reservation.ProductId == productId))
-            throw new ArgumentException("Only one reservation is allowed per product on an order.", nameof(productId));
+        foreach (var reservation in _inventoryReservations)
+        {
+            if (reservation.ProductId == productId)
+                throw new ArgumentException("Only one reservation is allowed per product on an order.", nameof(productId));
+        }
         _inventoryReservations.Add(InventoryReservation.Create(Id, productId, quantity, expiresAt));
     }
 
@@ -97,5 +100,13 @@ public sealed class Order
         PaymentStatus = string.IsNullOrWhiteSpace(status)
             ? PaymentStatuses.Failed
             : status.Trim().ToLowerInvariant();
+    }
+
+    public void UpdateStatus(string status)
+    {
+        var normalized = status?.Trim();
+        if (string.IsNullOrWhiteSpace(normalized) || normalized is not (OrderStatuses.PendingPayment or OrderStatuses.Processing or OrderStatuses.Shipped or OrderStatuses.Delivered))
+            throw new ArgumentException("Unsupported order status.", nameof(status));
+        Status = normalized;
     }
 }
