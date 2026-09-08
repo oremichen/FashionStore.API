@@ -35,7 +35,7 @@ public sealed class PaymentsController : BaseApiController
         return ProcessResponse(await _initializePaystackService.ExecuteAsync(userId, request, cancellationToken));
     }
 
-    [Authorize]
+    [Authorize(Policy = "RequireAuthenticatedUserIdOrExpiredSignedUserId")]
     [HttpGet("verify/{reference}")]
     [ProducesResponseType(typeof(ResponseResult<PaymentVerificationResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Verify(string reference, CancellationToken cancellationToken)
