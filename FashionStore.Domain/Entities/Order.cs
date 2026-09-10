@@ -22,6 +22,7 @@ public sealed class Order
     public decimal Total { get; private set; }
     public string Currency { get; private set; } = "NGN";
     public string Status { get; private set; } = OrderStatuses.PendingPayment;
+    public string? RefundedReason { get; private set; }
     public string PaymentReference { get; private set; } = null!;
     public string? AuthorizationUrl { get; private set; }
     public string PaymentStatus { get; private set; } = PaymentStatuses.Pending;
@@ -102,11 +103,19 @@ public sealed class Order
             : status.Trim().ToLowerInvariant();
     }
 
-    public void UpdateStatus(string status)
+    public void UpdateStatus(string status, string? refundedReason = null)
     {
         var normalized = status?.Trim();
-        if (string.IsNullOrWhiteSpace(normalized) || normalized is not (OrderStatuses.PendingPayment or OrderStatuses.Processing or OrderStatuses.Shipped or OrderStatuses.Delivered))
+        if (string.IsNullOrWhiteSpace(normalized) || normalized is not (OrderStatuses.Shipped or OrderStatuses.Delivered or OrderStatuses.Refunded))
             throw new ArgumentException("Unsupported order status.", nameof(status));
+        if (Status == OrderStatuses.Delivered && normalized != OrderStatuses.Shipped && normalized != OrderStatuses.Refunded) throw new ArgumentException("A delivered order can only be changed to Shipped or Refunded.", nameof(status));
+        if (Status == OrderStatuses.Processing && normalized == OrderStatuses.Delivered) throw new ArgumentException("A processing order must be shipped before it can be delivered.", nameof(status));
+        if (normalized == OrderStatuses.Refunded)
+        {
+            if (string.IsNullOrWhiteSpace(refundedReason)) throw new ArgumentException("A reason is required when refunding an order.", nameof(refundedReason));
+            if (refundedReason.Trim().Length > 1024) throw new ArgumentException("The refund reason cannot exceed 1024 characters.", nameof(refundedReason));
+            RefundedReason = refundedReason.Trim();
+        }
         Status = normalized;
     }
 }

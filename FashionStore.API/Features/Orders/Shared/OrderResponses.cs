@@ -36,6 +36,7 @@ public sealed class OrderResponse
     public string? Phone { get; init; }
     public UserAddressResponse? Address { get; init; }
     public required string Status { get; init; }
+    public string? RefundedReason { get; init; }
     public required string PaymentStatus { get; init; }
     public required string Currency { get; init; }
     public required string DeliveryMethod { get; init; }
@@ -49,6 +50,7 @@ public sealed class OrderResponse
 public sealed class UpdateOrderStatusRequest
 {
     public string Status { get; init; } = string.Empty;
+    public string? RefundedReason { get; init; }
 }
 
 public static class OrderResponseMapper
@@ -66,6 +68,7 @@ public static class OrderResponseMapper
             Phone = address?.PhoneNumber,
             Address = address,
             Status = order.Status,
+            RefundedReason = order.RefundedReason,
             PaymentStatus = order.PaymentStatus,
             Currency = order.Currency,
             DeliveryMethod = order.DeliveryMethod,
