@@ -15,7 +15,7 @@ public sealed class UpdateOrderStatusService(FashionStoreDbContext db) : IUpdate
 
         try
         {
-            order.UpdateStatus(request.Status, request.RefundedReason);
+            order.UpdateStatus(request.Status, request.Message ?? request.RefundedReason);
         }
         catch (ArgumentException exception)
         {

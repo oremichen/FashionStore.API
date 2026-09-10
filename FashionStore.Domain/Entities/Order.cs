@@ -103,18 +103,26 @@ public sealed class Order
             : status.Trim().ToLowerInvariant();
     }
 
-    public void UpdateStatus(string status, string? refundedReason = null)
+    public void UpdateStatus(string status, string? statusMessage = null)
     {
         var normalized = status?.Trim();
-        if (string.IsNullOrWhiteSpace(normalized) || normalized is not (OrderStatuses.Shipped or OrderStatuses.Delivered or OrderStatuses.Refunded))
+        if (string.IsNullOrWhiteSpace(normalized) || normalized is not (OrderStatuses.Processing or OrderStatuses.Shipped or OrderStatuses.Delivered or OrderStatuses.Cancelled or OrderStatuses.Returned))
             throw new ArgumentException("Unsupported order status.", nameof(status));
-        if (Status == OrderStatuses.Delivered && normalized != OrderStatuses.Shipped && normalized != OrderStatuses.Refunded) throw new ArgumentException("A delivered order can only be changed to Shipped or Refunded.", nameof(status));
-        if (Status == OrderStatuses.Processing && normalized == OrderStatuses.Delivered) throw new ArgumentException("A processing order must be shipped before it can be delivered.", nameof(status));
-        if (normalized == OrderStatuses.Refunded)
+        if (Status == OrderStatuses.Processing && normalized is not (OrderStatuses.Cancelled or OrderStatuses.Shipped))
+            throw new ArgumentException("A processing order can only be changed to Cancelled or Shipped.", nameof(status));
+        if (Status == OrderStatuses.Shipped && normalized != OrderStatuses.Delivered)
+            throw new ArgumentException("A shipped order can only be changed to Delivered.", nameof(status));
+        if (Status == OrderStatuses.Delivered && normalized != OrderStatuses.Returned)
+            throw new ArgumentException("A delivered order can only be changed to Returned.", nameof(status));
+        if (Status is OrderStatuses.Cancelled or OrderStatuses.Returned)
+            throw new ArgumentException("This order is already closed and cannot change status.", nameof(status));
+        if (normalized is OrderStatuses.Cancelled or OrderStatuses.Returned)
         {
-            if (string.IsNullOrWhiteSpace(refundedReason)) throw new ArgumentException("A reason is required when refunding an order.", nameof(refundedReason));
-            if (refundedReason.Trim().Length > 1024) throw new ArgumentException("The refund reason cannot exceed 1024 characters.", nameof(refundedReason));
-            RefundedReason = refundedReason.Trim();
+            if (string.IsNullOrWhiteSpace(statusMessage)) throw new ArgumentException("A message is required when cancelling or returning an order.", nameof(statusMessage));
+            if (statusMessage.Trim().Length > 1024) throw new ArgumentException("The status message cannot exceed 1024 characters.", nameof(statusMessage));
+            RefundedReason = statusMessage.Trim();
+            if (PaymentStatus == PaymentStatuses.Success)
+                PaymentStatus = PaymentStatuses.Refunded;
         }
         Status = normalized;
     }

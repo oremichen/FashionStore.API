@@ -50,6 +50,7 @@ public sealed class OrderResponse
 public sealed class UpdateOrderStatusRequest
 {
     public string Status { get; init; } = string.Empty;
+    public string? Message { get; init; }
     public string? RefundedReason { get; init; }
 }
 
