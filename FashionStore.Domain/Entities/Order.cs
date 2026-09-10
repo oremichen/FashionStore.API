@@ -22,6 +22,7 @@ public sealed class Order
     public decimal Total { get; private set; }
     public string Currency { get; private set; } = "NGN";
     public string Status { get; private set; } = OrderStatuses.PendingPayment;
+    public string? RefundedReason { get; private set; }
     public string PaymentReference { get; private set; } = null!;
     public string? AuthorizationUrl { get; private set; }
     public string PaymentStatus { get; private set; } = PaymentStatuses.Pending;
@@ -70,8 +71,11 @@ public sealed class Order
 
     public void ReserveInventory(string productId, int quantity, DateTimeOffset expiresAt)
     {
-        if (_inventoryReservations.Any(reservation => reservation.ProductId == productId))
-            throw new ArgumentException("Only one reservation is allowed per product on an order.", nameof(productId));
+        foreach (var reservation in _inventoryReservations)
+        {
+            if (reservation.ProductId == productId)
+                throw new ArgumentException("Only one reservation is allowed per product on an order.", nameof(productId));
+        }
         _inventoryReservations.Add(InventoryReservation.Create(Id, productId, quantity, expiresAt));
     }
 
@@ -97,5 +101,29 @@ public sealed class Order
         PaymentStatus = string.IsNullOrWhiteSpace(status)
             ? PaymentStatuses.Failed
             : status.Trim().ToLowerInvariant();
+    }
+
+    public void UpdateStatus(string status, string? statusMessage = null)
+    {
+        var normalized = status?.Trim();
+        if (string.IsNullOrWhiteSpace(normalized) || normalized is not (OrderStatuses.Processing or OrderStatuses.Shipped or OrderStatuses.Delivered or OrderStatuses.Cancelled or OrderStatuses.Returned))
+            throw new ArgumentException("Unsupported order status.", nameof(status));
+        if (Status == OrderStatuses.Processing && normalized is not (OrderStatuses.Cancelled or OrderStatuses.Shipped))
+            throw new ArgumentException("A processing order can only be changed to Cancelled or Shipped.", nameof(status));
+        if (Status == OrderStatuses.Shipped && normalized != OrderStatuses.Delivered)
+            throw new ArgumentException("A shipped order can only be changed to Delivered.", nameof(status));
+        if (Status == OrderStatuses.Delivered && normalized != OrderStatuses.Returned)
+            throw new ArgumentException("A delivered order can only be changed to Returned.", nameof(status));
+        if (Status is OrderStatuses.Cancelled or OrderStatuses.Returned)
+            throw new ArgumentException("This order is already closed and cannot change status.", nameof(status));
+        if (normalized is OrderStatuses.Cancelled or OrderStatuses.Returned)
+        {
+            if (string.IsNullOrWhiteSpace(statusMessage)) throw new ArgumentException("A message is required when cancelling or returning an order.", nameof(statusMessage));
+            if (statusMessage.Trim().Length > 1024) throw new ArgumentException("The status message cannot exceed 1024 characters.", nameof(statusMessage));
+            RefundedReason = statusMessage.Trim();
+            if (PaymentStatus == PaymentStatuses.Success)
+                PaymentStatus = PaymentStatuses.Refunded;
+        }
+        Status = normalized;
     }
 }
