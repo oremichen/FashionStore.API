@@ -23,6 +23,7 @@ using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddHttpClient();
 var vercelEnvironment = Environment.GetEnvironmentVariable("VERCEL");
 var isVercel = string.Equals(vercelEnvironment, "1", StringComparison.OrdinalIgnoreCase)
     || string.Equals(vercelEnvironment, "true", StringComparison.OrdinalIgnoreCase);

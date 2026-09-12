@@ -50,6 +50,7 @@ namespace FashionStore.Infrastructure
             services.AddScoped<IEmailTemplateRenderer, Notification.EmailTemplateRenderer>();
             services.AddScoped<IEmailProvider, Notification.PostmarkEmailProvider>();
             services.AddScoped<IEmailProvider, Notification.AmazonSesEmailProvider>();
+            services.AddHttpClient<ISmsProvider, Notification.TwilioSmsProvider>();
             services.AddSingleton<Messages.NotificationQueue.EmailNotificationQueueService>();
             services.AddSingleton<IEmailNotificationQueueService>(provider =>
                 provider.GetRequiredService<Messages.NotificationQueue.EmailNotificationQueueService>());
