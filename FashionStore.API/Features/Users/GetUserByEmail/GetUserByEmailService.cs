@@ -46,6 +46,7 @@ namespace FashionStore.API.Features.Users.GetUserByEmail
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 Email = user.Email ?? string.Empty,
+                ImageUrl = user.AvatarUrl,
                 Roles = roles.ToList(),
                 Addresses = user.Addresses
                     .OrderByDescending(address => address.IsMain)
