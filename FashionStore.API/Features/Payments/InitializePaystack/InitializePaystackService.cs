@@ -73,12 +73,23 @@ public sealed class InitializePaystackService : IInitializePaystackService
         if (existingOrder is not null)
             return response.Fail("This checkout is already being initialized. Please try again shortly.", ResponseCodes.REQUEST_IN_PROGRESS);
         
-        if (!await _orderRepository.AddressBelongsToUserAsync(request.AddressId, userId, cancellationToken))
+        var requestedRate = await _deliveryRepository.GetRateByIdAsync(request.DeliveryId, cancellationToken);
+        var requestedMethod = requestedRate is null
+            ? null
+            : await _deliveryRepository.GetMethodByIdAsync(requestedRate.MethodId, cancellationToken);
+        var activeContacts = await _dbContext.ContactUsConfigurations.AsNoTracking()
+            .ToListAsync(cancellationToken);
+        var activeContact = activeContacts.SingleOrDefault(IsActiveContact);
+        var isPickupAddress = activeContact?.AddressId == request.AddressId &&
+            requestedMethod?.Name.Contains("pickup", StringComparison.OrdinalIgnoreCase) == true;
+        if (!isPickupAddress && !await _orderRepository.AddressBelongsToUserAsync(request.AddressId, userId, cancellationToken))
         {
             _logger.LogError("User {UserId} attempted checkout with unavailable address {AddressId}.", userId, request.AddressId);
             return response.Fail("The selected address was not found.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
         }
-        var address = await _dbContext.Addresses.AsNoTracking().SingleAsync(item => item.Id == request.AddressId, cancellationToken);
+        var address = await _dbContext.Addresses.FindAsync([request.AddressId], cancellationToken);
+        if (address is null)
+            return response.Fail("The selected address was not found.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
         if (string.IsNullOrWhiteSpace(request.DeliveryId))
             return response.Fail("A delivery option is required.", ResponseCodes.INVALID_ACTION);
 
@@ -222,5 +233,10 @@ public sealed class InitializePaystackService : IInitializePaystackService
 
             return response.Fail("Payment could not be initialized. Please try again.", ResponseCodes.SERVICE_UNAVAILABLE);
         }
+    }
+
+    private static bool IsActiveContact(FashionStore.Domain.Entities.ContactUsConfiguration contact)
+    {
+        return contact.IsActive;
     }
 }

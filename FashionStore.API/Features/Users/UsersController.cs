@@ -11,6 +11,7 @@ using FashionStore.API.Features.Users.ResetAdminPassword;
 using FashionStore.API.Features.Users.GetAdminRoles;
 using FashionStore.API.Features.Users.UpdateAdminUser;
 using FashionStore.API.Features.Users.AdminUpdateUser;
+using FashionStore.API.Features.Users.GetPickupAddress;
 
 namespace FashionStore.API.Features.Users
 {
@@ -32,13 +33,15 @@ namespace FashionStore.API.Features.Users
         private readonly IGetAdminRolesService _getAdminRolesService;
         private readonly IUpdateAdminUserService _updateAdminUserService;
         private readonly IAdminUpdateUserService _adminUpdateUserService;
+        private readonly IGetPickupAddressService _getPickupAddressService;
 
         public UsersController(IGetUserByEmailService getUserByEmailService, IUpdateUserService updateUserService,
             ICreateUserService createUserService, IGetAllUserAddressesService getAllUserAddressesService,
             ICreateUserAddressService createUserAddressService, IUpdateUserAddressService updateUserAddressService,
             IDeleteUserAddressService deleteUserAddressService, IGetUsersService getUsersService,
             IChangeUserStatusService changeUserStatusService, IResetAdminPasswordService resetAdminPasswordService,
-            IGetAdminRolesService getAdminRolesService, IUpdateAdminUserService updateAdminUserService, IAdminUpdateUserService adminUpdateUserService)
+            IGetAdminRolesService getAdminRolesService, IUpdateAdminUserService updateAdminUserService, IAdminUpdateUserService adminUpdateUserService,
+            IGetPickupAddressService getPickupAddressService)
         {
             _getUserByEmailService = getUserByEmailService;
             _updateUserService = updateUserService;
@@ -53,6 +56,7 @@ namespace FashionStore.API.Features.Users
             _getAdminRolesService = getAdminRolesService;
             _updateAdminUserService = updateAdminUserService;
             _adminUpdateUserService = adminUpdateUserService;
+            _getPickupAddressService = getPickupAddressService;
         }
 
         [Authorize(Roles = RoleConstants.SuperAdmin)]
@@ -170,6 +174,15 @@ namespace FashionStore.API.Features.Users
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
             return ProcessResponse(await _getAllUserAddressesService.ExecuteAsync(userId, cancellationToken));
+        }
+
+        [AllowAnonymous]
+        [HttpGet("pickup-address")]
+        [ProducesResponseType(typeof(ResponseResult<UserAddressResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetPickupAddress(CancellationToken cancellationToken)
+        {
+            return ProcessResponse(await _getPickupAddressService.ExecuteAsync(cancellationToken));
         }
 
         [HttpPost("me/addresses")]
