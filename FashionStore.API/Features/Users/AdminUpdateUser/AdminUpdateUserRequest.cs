@@ -6,5 +6,5 @@ public sealed class AdminUpdateUserRequest
     [Required] public string FirstName { get; init; } = string.Empty;
     [Required] public string LastName { get; init; } = string.Empty;
     [Required, EmailAddress] public string Email { get; init; } = string.Empty;
-    public string? ImageUrl { get; init; }
+    public IFormFile? Image { get; init; }
 }

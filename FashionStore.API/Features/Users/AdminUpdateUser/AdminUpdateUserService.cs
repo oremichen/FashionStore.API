@@ -1,7 +1,9 @@
+using FashionStore.Domain.Abstractions.Images;
+
 namespace FashionStore.API.Features.Users.AdminUpdateUser;
-public sealed class AdminUpdateUserService(UserManager<ApplicationUser> userManager) : IAdminUpdateUserService
+public sealed class AdminUpdateUserService(UserManager<ApplicationUser> userManager, ICloudinaryImageService cloudinary) : IAdminUpdateUserService
 {
-    public async Task<ResponseResult> ExecuteAsync(string actorId, string userId, AdminUpdateUserRequest request)
+    public async Task<ResponseResult> ExecuteAsync(string actorId, string userId, AdminUpdateUserRequest request, CancellationToken cancellationToken)
     {
         var response = new ResponseResult();
         var actor = await userManager.FindByIdAsync(actorId);
@@ -16,7 +18,15 @@ public sealed class AdminUpdateUserService(UserManager<ApplicationUser> userMana
         user.UserName = user.Email;
         user.NormalizedEmail = userManager.NormalizeEmail(user.Email);
         user.NormalizedUserName = userManager.NormalizeName(user.Email);
-        user.AvatarUrl = string.IsNullOrWhiteSpace(request.ImageUrl) ? null : request.ImageUrl.Trim();
+        if (request.Image is { Length: > 0 })
+        {
+            await using var stream = new MemoryStream();
+            await request.Image.CopyToAsync(stream, cancellationToken);
+            var oldAvatarUrl = user.AvatarUrl;
+            var upload = await cloudinary.UploadWithMetadataAsync(stream.ToArray(), request.Image.FileName, cancellationToken);
+            user.AvatarUrl = upload.Url;
+            await cloudinary.DeleteAsync(oldAvatarUrl, cancellationToken);
+        }
         user.UpdatedAt = DateTimeOffset.UtcNow;
         var result = await userManager.UpdateAsync(user);
         return result.Succeeded ? response.Success("User updated successfully.") : response.Fail("The user could not be updated.", ResponseCodes.ACTION_FAILED, result.Errors.Select(error => error.Description).ToArray());

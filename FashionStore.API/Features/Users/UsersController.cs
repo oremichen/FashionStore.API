@@ -109,11 +109,11 @@ namespace FashionStore.API.Features.Users
 
         [Authorize(Roles = "Admin,SuperAdmin,BusinessAdmin")]
         [HttpPut("admin/{userId}")]
-        public async Task<IActionResult> UpdateAdminUserProfile(string userId, [FromBody] AdminUpdateUserRequest request)
+        public async Task<IActionResult> UpdateAdminUserProfile(string userId, [FromForm] AdminUpdateUserRequest request, CancellationToken cancellationToken)
         {
             var actorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrWhiteSpace(actorId)) return Unauthorized();
-            return ProcessResponse(await _adminUpdateUserService.ExecuteAsync(actorId, userId, request));
+            return ProcessResponse(await _adminUpdateUserService.ExecuteAsync(actorId, userId, request, cancellationToken));
         }
 
         [HttpGet("me")]
