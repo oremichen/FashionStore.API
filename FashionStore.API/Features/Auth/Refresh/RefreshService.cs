@@ -50,6 +50,7 @@ public sealed class RefreshService(
             RefreshToken = rotatedRefreshToken,
             ExpiresAtUtc = accessExpiry,
             UserFirstName = session.User.FirstName ?? string.Empty,
+            ImageUrl = session.User.AvatarUrl,
             UserName = session.User.Email ?? string.Empty,
             UserRoles = roles.ToList(),
             IsAdminSession = isAdmin

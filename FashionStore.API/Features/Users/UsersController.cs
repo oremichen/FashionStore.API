@@ -10,6 +10,7 @@ using FashionStore.API.Features.Users.ChangeUserStatus;
 using FashionStore.API.Features.Users.ResetAdminPassword;
 using FashionStore.API.Features.Users.GetAdminRoles;
 using FashionStore.API.Features.Users.UpdateAdminUser;
+using FashionStore.API.Features.Users.AdminUpdateUser;
 
 namespace FashionStore.API.Features.Users
 {
@@ -30,13 +31,14 @@ namespace FashionStore.API.Features.Users
         private readonly IResetAdminPasswordService _resetAdminPasswordService;
         private readonly IGetAdminRolesService _getAdminRolesService;
         private readonly IUpdateAdminUserService _updateAdminUserService;
+        private readonly IAdminUpdateUserService _adminUpdateUserService;
 
         public UsersController(IGetUserByEmailService getUserByEmailService, IUpdateUserService updateUserService,
             ICreateUserService createUserService, IGetAllUserAddressesService getAllUserAddressesService,
             ICreateUserAddressService createUserAddressService, IUpdateUserAddressService updateUserAddressService,
             IDeleteUserAddressService deleteUserAddressService, IGetUsersService getUsersService,
             IChangeUserStatusService changeUserStatusService, IResetAdminPasswordService resetAdminPasswordService,
-            IGetAdminRolesService getAdminRolesService, IUpdateAdminUserService updateAdminUserService)
+            IGetAdminRolesService getAdminRolesService, IUpdateAdminUserService updateAdminUserService, IAdminUpdateUserService adminUpdateUserService)
         {
             _getUserByEmailService = getUserByEmailService;
             _updateUserService = updateUserService;
@@ -50,6 +52,7 @@ namespace FashionStore.API.Features.Users
             _resetAdminPasswordService = resetAdminPasswordService;
             _getAdminRolesService = getAdminRolesService;
             _updateAdminUserService = updateAdminUserService;
+            _adminUpdateUserService = adminUpdateUserService;
         }
 
         [Authorize(Roles = RoleConstants.SuperAdmin)]
@@ -86,12 +89,32 @@ namespace FashionStore.API.Features.Users
 
         [Authorize(Roles = RoleConstants.SuperAdmin)]
         [HttpGet("admin-roles")]
-        public async Task<IActionResult> GetAdminRoles() => ProcessResponse(await _getAdminRolesService.ExecuteAsync());
+        public async Task<IActionResult> GetAdminRoles()
+        {
+            var response = await _getAdminRolesService.ExecuteAsync();
+
+            return ProcessResponse(response);
+        }
 
         [Authorize(Roles = RoleConstants.SuperAdmin)]
         [HttpPut("{userId}")]
-        public async Task<IActionResult> UpdateAdminUser(string userId, [FromBody] UpdateAdminUserRequest request)
-            => ProcessResponse(await _updateAdminUserService.ExecuteAsync(userId, request));
+        public async Task<IActionResult> UpdateAdminUser(
+            string userId,
+            [FromBody] UpdateAdminUserRequest request)
+        {
+            var response = await _updateAdminUserService.ExecuteAsync(userId, request);
+
+            return ProcessResponse(response);
+        }
+
+        [Authorize(Roles = "Admin,SuperAdmin,BusinessAdmin")]
+        [HttpPut("admin/{userId}")]
+        public async Task<IActionResult> UpdateAdminUserProfile(string userId, [FromForm] AdminUpdateUserRequest request, CancellationToken cancellationToken)
+        {
+            var actorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(actorId)) return Unauthorized();
+            return ProcessResponse(await _adminUpdateUserService.ExecuteAsync(actorId, userId, request, cancellationToken));
+        }
 
         [HttpGet("me")]
         [Produces("application/json")]
