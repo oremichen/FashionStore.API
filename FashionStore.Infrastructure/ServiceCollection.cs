@@ -39,6 +39,8 @@ namespace FashionStore.Infrastructure
                 Repository.UserRepo.UserRepository>();
             services.AddScoped<FashionStore.Domain.Abstractions.Orders.IOrderRepository,
                 Repository.OrderRepo.OrderRepository>();
+            services.AddScoped<FashionStore.Domain.Abstractions.Delivery.IDeliveryRepository,
+                Repository.DeliveryRepo.DeliveryRepository>();
             services.AddOptions<Payments.PaystackSettings>()
                 .BindConfiguration(Payments.PaystackSettings.SectionName)
                 .ValidateDataAnnotations()

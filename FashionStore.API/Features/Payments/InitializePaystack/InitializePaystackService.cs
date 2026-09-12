@@ -1,5 +1,6 @@
 using FashionStore.API.Features.Payments.Shared;
 using FashionStore.Domain.Abstractions.Orders;
+using FashionStore.Domain.Abstractions.Delivery;
 using FashionStore.Domain.Abstractions.Payments;
 using FashionStore.Domain.Abstractions.Products;
 using FashionStore.Domain.Constants;
@@ -12,15 +13,9 @@ namespace FashionStore.API.Features.Payments.InitializePaystack;
 public sealed class InitializePaystackService : IInitializePaystackService
 {
     private const double DefaultReservationExpiryHours = 24.0;
-    private static readonly IReadOnlyDictionary<string, decimal> DeliveryFees = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase)
-    {
-        ["free"] = 0m,
-        ["standard"] = 2500m,
-        ["express"] = 7500m
-    };
-
     private readonly IProductRepository _productRepository;
     private readonly IOrderRepository _orderRepository;
+    private readonly IDeliveryRepository _deliveryRepository;
     private readonly IPaystackClient _paystackClient;
     private readonly IConfiguration _configuration;
     private readonly FashionStoreDbContext _dbContext;
@@ -28,11 +23,12 @@ public sealed class InitializePaystackService : IInitializePaystackService
     private readonly TimeSpan _reservationLifetime;
 
     public InitializePaystackService(IProductRepository productRepository, IOrderRepository orderRepository,
-        IPaystackClient paystackClient, IConfiguration configuration, FashionStoreDbContext dbContext,
+        IPaystackClient paystackClient, IConfiguration configuration, FashionStoreDbContext dbContext, IDeliveryRepository deliveryRepository,
         ILogger<InitializePaystackService> logger)
     {
         _productRepository = productRepository;
         _orderRepository = orderRepository;
+        _deliveryRepository = deliveryRepository;
         _paystackClient = paystackClient;
         _configuration = configuration;
         _dbContext = dbContext;
@@ -77,16 +73,14 @@ public sealed class InitializePaystackService : IInitializePaystackService
         if (existingOrder is not null)
             return response.Fail("This checkout is already being initialized. Please try again shortly.", ResponseCodes.REQUEST_IN_PROGRESS);
         
-        var deliveryMethod = request.DeliveryMethod?.Trim().ToLowerInvariant() ?? string.Empty;
-        
-        if (!DeliveryFees.TryGetValue(deliveryMethod, out var deliveryFee))
-            return response.Fail("The selected delivery method is invalid.", ResponseCodes.INVALID_ACTION);
-
         if (!await _orderRepository.AddressBelongsToUserAsync(request.AddressId, userId, cancellationToken))
         {
             _logger.LogError("User {UserId} attempted checkout with unavailable address {AddressId}.", userId, request.AddressId);
             return response.Fail("The selected address was not found.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
         }
+        var address = await _dbContext.Addresses.AsNoTracking().SingleAsync(item => item.Id == request.AddressId, cancellationToken);
+        if (string.IsNullOrWhiteSpace(request.DeliveryId))
+            return response.Fail("A delivery option is required.", ResponseCodes.INVALID_ACTION);
 
         var orderItems = new List<OrderItem>();
         foreach (var requestedItem in request.Items)
@@ -157,6 +151,10 @@ public sealed class InitializePaystackService : IInitializePaystackService
         }
 
         var subtotal = orderItems.Sum(item => item.LineTotal);
+        var deliveryRate = await _deliveryRepository.GetActiveRateForStateAsync(request.DeliveryId, address.State, cancellationToken);
+        if (deliveryRate is null)
+            return response.Fail("The selected delivery option is unavailable for this address.", ResponseCodes.INVALID_ACTION);
+        var deliveryFee = deliveryRate.PriceKobo / 100m;
         var reference = "FS-" + Guid.NewGuid().ToString("N").ToUpperInvariant();
         var callbackUrl = _configuration["Frontend:PaymentCallbackUrl"];
         if (!Uri.TryCreate(callbackUrl, UriKind.Absolute, out var callbackUri) ||
@@ -165,7 +163,8 @@ public sealed class InitializePaystackService : IInitializePaystackService
             _logger.LogCritical("Frontend:PaymentCallbackUrl is missing or invalid.");
             return response.Fail("Payment callback configuration is unavailable.", ResponseCodes.SERVICE_UNAVAILABLE);
         }
-        var order = Order.Create(userId, idempotencyKey, request.AddressId, request.Email, deliveryMethod,
+        var order = Order.Create(userId, idempotencyKey, request.AddressId, request.Email, deliveryRate.Method.Name,
+            deliveryRate.Id, deliveryRate.EstimatedDaysMin, deliveryRate.EstimatedDaysMax,
             subtotal, deliveryFee, reference, orderItems);
         try
         {

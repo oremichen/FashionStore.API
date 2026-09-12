@@ -34,6 +34,10 @@ namespace FashionStore.Infrastructure.Data
         public DbSet<OrderItem> OrderItems { get; set; }
         public DbSet<InventoryReservation> InventoryReservations { get; set; }
         public DbSet<UserSession> UserSessions { get; set; }
+        public DbSet<DeliveryZone> DeliveryZones { get; set; }
+        public DbSet<DeliveryZoneLocation> DeliveryZoneLocations { get; set; }
+        public DbSet<DeliveryMethod> DeliveryMethods { get; set; }
+        public DbSet<DeliveryRate> DeliveryRates { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

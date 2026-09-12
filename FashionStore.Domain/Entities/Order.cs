@@ -17,6 +17,9 @@ public sealed class Order
     public string AddressId { get; private set; } = null!;
     public string Email { get; private set; } = null!;
     public string DeliveryMethod { get; private set; } = null!;
+    public string DeliveryRateId { get; private set; } = null!;
+    public int? EstimatedDaysMin { get; private set; }
+    public int? EstimatedDaysMax { get; private set; }
     public decimal Subtotal { get; private set; }
     public decimal DeliveryFee { get; private set; }
     public decimal Total { get; private set; }
@@ -42,12 +45,14 @@ public sealed class Order
     }
 
     public static Order Create(string userId, string idempotencyKey, string addressId, string email, string deliveryMethod,
+        string deliveryRateId, int? estimatedDaysMin, int? estimatedDaysMax,
         decimal subtotal, decimal deliveryFee, string paymentReference, IEnumerable<OrderItem> items)
     {
         if (string.IsNullOrWhiteSpace(userId)) throw new ArgumentException("User id is required.");
         if (string.IsNullOrWhiteSpace(idempotencyKey)) throw new ArgumentException("Idempotency key is required.");
         if (string.IsNullOrWhiteSpace(addressId)) throw new ArgumentException("Address id is required.");
         if (string.IsNullOrWhiteSpace(email)) throw new ArgumentException("Email is required.");
+        if (string.IsNullOrWhiteSpace(deliveryRateId)) throw new ArgumentException("Delivery rate is required.");
         if (subtotal < 0 || deliveryFee < 0) throw new ArgumentException("Order amounts cannot be negative.");
 
         var order = new Order
@@ -59,6 +64,9 @@ public sealed class Order
             AddressId = addressId.Trim(),
             Email = email.Trim(),
             DeliveryMethod = deliveryMethod,
+            DeliveryRateId = deliveryRateId.Trim(),
+            EstimatedDaysMin = estimatedDaysMin,
+            EstimatedDaysMax = estimatedDaysMax,
             Subtotal = subtotal,
             DeliveryFee = deliveryFee,
             Total = subtotal + deliveryFee,
