@@ -20,3 +20,14 @@ public sealed record DeliveryMethodResponse(
     long PriceKobo, 
     int? EstimatedDaysMin, 
     int? EstimatedDaysMax);
+
+public sealed record DeliveryZoneResponse(
+    string Id,
+    string Name,
+    bool IsDefault,
+    bool IsActive);
+
+public sealed record DeliveryMethodCatalogResponse(
+    string Id,
+    string Name,
+    bool IsActive);

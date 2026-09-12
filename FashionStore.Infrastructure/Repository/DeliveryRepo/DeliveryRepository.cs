@@ -12,6 +12,20 @@ public sealed class DeliveryRepository(FashionStoreDbContext dbContext) : IDeliv
         return await query.OrderBy(rate => rate.Zone.Name).ThenBy(rate => rate.Method.Name).ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<DeliveryZone>> GetZonesAsync(CancellationToken cancellationToken)
+    {
+        return await (from zone in dbContext.DeliveryZones.AsNoTracking()
+                      orderby zone.Name
+                      select zone).ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<DeliveryMethod>> GetMethodsAsync(CancellationToken cancellationToken)
+    {
+        return await (from method in dbContext.DeliveryMethods.AsNoTracking()
+                      orderby method.Name
+                      select method).ToListAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<DeliveryRate>> GetActiveRatesForStateAsync(string state, CancellationToken cancellationToken)
     {
         var normalized = state.Trim().ToLower();
