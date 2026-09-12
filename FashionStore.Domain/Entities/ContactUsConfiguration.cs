@@ -5,19 +5,21 @@ public sealed class ContactUsConfiguration
     private ContactUsConfiguration() { }
 
     private ContactUsConfiguration(
-        string address,
+        string? addressId,
         string contactPhone,
         string? businessPhone,
         string contactEmail,
         string? businessEmail,
         bool isActive)
     {
-        SetDetails(address, contactPhone, businessPhone, contactEmail, businessEmail, isActive);
+        SetDetails(contactPhone, businessPhone, contactEmail, businessEmail, isActive);
+        AddressId = addressId;
         CreatedAt = UpdatedAt = DateTimeOffset.UtcNow;
     }
 
     public string Id { get; private set; } = null!;
-    public string Address { get; private set; } = string.Empty;
+    public string? AddressId { get; private set; }
+    public Address? AddressDetails { get; private set; }
     public string ContactPhone { get; private set; } = string.Empty;
     public string? BusinessPhone { get; private set; }
     public string ContactEmail { get; private set; } = string.Empty;
@@ -27,25 +29,26 @@ public sealed class ContactUsConfiguration
     public bool IsActive { get; private set; }
 
     public static ContactUsConfiguration Create(
-        string address,
+        string? addressId,
         string contactPhone,
         string? businessPhone,
         string contactEmail,
         string? businessEmail,
         bool isActive)
     {
-        return new ContactUsConfiguration(address, contactPhone, businessPhone, contactEmail, businessEmail, isActive);
+        return new ContactUsConfiguration(addressId, contactPhone, businessPhone, contactEmail, businessEmail, isActive);
     }
 
     public void Update(
-        string address,
+        string? addressId,
         string contactPhone,
         string? businessPhone,
         string contactEmail,
         string? businessEmail,
         bool isActive)
     {
-        SetDetails(address, contactPhone, businessPhone, contactEmail, businessEmail, isActive);
+        SetDetails(contactPhone, businessPhone, contactEmail, businessEmail, isActive);
+        AddressId = addressId;
     }
 
     public void Deactivate()
@@ -55,14 +58,12 @@ public sealed class ContactUsConfiguration
     }
 
     private void SetDetails(
-        string address,
         string contactPhone,
         string? businessPhone,
         string contactEmail,
         string? businessEmail,
         bool isActive)
     {
-        Address = Rules.Required(address, 500, nameof(address));
         ContactPhone = Rules.RequiredPhone(contactPhone, 50, nameof(contactPhone));
         BusinessPhone = Rules.OptionalPhone(businessPhone, 50, nameof(businessPhone));
         ContactEmail = Rules.RequiredEmail(contactEmail, 254, nameof(contactEmail));

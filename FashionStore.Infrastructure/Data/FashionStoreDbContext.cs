@@ -50,6 +50,9 @@ namespace FashionStore.Infrastructure.Data
                 .HasForeignKey(a => a.UserId)
                 .OnDelete(DeleteBehavior.Cascade); // Deletes addresses when user is deleted
 
+            builder.Entity<Address>().Property(address => address.Street).IsRequired(false);
+            builder.Entity<Address>().Property(address => address.City).IsRequired(false);
+
             builder.Entity<Address>()
                 .Property(address => address.Id)
                 .HasMaxLength(50)
