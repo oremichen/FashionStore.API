@@ -83,7 +83,19 @@ namespace FashionStore.API.Features.Auth.Login
             user.LastLoginDate = DateTimeOffset.UtcNow;
             await _userManager.UpdateAsync(user);
             _logger.LogInformation("Login successful for user {UserId} with email {Email}. Roles: {Roles}. Token expires at {TokenExpiryUtc}.", user.Id, user.Email, string.Join(", ", roles), tokenExpiry);
-            return response.Success(new LoginResponse { AccessToken = token, RefreshToken = refreshToken, ExpiresAtUtc = tokenExpiry, TokenType = "Bearer", UserFirstName = user.FirstName ?? string.Empty, UserName = user.Email ?? string.Empty, UserRoles = roles.ToList(), IsAdminSession = isAdmin }, "Login successful.");
+            return response.Success(new LoginResponse 
+            { 
+                AccessToken = token, 
+                RefreshToken = refreshToken, 
+                ExpiresAtUtc = tokenExpiry, 
+                TokenType = "Bearer", 
+                UserFirstName = user.FirstName ?? string.Empty, 
+                UserName = user.Email ?? string.Empty, 
+                ImageUrl = user.AvatarUrl, 
+                UserRoles = roles.ToList(), 
+                IsAdminSession = isAdmin 
+            }, 
+            "Login successful.");
         }
 
         private async Task SendConfirmationMail(ApplicationUser user)
