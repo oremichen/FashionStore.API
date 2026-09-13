@@ -181,11 +181,7 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
             ? $"{HtmlEncoder.Default.Encode(user.FirstName)} {HtmlEncoder.Default.Encode(user.LastName ?? string.Empty)}".Trim()
             : HtmlEncoder.Default.Encode(order.Email);
 
-        var recipientName = !string.IsNullOrWhiteSpace(address?.Landmark) || !string.IsNullOrWhiteSpace(address?.Street)
-            ? customerName
-            : customerName;
-
-        var fullAddress = BuildFullAddress(address);
+        var recipientName = customerName;
         var phoneNumber = HtmlEncoder.Default.Encode(address?.PhoneNumber ?? user?.PhoneNumber ?? "Not provided");
         var orderDate = order.CreatedAt.ToString("d MMMM yyyy", CultureInfo.InvariantCulture);
         var itemsTotal = FormatNaira(order.Subtotal);
@@ -194,8 +190,28 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
         var customerOrderItemsHtml = BuildOrderItemsHtml(order.Items, includeSku: false);
         var internalOrderItemsHtml = BuildOrderItemsHtml(order.Items, includeSku: true);
         var totalQuantity = order.Items.Sum(i => i.Quantity);
-        var deliveryMethod = HtmlEncoder.Default.Encode(order.DeliveryMethod);
-        var deliveryWindow = FormatDeliveryWindow(order.EstimatedDaysMin, order.EstimatedDaysMax);
+        var isPickup = IsPickupOrder(order.DeliveryMethod);
+
+        string deliveryMethod;
+        string deliveryWindow;
+        string fullAddress;
+
+        if (isPickup)
+        {
+            deliveryMethod = HtmlEncoder.Default.Encode("Pickup");
+            deliveryWindow = HtmlEncoder.Default.Encode("To be confirmed");
+            fullAddress = HtmlEncoder.Default.Encode(string.Empty);
+        }
+        else
+        {
+            deliveryMethod = HtmlEncoder.Default.Encode(order.DeliveryMethod);
+            deliveryWindow = FormatDeliveryWindow(order.EstimatedDaysMin, order.EstimatedDaysMax);
+            fullAddress = BuildFullAddress(address);
+        }
+
+        var customerTemplate = isPickup
+            ? EmailNotificationTypeEnum.OrderCustomerPickupConfirmation
+            : EmailNotificationTypeEnum.OrderCustomerConfirmation;
 
         var customerTokens = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -217,8 +233,7 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
             ["contactEmail"] = HtmlEncoder.Default.Encode(contactEmail),
         };
 
-        var customerBody = await _templateRenderer.RenderAsync(
-            EmailNotificationTypeEnum.OrderCustomerConfirmation, customerTokens);
+        var customerBody = await _templateRenderer.RenderAsync(customerTemplate, customerTokens);
         await _emailService.QueueEmailAsync(new EmailNotification
         {
             To = [order.Email],
@@ -233,6 +248,10 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
         {
             internalRecipients.Add(businessEmail);
         }
+
+        var internalTemplate = isPickup
+            ? EmailNotificationTypeEnum.OrderInternalPickupNotification
+            : EmailNotificationTypeEnum.OrderInternalNotification;
 
         var internalTokens = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -258,8 +277,7 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
             ["customerNote"] = "No additional note was provided by the customer.",
         };
 
-        var internalBody = await _templateRenderer.RenderAsync(
-            EmailNotificationTypeEnum.OrderInternalNotification, internalTokens);
+        var internalBody = await _templateRenderer.RenderAsync(internalTemplate, internalTokens);
         await _emailService.QueueEmailAsync(new EmailNotification
         {
             To = internalRecipients,
@@ -269,6 +287,11 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
         }, cancellationToken);
         _logger.LogInformation("Internal sales notification email queued for order {OrderId} ({TrackOrderId}) to {Recipients}.",
             order.Id, order.TrackOrderId, string.Join(", ", internalRecipients));
+    }
+
+    private static bool IsPickupOrder(string deliveryMethod)
+    {
+        return deliveryMethod?.Contains("pickup", StringComparison.OrdinalIgnoreCase) == true;
     }
 
     private static string BuildFullAddress(Address? address)

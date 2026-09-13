@@ -77,15 +77,27 @@ public sealed class UpdateOrderStatusService(
         AddRecipient(recipients, contactEmail);
         AddRecipient(recipients, contact?.BusinessEmail);
 
-        var status = GetStatusLabel(order.Status);
+        var isPickup = IsPickupOrder(order.DeliveryMethod);
+        var status = GetStatusLabel(order.Status, isPickup);
+
+        string deliveryAddress;
+        if (isPickup)
+        {
+            deliveryAddress = HtmlEncoder.Default.Encode(string.Empty);
+        }
+        else
+        {
+            deliveryAddress = BuildAddress(address);
+        }
+
         var tokens = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             ["appName"] = HtmlEncoder.Default.Encode(appName),
             ["customerName"] = HtmlEncoder.Default.Encode(order.User?.FirstName ?? order.Email),
             ["trackOrderId"] = HtmlEncoder.Default.Encode(order.TrackOrderId),
             ["status"] = HtmlEncoder.Default.Encode(status),
-            ["statusMessage"] = HtmlEncoder.Default.Encode(statusMessage ?? GetDefaultMessage(order.Status)),
-            ["deliveryAddress"] = BuildAddress(address),
+            ["statusMessage"] = HtmlEncoder.Default.Encode(statusMessage ?? GetDefaultMessage(order.Status, isPickup)),
+            ["deliveryAddress"] = deliveryAddress,
             ["phoneNumber"] = HtmlEncoder.Default.Encode(address?.PhoneNumber ?? order.User?.PhoneNumber ?? "Not provided"),
             ["orderItemsHtml"] = BuildOrderItemsHtml(order.Items),
             ["year"] = DateTime.UtcNow.Year.ToString()
@@ -93,7 +105,7 @@ public sealed class UpdateOrderStatusService(
         var customerBody = await templateRenderer.RenderAsync(EmailNotificationTypeEnum.OrderStatusUpdate, tokens);
         var adminTokens = new Dictionary<string, string>(tokens, StringComparer.OrdinalIgnoreCase)
         {
-            ["statusMessage"] = HtmlEncoder.Default.Encode(statusMessage ?? GetAdminMessage(order.Status))
+            ["statusMessage"] = HtmlEncoder.Default.Encode(statusMessage ?? GetAdminMessage(order.Status, isPickup))
         };
         var adminBody = await templateRenderer.RenderAsync(EmailNotificationTypeEnum.OrderStatusInternalUpdate, adminTokens);
         var customerSubject = $"Order {status} – {order.TrackOrderId}";
@@ -101,6 +113,11 @@ public sealed class UpdateOrderStatusService(
         await emailService.QueueEmailAsync(new EmailNotification { To = [order.Email], Subject = customerSubject, Body = customerBody }, cancellationToken);
         if (recipients.Count > 0)
             await emailService.QueueEmailAsync(new EmailNotification { To = recipients, ReplyTo = order.Email, Subject = adminSubject, Body = adminBody }, cancellationToken);
+    }
+
+    private static bool IsPickupOrder(string deliveryMethod)
+    {
+        return deliveryMethod?.Contains("pickup", StringComparison.OrdinalIgnoreCase) == true;
     }
 
     private static string BuildAddress(Address? address)
@@ -144,26 +161,40 @@ public sealed class UpdateOrderStatusService(
             recipients.Add(email);
     }
 
-    private static string GetStatusLabel(string status)
+    private static string GetStatusLabel(string status, bool isPickup)
     {
-        if (status.Equals(OrderStatuses.Shipped, StringComparison.OrdinalIgnoreCase)) return "Shipping";
-        if (status.Equals(OrderStatuses.Delivered, StringComparison.OrdinalIgnoreCase)) return "Delivered";
+        if (status.Equals(OrderStatuses.Shipped, StringComparison.OrdinalIgnoreCase))
+            return isPickup ? "Ready for Pickup" : "Shipping";
+        if (status.Equals(OrderStatuses.Delivered, StringComparison.OrdinalIgnoreCase))
+            return isPickup ? "Picked Up" : "Delivered";
         if (status.Equals(OrderStatuses.Cancelled, StringComparison.OrdinalIgnoreCase)) return "Cancelled";
         return "Returned";
     }
 
-    private static string GetDefaultMessage(string status)
+    private static string GetDefaultMessage(string status, bool isPickup)
     {
-        if (status.Equals(OrderStatuses.Shipped, StringComparison.OrdinalIgnoreCase)) return "Your order has been shipped and is on its way to you.";
-        if (status.Equals(OrderStatuses.Delivered, StringComparison.OrdinalIgnoreCase)) return "Your order has been delivered. We hope you enjoy your purchase.";
+        if (status.Equals(OrderStatuses.Shipped, StringComparison.OrdinalIgnoreCase))
+            return isPickup
+                ? "Your order is ready for pickup. Please visit our store during business hours to collect your items."
+                : "Your order has been shipped and is on its way to you.";
+        if (status.Equals(OrderStatuses.Delivered, StringComparison.OrdinalIgnoreCase))
+            return isPickup
+                ? "Your order has been picked up. Thank you for shopping with us and we hope you enjoy your purchase."
+                : "Your order has been delivered. We hope you enjoy your purchase.";
         if (status.Equals(OrderStatuses.Cancelled, StringComparison.OrdinalIgnoreCase)) return "Your order has been cancelled. If a refund applies, it will be processed according to our policy.";
         return "Your returned order has been received and is being reviewed.";
     }
 
-    private static string GetAdminMessage(string status)
+    private static string GetAdminMessage(string status, bool isPickup)
     {
-        if (status.Equals(OrderStatuses.Shipped, StringComparison.OrdinalIgnoreCase)) return "Action recorded: the order has been marked as shipped. Confirm courier handover and tracking details are available to the customer.";
-        if (status.Equals(OrderStatuses.Delivered, StringComparison.OrdinalIgnoreCase)) return "Action recorded: the order has been marked as delivered. Confirm delivery completion and resolve any outstanding fulfilment tasks.";
+        if (status.Equals(OrderStatuses.Shipped, StringComparison.OrdinalIgnoreCase))
+            return isPickup
+                ? "Action recorded: the pickup order has been marked as ready for collection. Ensure items are packaged and the customer has been notified to visit the store."
+                : "Action recorded: the order has been marked as shipped. Confirm courier handover and tracking details are available to the customer.";
+        if (status.Equals(OrderStatuses.Delivered, StringComparison.OrdinalIgnoreCase))
+            return isPickup
+                ? "Action recorded: the pickup order has been marked as collected. Confirm customer identification was verified and the items were handed over successfully."
+                : "Action recorded: the order has been marked as delivered. Confirm delivery completion and resolve any outstanding fulfilment tasks.";
         if (status.Equals(OrderStatuses.Cancelled, StringComparison.OrdinalIgnoreCase)) return "Action recorded: the order has been cancelled. Review the cancellation reason and process any applicable refund or stock adjustment.";
         return "Action recorded: the order has been marked as returned. Inspect the returned items and update the refund or restocking outcome.";
     }

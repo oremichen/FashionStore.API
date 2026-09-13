@@ -55,6 +55,8 @@ namespace FashionStore.Infrastructure.Notification
                 EmailNotificationTypeEnum.OrderCustomerConfirmation => Path.Combine(_environment.WebRootPath, "EmailTemplates", "OrderCustomerConfirmationTemplate.html"),
                 EmailNotificationTypeEnum.OrderInternalNotification => Path.Combine(_environment.WebRootPath, "EmailTemplates", "OrderInternalNotificationTemplate.html"),
                 EmailNotificationTypeEnum.OrderStatusUpdate => Path.Combine(_environment.WebRootPath, "EmailTemplates", "OrderStatusUpdateTemplate.html"),
+                EmailNotificationTypeEnum.OrderCustomerPickupConfirmation => Path.Combine(_environment.WebRootPath, "EmailTemplates", "OrderCustomerPickupConfirmationTemplate.html"),
+                EmailNotificationTypeEnum.OrderInternalPickupNotification => Path.Combine(_environment.WebRootPath, "EmailTemplates", "OrderInternalPickupNotificationTemplate.html"),
                 _ => throw new ArgumentException($"No email template is configured for {templateType}.", nameof(templateType))
             };
         }
