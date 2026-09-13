@@ -20,7 +20,7 @@ public sealed class BrandsController(IGetBrandsService getBrandsService, ICreate
         return ProcessResponse(response);
     }
 
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin")]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}")]
     [HttpGet("~/api/admin/brands")]
     [ProducesResponseType(typeof(ResponseResult<IReadOnlyList<BrandResponse>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAllAdmin(CancellationToken cancellationToken)
@@ -28,7 +28,7 @@ public sealed class BrandsController(IGetBrandsService getBrandsService, ICreate
         return ProcessResponse(await getBrandsService.ExecuteAsync(false, cancellationToken));
     }
 
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin")]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}")]
     [HttpPost]
     [EnableRateLimiting(RateLimitPolicies.AdminUpload)]
     [Consumes("multipart/form-data")]
@@ -63,7 +63,7 @@ public sealed class BrandsController(IGetBrandsService getBrandsService, ICreate
         return ProcessResponse(await createBrandService.ExecuteAsync(request, cancellationToken));
     }
 
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin")]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}")]
     [HttpDelete("{id}")]
     [Produces("application/json")]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status200OK)]

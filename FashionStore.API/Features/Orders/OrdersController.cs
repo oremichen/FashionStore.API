@@ -27,21 +27,21 @@ public sealed class OrdersController(
         return ProcessResponse(await getOrderByIdService.ExecuteAsync(id, userId, false, cancellationToken));
     }
 
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin")]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}")]
     [HttpGet("~/api/admin/orders")]
     public async Task<IActionResult> GetAdmin([FromQuery] OrderQuery query, CancellationToken cancellationToken)
     {
         return ProcessResponse(await getOrdersService.ExecuteAsync(null, query, true, cancellationToken));
     }
 
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin")]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}")]
     [HttpGet("~/api/admin/orders/{id}")]
     public async Task<IActionResult> GetAdminById(string id, CancellationToken cancellationToken)
     {
         return ProcessResponse(await getOrderByIdService.ExecuteAsync(id, null, true, cancellationToken));
     }
 
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin")]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}")]
     [HttpPut("~/api/admin/orders/{id}/status")]
     public async Task<IActionResult> UpdateStatus(string id, [FromBody] UpdateOrderStatusRequest request, CancellationToken cancellationToken)
     {

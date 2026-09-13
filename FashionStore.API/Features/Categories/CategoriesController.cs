@@ -27,7 +27,7 @@ public sealed class CategoriesController(
         return ProcessResponse(await getCategoriesService.ExecuteAsync(cancellationToken));
     }
 
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin")]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}")]
     [HttpGet("{id}")]
     [Produces("application/json")]
     [ProducesResponseType(typeof(ResponseResult<CategoryDetailsResponse>), StatusCodes.Status200OK)]
@@ -42,7 +42,7 @@ public sealed class CategoriesController(
     }
 
     // Per the requested definition, these are categories whose ParentId is populated.
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin")]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}")]
     [HttpGet("with-parent")]
     [Produces("application/json")]
     [ProducesResponseType(typeof(ResponseResult<IReadOnlyList<CategoryResponse>>), StatusCodes.Status200OK)]
@@ -55,7 +55,7 @@ public sealed class CategoriesController(
         return ProcessResponse(await getCategoriesWithParentService.ExecuteAsync(cancellationToken));
     }
 
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin")]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}")]
     [HttpPost]
     [Consumes("application/json")]
     [Produces("application/json")]
@@ -71,7 +71,7 @@ public sealed class CategoriesController(
         return ProcessResponse(await createCategoryService.ExecuteAsync(request, cancellationToken));
     }
 
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin")]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}")]
     [HttpPut("{id}")]
     [Consumes("application/json")]
     [Produces("application/json")]

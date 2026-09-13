@@ -111,7 +111,7 @@ namespace FashionStore.API.Features.Users
             return ProcessResponse(response);
         }
 
-        [Authorize(Roles = "Admin,SuperAdmin,BusinessAdmin")]
+        [Authorize(Roles = RoleConstants.SuperAdmin)]
         [HttpPut("admin/{userId}")]
         public async Task<IActionResult> UpdateAdminUserProfile(string userId, [FromForm] AdminUpdateUserRequest request, CancellationToken cancellationToken)
         {
@@ -150,7 +150,7 @@ namespace FashionStore.API.Features.Users
             return ProcessResponse(response);
         }
 
-        [Authorize(Roles = "SuperAdmin")]
+        [Authorize(Roles = RoleConstants.SuperAdmin)]
         [HttpPost]
         [Produces("application/json")]
         [ProducesResponseType(typeof(ResponseResult<UserDetailsResponse>), StatusCodes.Status200OK)]

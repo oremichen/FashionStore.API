@@ -29,7 +29,7 @@ public sealed class DeliveryController(
         return ProcessResponse(await getDeliveryMethodsService.ExecuteAsync(request, cancellationToken));
     }
 
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin")]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin}")]
     [HttpGet("~/api/admin/delivery/rates")]
     [Produces("application/json")]
     [ProducesResponseType(typeof(ResponseResult<IReadOnlyList<DeliveryRateResponse>>), StatusCodes.Status200OK)]
@@ -41,7 +41,7 @@ public sealed class DeliveryController(
         return ProcessResponse(await getRatesService.ExecuteAsync(request, cancellationToken));
     }
 
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin")]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin}")]
     [HttpGet("~/api/admin/delivery/zones")]
     [Produces("application/json")]
     [ProducesResponseType(typeof(ResponseResult<IReadOnlyList<DeliveryZoneResponse>>), StatusCodes.Status200OK)]
@@ -53,7 +53,7 @@ public sealed class DeliveryController(
         return ProcessResponse(await getZonesService.ExecuteAsync(cancellationToken));
     }
 
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin")]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin}")]
     [HttpGet("~/api/admin/delivery/methods")]
     [Produces("application/json")]
     [ProducesResponseType(typeof(ResponseResult<IReadOnlyList<DeliveryMethodCatalogResponse>>), StatusCodes.Status200OK)]
@@ -65,7 +65,7 @@ public sealed class DeliveryController(
         return ProcessResponse(await getMethodsService.ExecuteAsync(cancellationToken));
     }
 
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin")]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin}")]
     [HttpPost("~/api/admin/delivery/rates")]
     [Produces("application/json")]
     [ProducesResponseType(typeof(ResponseResult<DeliveryRateResponse>), StatusCodes.Status200OK)]
@@ -80,7 +80,7 @@ public sealed class DeliveryController(
         return ProcessResponse(await createRateService.ExecuteAsync(request, cancellationToken));
     }
 
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin")]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin}")]
     [HttpPut("~/api/admin/delivery/rates/{id}")]
     [Produces("application/json")]
     [ProducesResponseType(typeof(ResponseResult<DeliveryRateResponse>), StatusCodes.Status200OK)]
@@ -95,7 +95,7 @@ public sealed class DeliveryController(
         return ProcessResponse(await updateRateService.ExecuteAsync(id, request, cancellationToken));
     }
 
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin")]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin}")]
     [HttpDelete("~/api/admin/delivery/rates/{id}")]
     [Produces("application/json")]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status200OK)]

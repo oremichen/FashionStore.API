@@ -6,7 +6,7 @@ namespace FashionStore.API.Controllers;
 
 [ApiController]
 [Route("api/twilio-sms-message")]
-[Authorize(Roles = "Admin")]
+[Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}")]
 public sealed class TwilioSmsMessageController : ControllerBase
 {
     private readonly ISmsProvider _smsProvider;
