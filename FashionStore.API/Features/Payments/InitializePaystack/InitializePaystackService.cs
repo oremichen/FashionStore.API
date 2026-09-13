@@ -80,8 +80,10 @@ public sealed class InitializePaystackService : IInitializePaystackService
         var activeContacts = await _dbContext.ContactUsConfigurations.AsNoTracking()
             .ToListAsync(cancellationToken);
         var activeContact = activeContacts.SingleOrDefault(IsActiveContact);
+
         var isPickupAddress = activeContact?.AddressId == request.AddressId &&
             requestedMethod?.Name.Contains("pickup", StringComparison.OrdinalIgnoreCase) == true;
+
         if (!isPickupAddress && !await _orderRepository.AddressBelongsToUserAsync(request.AddressId, userId, cancellationToken))
         {
             _logger.LogError("User {UserId} attempted checkout with unavailable address {AddressId}.", userId, request.AddressId);
@@ -174,9 +176,19 @@ public sealed class InitializePaystackService : IInitializePaystackService
             _logger.LogCritical("Frontend:PaymentCallbackUrl is missing or invalid.");
             return response.Fail("Payment callback configuration is unavailable.", ResponseCodes.SERVICE_UNAVAILABLE);
         }
-        var order = Order.Create(userId, idempotencyKey, request.AddressId, request.Email, deliveryRate.Method.Name,
-            deliveryRate.Id, deliveryRate.EstimatedDaysMin, deliveryRate.EstimatedDaysMax,
-            subtotal, deliveryFee, reference, orderItems);
+        var order = Order.Create(
+            userId, 
+            idempotencyKey, 
+            request.AddressId, 
+            request.Email, 
+            deliveryRate.Method.Name,
+            deliveryRate.Id, 
+            deliveryRate.EstimatedDaysMin, 
+            deliveryRate.EstimatedDaysMax,
+            subtotal, 
+            deliveryFee, 
+            reference, 
+            orderItems);
         try
         {
             await _orderRepository.CreateWithInventoryReservationsAsync(order, DateTimeOffset.UtcNow.Add(_reservationLifetime), cancellationToken);
