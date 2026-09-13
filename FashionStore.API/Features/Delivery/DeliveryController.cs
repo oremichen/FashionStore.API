@@ -1,4 +1,5 @@
 using FashionStore.API.Features.Delivery.CreateRate;
+using FashionStore.API.Features.Delivery.DeleteRate;
 using FashionStore.API.Features.Delivery.GetDeliveryMethods;
 using FashionStore.API.Features.Delivery.GetRates;
 using FashionStore.API.Features.Delivery.GetMethods;
@@ -15,7 +16,8 @@ public sealed class DeliveryController(
     ICreateRateService createRateService,
     IUpdateRateService updateRateService,
     IGetZonesService getZonesService,
-    IGetMethodsService getMethodsService) : BaseApiController
+    IGetMethodsService getMethodsService,
+    IDeleteRateService deleteRateService) : BaseApiController
 {
     [HttpGet("methods")]
     [Produces("application/json")]
@@ -91,5 +93,19 @@ public sealed class DeliveryController(
     public async Task<IActionResult> UpdateRate(string id, [FromBody] UpdateRateRequest request, CancellationToken cancellationToken)
     {
         return ProcessResponse(await updateRateService.ExecuteAsync(id, request, cancellationToken));
+    }
+
+    [Authorize(Roles = "SuperAdmin,BusinessAdmin")]
+    [HttpDelete("~/api/admin/delivery/rates/{id}")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> DeleteRate(string id, CancellationToken cancellationToken)
+    {
+        return ProcessResponse(await deleteRateService.ExecuteAsync(id, cancellationToken));
     }
 }
