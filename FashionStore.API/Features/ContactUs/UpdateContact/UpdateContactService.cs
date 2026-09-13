@@ -31,7 +31,7 @@ public sealed class UpdateContactService(IContactUsConfigurationRepository repos
                 await DeactivateOtherContactsAsync(contact.Id, cancellationToken);
             }
 
-            contact.AddressDetails?.UpdateForContact(request.Country, request.State, request.City, request.Street);
+            contact.AddressDetails?.UpdateForContact(request.Country, request.State, request.ContactPhone, request.City, request.Street);
             contact.Update(
                 contact.AddressId, 
                 request.ContactPhone, 

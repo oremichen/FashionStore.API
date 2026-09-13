@@ -15,7 +15,13 @@ public sealed class CreateContactService(IContactUsConfigurationRepository repos
                 await DeactivateOtherContactsAsync(null, cancellationToken);
             }
 
-            var address = FashionStore.Domain.Entities.Address.CreateForContact(request.Country, request.State, request.City, request.Street);
+            var address = FashionStore.Domain.Entities.Address.CreateForContact(
+                request.Country, 
+                request.State, 
+                request.ContactPhone, 
+                request.City, 
+                request.Street);
+
             address.Id = Guid.NewGuid().ToString();
             await repository.AddAddressAsync(address, cancellationToken);
 

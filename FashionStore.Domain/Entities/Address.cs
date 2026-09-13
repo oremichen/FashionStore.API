@@ -18,7 +18,7 @@ namespace FashionStore.Domain.Entities
 
         public Address() { }
 
-        public static Address CreateForContact(string country, string state, string? city, string? street)
+        public static Address CreateForContact(string country, string state, string phoneNumber, string? city, string? street)
         {
             return new Address
             {
@@ -26,18 +26,19 @@ namespace FashionStore.Domain.Entities
                 State = Rules.Required(state, 100, nameof(state)),
                 City = Rules.Optional(city, 100, nameof(city))!,
                 Street = Rules.Optional(street, 250, nameof(street))!,
-                PhoneNumber = string.Empty,
+                PhoneNumber = Rules.RequiredPhone(phoneNumber, 50, nameof(phoneNumber)),
                 UserId = null,
                 IsMain = false
             };
         }
 
-        public void UpdateForContact(string country, string state, string? city, string? street)
+        public void UpdateForContact(string country, string state, string phoneNumber, string? city, string? street)
         {
             Country = Rules.Required(country, 100, nameof(country));
             State = Rules.Required(state, 100, nameof(state));
             City = Rules.Optional(city, 100, nameof(city))!;
             Street = Rules.Optional(street, 250, nameof(street))!;
+            PhoneNumber = Rules.RequiredPhone(phoneNumber, 50, nameof(phoneNumber));
         }
 
         public static Address Create(

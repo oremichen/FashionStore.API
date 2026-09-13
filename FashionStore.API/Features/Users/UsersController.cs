@@ -177,10 +177,10 @@ namespace FashionStore.API.Features.Users
         }
 
         [AllowAnonymous]
-        [HttpGet("pickup-address")]
-        [ProducesResponseType(typeof(ResponseResult<UserAddressResponse>), StatusCodes.Status200OK)]
+        [HttpGet("pickup-addresses")]
+        [ProducesResponseType(typeof(ResponseResult<IReadOnlyList<UserAddressResponse>>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetPickupAddress(CancellationToken cancellationToken)
+        public async Task<IActionResult> GetPickupAddresses(CancellationToken cancellationToken)
         {
             return ProcessResponse(await _getPickupAddressService.ExecuteAsync(cancellationToken));
         }
