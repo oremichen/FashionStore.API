@@ -4,8 +4,17 @@ namespace FashionStore.API.Features.ContactUs.Shared;
 
 public class ContactUsRequest
 {
-    [Required, StringLength(500)]
-    public string Address { get; init; } = string.Empty;
+    [Required, StringLength(100)]
+    public string Country { get; init; } = string.Empty;
+
+    [Required, StringLength(100)]
+    public string State { get; init; } = string.Empty;
+
+    [StringLength(100)]
+    public string? City { get; init; }
+
+    [StringLength(250)]
+    public string? Street { get; init; }
 
     [Required, StringLength(50)]
     public string ContactPhone { get; init; } = string.Empty;

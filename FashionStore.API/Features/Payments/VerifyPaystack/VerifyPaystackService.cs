@@ -195,6 +195,7 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
         var internalOrderItemsHtml = BuildOrderItemsHtml(order.Items, includeSku: true);
         var totalQuantity = order.Items.Sum(i => i.Quantity);
         var deliveryMethod = HtmlEncoder.Default.Encode(order.DeliveryMethod);
+        var deliveryWindow = FormatDeliveryWindow(order.EstimatedDaysMin, order.EstimatedDaysMax);
 
         var customerTokens = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -207,6 +208,8 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
             ["orderItemsHtml"] = customerOrderItemsHtml,
             ["itemsTotal"] = itemsTotal,
             ["deliveryFee"] = deliveryFee,
+            ["deliveryMethod"] = deliveryMethod,
+            ["deliveryWindow"] = deliveryWindow,
             ["orderTotal"] = orderTotal,
             ["recipientName"] = recipientName,
             ["deliveryAddress"] = fullAddress,
@@ -243,6 +246,7 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
             ["orderDate"] = HtmlEncoder.Default.Encode(orderDate),
             ["paymentReference"] = HtmlEncoder.Default.Encode(order.PaymentReference),
             ["deliveryMethod"] = deliveryMethod,
+            ["deliveryWindow"] = deliveryWindow,
             ["recipientName"] = recipientName,
             ["deliveryAddress"] = fullAddress,
             ["orderItemsHtml"] = internalOrderItemsHtml,
@@ -283,6 +287,15 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
     {
         var formatted = amount.ToString("#,##0.00", CultureInfo.GetCultureInfo("en-NG"));
         return HtmlEncoder.Default.Encode($"₦{formatted}");
+    }
+
+    private static string FormatDeliveryWindow(int? min, int? max)
+    {
+        if (!min.HasValue && !max.HasValue) return HtmlEncoder.Default.Encode("Timing to be confirmed");
+        if (min == max) return HtmlEncoder.Default.Encode($"{min} day" + (min == 1 ? string.Empty : "s"));
+        if (!min.HasValue) return HtmlEncoder.Default.Encode($"Up to {max} days");
+        if (!max.HasValue) return HtmlEncoder.Default.Encode($"From {min} days");
+        return HtmlEncoder.Default.Encode($"{min}-{max} days");
     }
 
     private static string BuildOrderItemsHtml(IEnumerable<OrderItem> items, bool includeSku)

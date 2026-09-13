@@ -10,7 +10,11 @@ public sealed class ContactUsConfigurationEntityConfiguration : IEntityTypeConfi
         builder.ToTable("ContactUsConfiguration");
         builder.HasKey(contact => contact.Id);
         builder.Property(contact => contact.Id).HasMaxLength(50).HasDefaultValueSql("gen_random_uuid()::text");
-        builder.Property(contact => contact.Address).HasMaxLength(500).IsRequired();
+        builder.Property(contact => contact.AddressId).HasMaxLength(50).IsRequired(false);
+        builder.HasOne(contact => contact.AddressDetails)
+            .WithMany()
+            .HasForeignKey(contact => contact.AddressId)
+            .OnDelete(DeleteBehavior.SetNull);
         builder.Property(contact => contact.ContactPhone).HasMaxLength(50).IsRequired();
         builder.Property(contact => contact.BusinessPhone).HasMaxLength(50).IsRequired(false);
         builder.Property(contact => contact.ContactEmail).HasMaxLength(254).IsRequired();

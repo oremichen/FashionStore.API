@@ -34,6 +34,10 @@ namespace FashionStore.Infrastructure.Data
         public DbSet<OrderItem> OrderItems { get; set; }
         public DbSet<InventoryReservation> InventoryReservations { get; set; }
         public DbSet<UserSession> UserSessions { get; set; }
+        public DbSet<DeliveryZone> DeliveryZones { get; set; }
+        public DbSet<DeliveryZoneLocation> DeliveryZoneLocations { get; set; }
+        public DbSet<DeliveryMethod> DeliveryMethods { get; set; }
+        public DbSet<DeliveryRate> DeliveryRates { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -45,6 +49,9 @@ namespace FashionStore.Infrastructure.Data
                 .WithMany(u => u.Addresses)
                 .HasForeignKey(a => a.UserId)
                 .OnDelete(DeleteBehavior.Cascade); // Deletes addresses when user is deleted
+
+            builder.Entity<Address>().Property(address => address.Street).IsRequired(false);
+            builder.Entity<Address>().Property(address => address.City).IsRequired(false);
 
             builder.Entity<Address>()
                 .Property(address => address.Id)

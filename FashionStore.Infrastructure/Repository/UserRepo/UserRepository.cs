@@ -17,6 +17,12 @@ public sealed class UserRepository(FashionStoreDbContext dbContext) : IUserRepos
         return await query.OrderByDescending(address => address.IsMain).ThenBy(address => address.Id).ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Address>> GetSystemAddressesAsync(CancellationToken cancellationToken)
+    {
+        var query = dbContext.Addresses.Where(address => string.IsNullOrEmpty(address.UserId)).AsNoTracking();
+        return await query.ToListAsync(cancellationToken);
+    }
+
     public Task<Address?> GetAddressAsync(string userId, string addressId, CancellationToken cancellationToken)
     {
         return dbContext.Addresses.SingleOrDefaultAsync(address => address.UserId == userId && address.Id == addressId, cancellationToken);

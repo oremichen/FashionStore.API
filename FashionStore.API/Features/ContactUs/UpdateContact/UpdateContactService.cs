@@ -31,8 +31,14 @@ public sealed class UpdateContactService(IContactUsConfigurationRepository repos
                 await DeactivateOtherContactsAsync(contact.Id, cancellationToken);
             }
 
-            contact.Update(request.Address, request.ContactPhone, request.BusinessPhone,
-                request.ContactEmail, request.BusinessEmail, request.IsActive);
+            contact.AddressDetails?.UpdateForContact(request.Country, request.State, request.ContactPhone, request.City, request.Street);
+            contact.Update(
+                contact.AddressId, 
+                request.ContactPhone, 
+                request.BusinessPhone,
+                request.ContactEmail, 
+                request.BusinessEmail, 
+                request.IsActive);
             await repository.SaveChangesAsync(cancellationToken);
             return response.Success(ContactUsMapper.Map(contact), "Contact updated successfully.");
         }

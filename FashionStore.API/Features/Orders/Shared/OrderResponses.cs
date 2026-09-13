@@ -40,6 +40,9 @@ public sealed class OrderResponse
     public required string PaymentStatus { get; init; }
     public required string Currency { get; init; }
     public required string DeliveryMethod { get; init; }
+    public required string DeliveryRateId { get; init; }
+    public int? EstimatedDeliveryDaysMin { get; init; }
+    public int? EstimatedDeliveryDaysMax { get; init; }
     public DateTimeOffset Date { get; init; }
     public decimal Subtotal { get; init; }
     public decimal Shipping { get; init; }
@@ -73,6 +76,9 @@ public static class OrderResponseMapper
             PaymentStatus = order.PaymentStatus,
             Currency = order.Currency,
             DeliveryMethod = order.DeliveryMethod,
+            DeliveryRateId = order.DeliveryRateId,
+            EstimatedDeliveryDaysMin = order.EstimatedDaysMin,
+            EstimatedDeliveryDaysMax = order.EstimatedDaysMax,
             Date = order.CreatedAt,
             Subtotal = order.Subtotal,
             Shipping = order.DeliveryFee,
