@@ -543,13 +543,13 @@ if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Docker"))
 }
 
 app.UseMiddleware<GlobalErrorMiddleware>(); 
-app.UseMiddleware<RequestPayloadLoggingMiddleware>();
+//app.UseMiddleware<RequestPayloadLoggingMiddleware>();
 app.UseHttpsRedirection();                 
 app.UseCors(corsPolicyName);               
 app.UseAuthentication();                   
 app.UseAuthorization();                    
 app.UseRateLimiter();
-app.UseMiddleware<RedisResponseCacheMiddleware>();
+//app.UseMiddleware<RedisResponseCacheMiddleware>();
 app.MapControllers();
 app.MapGet("/", () => Results.Ok(new
 {

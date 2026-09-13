@@ -1,3 +1,4 @@
+using FashionStore.API.Caching;
 using FashionStore.Domain.Abstractions.Contacts;
 
 namespace FashionStore.API.Features.ContactUs.DeleteContact;
@@ -7,7 +8,9 @@ public interface IDeleteContactService
     Task<ResponseResult> ExecuteAsync(string id, CancellationToken cancellationToken);
 }
 
-public sealed class DeleteContactService(IContactUsConfigurationRepository repository) : IDeleteContactService
+public sealed class DeleteContactService(
+    IContactUsConfigurationRepository repository,
+    IRedisCacheService cacheService) : IDeleteContactService
 {
     public async Task<ResponseResult> ExecuteAsync(string id, CancellationToken cancellationToken)
     {
@@ -25,6 +28,7 @@ public sealed class DeleteContactService(IContactUsConfigurationRepository repos
 
         await repository.DeleteAsync(contact, cancellationToken);
         await repository.SaveChangesAsync(cancellationToken);
+        await cacheService.InvalidateTagAsync("contacts");
         return response.Success("Contact deleted successfully.");
     }
 }

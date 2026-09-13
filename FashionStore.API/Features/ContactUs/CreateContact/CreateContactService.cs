@@ -1,9 +1,12 @@
+using FashionStore.API.Caching;
 using FashionStore.API.Features.ContactUs.Shared;
 using FashionStore.Domain.Abstractions.Contacts;
 
 namespace FashionStore.API.Features.ContactUs.CreateContact;
 
-public sealed class CreateContactService(IContactUsConfigurationRepository repository) : ICreateContactService
+public sealed class CreateContactService(
+    IContactUsConfigurationRepository repository,
+    IRedisCacheService cacheService) : ICreateContactService
 {
     public async Task<ResponseResult<ContactUsResponse>> ExecuteAsync(ContactUsRequest request, CancellationToken cancellationToken)
     {
@@ -34,6 +37,7 @@ public sealed class CreateContactService(IContactUsConfigurationRepository repos
                 request.IsActive);
             await repository.AddAsync(contact, cancellationToken);
             await repository.SaveChangesAsync(cancellationToken);
+            await cacheService.InvalidateTagAsync("contacts");
             return response.Success(ContactUsMapper.Map(contact), "Contact created successfully.")
                 .SetStatusCode(ResponseCodes.CREATED);
         }
