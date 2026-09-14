@@ -139,6 +139,14 @@ public sealed class Order
             if (PaymentStatus == PaymentStatuses.Success)
                 PaymentStatus = PaymentStatuses.Refunded;
         }
+        if (normalized == OrderStatuses.Delivered &&
+            PaymentProvider.Equals(PaymentProviderKeys.PayOnDelivery, StringComparison.OrdinalIgnoreCase) &&
+            PaymentStatus != PaymentStatuses.Success &&
+            PaymentStatus != PaymentStatuses.Refunded)
+        {
+            PaymentStatus = PaymentStatuses.Success;
+            PaidAt = DateTimeOffset.UtcNow;
+        }
         Status = normalized;
     }
 }
