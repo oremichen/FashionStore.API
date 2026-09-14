@@ -1,5 +1,6 @@
 using FashionStore.API.Features.Orders.Shared;
 using FashionStore.Domain.Abstractions.Contacts;
+using FashionStore.Domain.Abstractions.Delivery;
 using FashionStore.Domain.Abstractions.Notification;
 using FashionStore.Domain.Constants;
 using FashionStore.Domain.Entities;
@@ -17,7 +18,8 @@ public sealed class UpdateOrderStatusService(
     IEmailTemplateRenderer templateRenderer,
     IContactUsConfigurationRepository contactRepository,
     IConfiguration configuration,
-    ILogger<UpdateOrderStatusService> logger) : IUpdateOrderStatusService
+    ILogger<UpdateOrderStatusService> logger,
+    IDeliveryMethodClassifier deliveryClassifier) : IUpdateOrderStatusService
 {
     public async Task<ResponseResult<OrderResponse>> ExecuteAsync(string id, UpdateOrderStatusRequest request, CancellationToken cancellationToken)
     {
@@ -77,18 +79,12 @@ public sealed class UpdateOrderStatusService(
         AddRecipient(recipients, contactEmail);
         AddRecipient(recipients, contact?.BusinessEmail);
 
-        var isPickup = IsPickupOrder(order.DeliveryMethod);
+        var isPickup = deliveryClassifier.IsPickup(order.DeliveryMethod);
         var status = GetStatusLabel(order.Status, isPickup);
 
-        string deliveryAddress;
-        if (isPickup)
-        {
-            deliveryAddress = HtmlEncoder.Default.Encode(string.Empty);
-        }
-        else
-        {
-            deliveryAddress = BuildAddress(address);
-        }
+        var deliveryAddress = isPickup
+            ? HtmlEncoder.Default.Encode(string.Empty)
+            : deliveryClassifier.FormatDeliveryAddress(address);
 
         var tokens = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -113,24 +109,6 @@ public sealed class UpdateOrderStatusService(
         await emailService.QueueEmailAsync(new EmailNotification { To = [order.Email], Subject = customerSubject, Body = customerBody }, cancellationToken);
         if (recipients.Count > 0)
             await emailService.QueueEmailAsync(new EmailNotification { To = recipients, ReplyTo = order.Email, Subject = adminSubject, Body = adminBody }, cancellationToken);
-    }
-
-    private static bool IsPickupOrder(string deliveryMethod)
-    {
-        return deliveryMethod?.Contains("pickup", StringComparison.OrdinalIgnoreCase) == true;
-    }
-
-    private static string BuildAddress(Address? address)
-    {
-        if (address is null) return "Address not available";
-        var parts = new List<string>();
-        AddPart(parts, address.Street);
-        AddPart(parts, address.City);
-        AddPart(parts, address.State);
-        AddPart(parts, address.Country);
-        AddPart(parts, address.PostalCode);
-        AddPart(parts, address.Landmark);
-        return HtmlEncoder.Default.Encode(string.Join(", ", parts));
     }
 
     private static string BuildOrderItemsHtml(IEnumerable<OrderItem> items)

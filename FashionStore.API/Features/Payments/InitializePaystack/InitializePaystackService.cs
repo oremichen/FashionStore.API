@@ -20,11 +20,12 @@ public sealed class InitializePaystackService : IInitializePaystackService
     private readonly IConfiguration _configuration;
     private readonly FashionStoreDbContext _dbContext;
     private readonly ILogger<InitializePaystackService> _logger;
+    private readonly IDeliveryMethodClassifier _deliveryClassifier;
     private readonly TimeSpan _reservationLifetime;
 
     public InitializePaystackService(IProductRepository productRepository, IOrderRepository orderRepository,
         IPaystackClient paystackClient, IConfiguration configuration, FashionStoreDbContext dbContext, IDeliveryRepository deliveryRepository,
-        ILogger<InitializePaystackService> logger)
+        ILogger<InitializePaystackService> logger, IDeliveryMethodClassifier deliveryClassifier)
     {
         _productRepository = productRepository;
         _orderRepository = orderRepository;
@@ -33,6 +34,7 @@ public sealed class InitializePaystackService : IInitializePaystackService
         _configuration = configuration;
         _dbContext = dbContext;
         _logger = logger;
+        _deliveryClassifier = deliveryClassifier;
 
         if (!double.TryParse(_configuration["AppSettings:Inventory:ReservationExpiryHours"], out var configuredHours)
             || configuredHours <= 0)
@@ -190,7 +192,7 @@ public sealed class InitializePaystackService : IInitializePaystackService
 
         var pickupMethod = await _deliveryRepository.GetMethodByIdAsync(deliveryId, cancellationToken);
         var isPickupOrder = pickupMethod is not null
-            && pickupMethod.Name.Contains("pickup", StringComparison.OrdinalIgnoreCase)
+            && _deliveryClassifier.IsPickup(pickupMethod.Name)
             && activeContact?.AddressId == addressId;
 
         if (isPickupOrder)
@@ -213,7 +215,7 @@ public sealed class InitializePaystackService : IInitializePaystackService
             : await _deliveryRepository.GetMethodByIdAsync(requestedRate.MethodId, cancellationToken);
 
         var isPickupAddress = activeContact?.AddressId == addressId &&
-            requestedMethod?.Name.Contains("pickup", StringComparison.OrdinalIgnoreCase) == true;
+            _deliveryClassifier.IsPickup(requestedMethod?.Name);
 
         var deliveryRate = await _deliveryRepository.GetActiveRateForStateAsync(deliveryId, state, cancellationToken);
         if (deliveryRate is null)

@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Encodings.Web;
 using FashionStore.API.Features.Payments.Shared;
 using FashionStore.Domain.Abstractions.Contacts;
+using FashionStore.Domain.Abstractions.Delivery;
 using FashionStore.Domain.Abstractions.Notification;
 using FashionStore.Domain.Abstractions.Orders;
 using FashionStore.Domain.Abstractions.Payments;
@@ -22,6 +23,7 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
     private readonly IContactUsConfigurationRepository _contactConfigRepository;
     private readonly IConfiguration _configuration;
     private readonly ILogger<VerifyPaystackService> _logger;
+    private readonly IDeliveryMethodClassifier _deliveryClassifier;
 
     public VerifyPaystackService(
         IOrderRepository orderRepository,
@@ -30,7 +32,8 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
         IEmailTemplateRenderer templateRenderer,
         IContactUsConfigurationRepository contactConfigRepository,
         IConfiguration configuration,
-        ILogger<VerifyPaystackService> logger)
+        ILogger<VerifyPaystackService> logger,
+        IDeliveryMethodClassifier deliveryClassifier)
     {
         _orderRepository = orderRepository;
         _paystackClient = paystackClient;
@@ -39,6 +42,7 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
         _contactConfigRepository = contactConfigRepository;
         _configuration = configuration;
         _logger = logger;
+        _deliveryClassifier = deliveryClassifier;
     }
 
     public async Task<ResponseResult<PaymentVerificationResponse>> ExecuteAsync(string reference, string? userId, CancellationToken cancellationToken)
@@ -184,13 +188,13 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
         var recipientName = customerName;
         var phoneNumber = HtmlEncoder.Default.Encode(address?.PhoneNumber ?? user?.PhoneNumber ?? "Not provided");
         var orderDate = order.CreatedAt.ToString("d MMMM yyyy", CultureInfo.InvariantCulture);
-        var itemsTotal = FormatNaira(order.Subtotal);
-        var deliveryFee = FormatNaira(order.DeliveryFee);
-        var orderTotal = FormatNaira(order.Total);
+        var itemsTotal = _deliveryClassifier.FormatNaira(order.Subtotal);
+        var deliveryFee = _deliveryClassifier.FormatNaira(order.DeliveryFee);
+        var orderTotal = _deliveryClassifier.FormatNaira(order.Total);
         var customerOrderItemsHtml = BuildOrderItemsHtml(order.Items, includeSku: false);
         var internalOrderItemsHtml = BuildOrderItemsHtml(order.Items, includeSku: true);
         var totalQuantity = order.Items.Sum(i => i.Quantity);
-        var isPickup = IsPickupOrder(order.DeliveryMethod);
+        var isPickup = _deliveryClassifier.IsPickup(order.DeliveryMethod);
 
         string deliveryMethod;
         string deliveryWindow;
@@ -205,8 +209,8 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
         else
         {
             deliveryMethod = HtmlEncoder.Default.Encode(order.DeliveryMethod);
-            deliveryWindow = FormatDeliveryWindow(order.EstimatedDaysMin, order.EstimatedDaysMax);
-            fullAddress = BuildFullAddress(address);
+            deliveryWindow = _deliveryClassifier.FormatDeliveryWindow(order.EstimatedDaysMin, order.EstimatedDaysMax);
+            fullAddress = _deliveryClassifier.FormatDeliveryAddress(address);
         }
 
         var customerTemplate = isPickup
@@ -289,45 +293,13 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
             order.Id, order.TrackOrderId, string.Join(", ", internalRecipients));
     }
 
-    private static bool IsPickupOrder(string deliveryMethod)
-    {
-        return deliveryMethod?.Contains("pickup", StringComparison.OrdinalIgnoreCase) == true;
-    }
-
-    private static string BuildFullAddress(Address? address)
-    {
-        if (address is null) return HtmlEncoder.Default.Encode("Address not available");
-        var parts = new List<string>();
-        if (!string.IsNullOrWhiteSpace(address.Street)) parts.Add(address.Street);
-        if (!string.IsNullOrWhiteSpace(address.City)) parts.Add(address.City);
-        if (!string.IsNullOrWhiteSpace(address.State)) parts.Add(address.State);
-        if (!string.IsNullOrWhiteSpace(address.Country)) parts.Add(address.Country);
-        var joined = string.Join(", ", parts.Where(p => !string.IsNullOrWhiteSpace(p)));
-        return HtmlEncoder.Default.Encode(joined);
-    }
-
-    private static string FormatNaira(decimal amount)
-    {
-        var formatted = amount.ToString("#,##0.00", CultureInfo.GetCultureInfo("en-NG"));
-        return HtmlEncoder.Default.Encode($"₦{formatted}");
-    }
-
-    private static string FormatDeliveryWindow(int? min, int? max)
-    {
-        if (!min.HasValue && !max.HasValue) return HtmlEncoder.Default.Encode("Timing to be confirmed");
-        if (min == max) return HtmlEncoder.Default.Encode($"{min} day" + (min == 1 ? string.Empty : "s"));
-        if (!min.HasValue) return HtmlEncoder.Default.Encode($"Up to {max} days");
-        if (!max.HasValue) return HtmlEncoder.Default.Encode($"From {min} days");
-        return HtmlEncoder.Default.Encode($"{min}-{max} days");
-    }
-
-    private static string BuildOrderItemsHtml(IEnumerable<OrderItem> items, bool includeSku)
+    private string BuildOrderItemsHtml(IEnumerable<OrderItem> items, bool includeSku)
     {
         var sb = new System.Text.StringBuilder();
         foreach (var item in items)
         {
-            var unitPrice = FormatNaira(item.UnitPrice);
-            var lineTotal = FormatNaira(item.LineTotal);
+            var unitPrice = _deliveryClassifier.FormatNaira(item.UnitPrice);
+            var lineTotal = _deliveryClassifier.FormatNaira(item.LineTotal);
             sb.Append("<div style=\"padding:16px 20px; border-bottom:1px solid #f0f0f0;\">");
             sb.Append("<div style=\"font-size:15px; font-weight:700; color:#212121; margin-bottom:8px;\">");
             sb.Append(HtmlEncoder.Default.Encode(item.ProductName));
