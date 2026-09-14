@@ -26,6 +26,10 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.Property(item => item.Status).HasMaxLength(30).IsRequired();
         builder.Property(item => item.RefundedReason).HasMaxLength(1024).IsRequired(false);
         builder.Property(item => item.PaymentReference).HasMaxLength(100).IsRequired();
+        builder.Property(item => item.PaymentProvider)
+            .HasMaxLength(30)
+            .IsRequired()
+            .HasDefaultValueSql("'paystack'");
         builder.Property(item => item.AuthorizationUrl);
         builder.Property(item => item.PaymentStatus).HasMaxLength(30).IsRequired();
         builder.HasIndex(item => item.TrackOrderId).IsUnique();

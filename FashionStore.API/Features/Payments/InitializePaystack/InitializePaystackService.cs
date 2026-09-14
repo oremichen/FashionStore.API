@@ -16,27 +16,28 @@ public sealed class InitializePaystackService : IInitializePaystackService
     private readonly IProductRepository _productRepository;
     private readonly IOrderRepository _orderRepository;
     private readonly IDeliveryRepository _deliveryRepository;
-    private readonly IPaystackClient _paystackClient;
     private readonly IConfiguration _configuration;
     private readonly FashionStoreDbContext _dbContext;
     private readonly ILogger<InitializePaystackService> _logger;
     private readonly IDeliveryMethodClassifier _deliveryClassifier;
     private readonly IDeliveryMethodFactory _deliveryFactory;
+    private readonly IPaymentGatewayFactory _paymentGatewayFactory;
     private readonly TimeSpan _reservationLifetime;
 
     public InitializePaystackService(IProductRepository productRepository, IOrderRepository orderRepository,
-        IPaystackClient paystackClient, IConfiguration configuration, FashionStoreDbContext dbContext, IDeliveryRepository deliveryRepository,
-        ILogger<InitializePaystackService> logger, IDeliveryMethodClassifier deliveryClassifier, IDeliveryMethodFactory deliveryFactory)
+        IConfiguration configuration, FashionStoreDbContext dbContext, IDeliveryRepository deliveryRepository,
+        ILogger<InitializePaystackService> logger, IDeliveryMethodClassifier deliveryClassifier, IDeliveryMethodFactory deliveryFactory,
+        IPaymentGatewayFactory paymentGatewayFactory)
     {
         _productRepository = productRepository;
         _orderRepository = orderRepository;
         _deliveryRepository = deliveryRepository;
-        _paystackClient = paystackClient;
         _configuration = configuration;
         _dbContext = dbContext;
         _logger = logger;
         _deliveryClassifier = deliveryClassifier;
         _deliveryFactory = deliveryFactory;
+        _paymentGatewayFactory = paymentGatewayFactory;
 
         if (!double.TryParse(_configuration["AppSettings:Inventory:ReservationExpiryHours"], out var configuredHours)
             || configuredHours <= 0)
@@ -51,7 +52,7 @@ public sealed class InitializePaystackService : IInitializePaystackService
         _reservationLifetime = TimeSpan.FromHours(configuredHours);
     }
 
-    public async Task<ResponseResult<PaystackInitializationResponse>> ExecuteAsync(string userId,
+    public async Task<ResponseResult<PaystackInitializationResponse>>ExecuteAsync(string userId,
         InitializePaystackRequest request, CancellationToken cancellationToken)
     {
         var response = new ResponseResult<PaystackInitializationResponse>();
@@ -121,7 +122,8 @@ public sealed class InitializePaystackService : IInitializePaystackService
             subtotal,
             deliveryResolution.DeliveryFee,
             reference,
-            orderItems);
+            orderItems,
+            paymentProvider: PaymentProviderKeys.Paystack);
 
         try
         {
@@ -136,20 +138,25 @@ public sealed class InitializePaystackService : IInitializePaystackService
         try
         {
             var amountInKobo = checked(decimal.ToInt64(order.Total * 100m));
-            var initialized = await _paystackClient.InitializeAsync(
-                new PaystackInitializeCommand(
-                    order.Email,
-                    amountInKobo,
+            var gateway = _paymentGatewayFactory.Get(PaymentProviderKeys.Paystack);
+            var initialized = await gateway.InitializeAsync(
+                new PaymentInitializeCommand(
+                    order.Id,
                     reference,
-                    callbackUri.ToString()),
+                    order.Email,
+                    address?.PhoneNumber,
+                    amountInKobo,
+                    order.Currency,
+                    callbackUri.ToString(),
+                    null),
                     cancellationToken);
 
             var result = new PaystackInitializationResponse(
-                initialized.AuthorizationUrl,
-                initialized.AccessCode,
-                initialized.Reference);
+                initialized.RedirectUrl!,
+                initialized.AccessCode ?? string.Empty,
+                initialized.ProviderReference);
 
-            order.SetAuthorizationUrl(initialized.AuthorizationUrl);
+            order.SetAuthorizationUrl(initialized.RedirectUrl!);
             await _orderRepository.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation("Order {OrderId} ({TrackOrderId}) initialized on Paystack with reference {Reference} and total {Total} NGN.",

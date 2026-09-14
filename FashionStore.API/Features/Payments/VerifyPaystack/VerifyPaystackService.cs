@@ -6,6 +6,7 @@ using FashionStore.Domain.Abstractions.Delivery;
 using FashionStore.Domain.Abstractions.Notification;
 using FashionStore.Domain.Abstractions.Orders;
 using FashionStore.Domain.Abstractions.Payments;
+using FashionStore.Domain.Constants;
 using FashionStore.Domain.Entities;
 
 namespace FashionStore.API.Features.Payments.VerifyPaystack;
@@ -15,7 +16,6 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
     private static readonly TimeSpan ReservationVerificationGrace = TimeSpan.FromSeconds(5);
 
     private readonly IOrderRepository _orderRepository;
-    private readonly IPaystackClient _paystackClient;
     private readonly IEmailNotificationService _emailService;
     private readonly IEmailTemplateRenderer _templateRenderer;
     private readonly IContactUsConfigurationRepository _contactConfigRepository;
@@ -23,20 +23,20 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
     private readonly ILogger<VerifyPaystackService> _logger;
     private readonly IDeliveryMethodClassifier _deliveryClassifier;
     private readonly IDeliveryMethodFactory _deliveryFactory;
+    private readonly IPaymentGatewayFactory _paymentGatewayFactory;
 
     public VerifyPaystackService(
         IOrderRepository orderRepository,
-        IPaystackClient paystackClient,
         IEmailNotificationService emailService,
         IEmailTemplateRenderer templateRenderer,
         IContactUsConfigurationRepository contactConfigRepository,
         IConfiguration configuration,
         ILogger<VerifyPaystackService> logger,
         IDeliveryMethodClassifier deliveryClassifier,
-        IDeliveryMethodFactory deliveryFactory)
+        IDeliveryMethodFactory deliveryFactory,
+        IPaymentGatewayFactory paymentGatewayFactory)
     {
         _orderRepository = orderRepository;
-        _paystackClient = paystackClient;
         _emailService = emailService;
         _templateRenderer = templateRenderer;
         _contactConfigRepository = contactConfigRepository;
@@ -44,6 +44,7 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
         _logger = logger;
         _deliveryClassifier = deliveryClassifier;
         _deliveryFactory = deliveryFactory;
+        _paymentGatewayFactory = paymentGatewayFactory;
     }
 
     public async Task<ResponseResult<PaymentVerificationResponse>> ExecuteAsync(string reference, string? userId, CancellationToken cancellationToken)
@@ -78,10 +79,11 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
             return response.Fail("This checkout has expired or is about to expire. Please start a new order.", ResponseCodes.INVALID_ACTION);
         }
 
-        PaystackVerificationResult transaction;
+        Domain.Abstractions.Payments.PaymentVerificationResult transaction;
         try
         {
-            transaction = await _paystackClient.VerifyAsync(reference, cancellationToken);
+            var gateway = _paymentGatewayFactory.Get(PaymentProviderKeys.Paystack);
+            transaction = await gateway.VerifyByMerchantReferenceAsync(reference, cancellationToken);
         }
         catch (Exception exception) when (exception is HttpRequestException or InvalidOperationException or OverflowException)
         {
@@ -90,18 +92,22 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
         }
 
         var expectedAmount = checked(decimal.ToInt64(order.Total * 100m));
-        var detailsMatch = transaction.Reference == order.PaymentReference &&
-            transaction.Amount == expectedAmount && string.Equals(transaction.Currency, order.Currency, StringComparison.OrdinalIgnoreCase);
+        var detailsMatch = transaction.ProviderReference == order.PaymentReference &&
+            transaction.AmountKobo == expectedAmount && string.Equals(transaction.Currency, order.Currency, StringComparison.OrdinalIgnoreCase);
         if (!detailsMatch)
         {
             _logger.LogError("Paystack verification mismatch for order {OrderId}. Expected {Amount} {Currency}; received {PaidAmount} {PaidCurrency}.",
-                order.Id, expectedAmount, order.Currency, transaction.Amount, transaction.Currency);
+                order.Id, expectedAmount, order.Currency, transaction.AmountKobo, transaction.Currency);
             return response.Fail("Payment details did not match the order.", ResponseCodes.SECURITY_VIOLATION);
         }
 
-        var paymentSucceeded = string.Equals(transaction.Status, Domain.Constants.PaymentStatuses.Success, StringComparison.OrdinalIgnoreCase);
+        var paymentSucceeded = transaction.IsSuccess;
         var paidAt = transaction.PaidAt ?? DateTimeOffset.UtcNow;
-        var failedStatus = paymentSucceeded ? Domain.Constants.PaymentStatuses.Failed : (transaction.Status ?? Domain.Constants.PaymentStatuses.Failed);
+        var failedStatus = paymentSucceeded
+            ? Domain.Constants.PaymentStatuses.Failed
+            : (string.IsNullOrWhiteSpace(transaction.RawStatus)
+                ? Domain.Constants.PaymentStatuses.Failed
+                : transaction.RawStatus);
 
         var (commitSucceeded, conflictMessage) = await _orderRepository.ExecuteInRetriableTransactionAsync(async (orderTransaction, ct) =>
         {

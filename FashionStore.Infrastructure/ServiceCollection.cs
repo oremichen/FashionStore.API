@@ -53,6 +53,9 @@ namespace FashionStore.Infrastructure
                 .ValidateOnStart();
             services.AddHttpClient<FashionStore.Domain.Abstractions.Payments.IPaystackClient,
                 Payments.PaystackClient>();
+            services.AddScoped<Payments.PaystackPaymentGateway>();
+            services.AddScoped<FashionStore.Domain.Abstractions.Payments.IPaymentGatewayFactory,
+                Payments.PaymentGatewayFactory>();
 
             services.AddScoped<IEmailNotificationService, Notification.EmailNotificationService>();
             services.AddScoped<IEmailTemplateRenderer, Notification.EmailTemplateRenderer>();
