@@ -2,16 +2,15 @@ using FashionStore.API.Features.Orders.Shared;
 using FashionStore.Domain.Abstractions.Contacts;
 using FashionStore.Domain.Abstractions.Delivery;
 using FashionStore.Domain.Abstractions.Notification;
+using FashionStore.Domain.Abstractions.Orders;
 using FashionStore.Domain.Entities;
-using FashionStore.Infrastructure.Data;
 using FashionStore.Shared.Constants;
-using Microsoft.EntityFrameworkCore;
 using System.Text.Encodings.Web;
 
 namespace FashionStore.API.Features.Orders.UpdateOrderStatus;
 
 public sealed class UpdateOrderStatusService(
-    FashionStoreDbContext db,
+    IOrderRepository orderRepository,
     IEmailNotificationService emailService,
     IEmailTemplateRenderer templateRenderer,
     IContactUsConfigurationRepository contactRepository,
@@ -22,7 +21,7 @@ public sealed class UpdateOrderStatusService(
 {
     public async Task<ResponseResult<OrderResponse>> ExecuteAsync(string id, UpdateOrderStatusRequest request, CancellationToken cancellationToken)
     {
-        var order = await db.Orders.Include("User").Include("Items").SingleOrDefaultAsync(item => item.Id == id, cancellationToken);
+        var order = await orderRepository.GetOrderByIdWithDetailsAsync(id, trackChanges: true, cancellationToken);
         if (order is null)
             return new ResponseResult<OrderResponse>().Fail("Order was not found.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
 
@@ -35,8 +34,8 @@ public sealed class UpdateOrderStatusService(
             return new ResponseResult<OrderResponse>().Fail(exception.Message, ResponseCodes.INVALID_ACTION);
         }
 
-        await db.SaveChangesAsync(cancellationToken);
-        var address = await db.Addresses.AsNoTracking().SingleOrDefaultAsync(item => item.Id == order.AddressId, cancellationToken);
+        await orderRepository.SaveChangesAsync(cancellationToken);
+        var address = await orderRepository.GetAddressByIdAsync(order.AddressId, cancellationToken);
         if (request.Status.Equals(Domain.Constants.OrderStatuses.Shipped, StringComparison.OrdinalIgnoreCase) ||
             request.Status.Equals(Domain.Constants.OrderStatuses.Delivered, StringComparison.OrdinalIgnoreCase) ||
             request.Status.Equals(Domain.Constants.OrderStatuses.Cancelled, StringComparison.OrdinalIgnoreCase) ||
@@ -55,11 +54,7 @@ public sealed class UpdateOrderStatusService(
             .Select(item => item.ProductId)
             .Distinct()
             .ToList();
-        var productImages = await (from product in db.Products
-                                   from image in product.Images
-                                   where productIds.Contains(product.Id) && image.IsPrimary
-                                   select new { product.Id, image.SmallUrl, image.MediumUrl, image.BigUrl })
-            .ToDictionaryAsync(item => item.Id, item => item.SmallUrl ?? item.MediumUrl ?? item.BigUrl, cancellationToken);
+        var productImages = await orderRepository.GetPrimaryProductImagesAsync(productIds, cancellationToken);
 
         return new ResponseResult<OrderResponse>()
             .Success(OrderResponseMapper.Map(

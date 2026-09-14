@@ -15,8 +15,8 @@ namespace FashionStore.API.Features.Auth.ForgotPassword
         private readonly IEmailTemplateRenderer _emailTemplateRenderer;
         private readonly ILogger<ForgotPasswordService> _logger;
         private readonly IConfiguration _configuration;
-        private readonly FashionStoreDbContext _dbContext;
-        public ForgotPasswordService(UserManager<ApplicationUser> userManager, ITokenService tokenService, IEmailNotificationService emailNotificationService, IEmailTemplateRenderer emailTemplateRenderer, ILogger<ForgotPasswordService> logger, IConfiguration configuration, FashionStoreDbContext dbContext)
+        private readonly IAuthSessionRepository _authSessionRepository;
+        public ForgotPasswordService(UserManager<ApplicationUser> userManager, ITokenService tokenService, IEmailNotificationService emailNotificationService, IEmailTemplateRenderer emailTemplateRenderer, ILogger<ForgotPasswordService> logger, IConfiguration configuration, IAuthSessionRepository authSessionRepository)
         {
             _userManager = userManager;
             _tokenService = tokenService;
@@ -24,7 +24,7 @@ namespace FashionStore.API.Features.Auth.ForgotPassword
             _emailTemplateRenderer = emailTemplateRenderer;
             _logger = logger;
             _configuration = configuration;
-            _dbContext = dbContext;
+            _authSessionRepository = authSessionRepository;
         }
 
         public async Task<ResponseResult> ExecuteAsync(ForgotPasswordRequest request)
@@ -75,8 +75,7 @@ namespace FashionStore.API.Features.Auth.ForgotPassword
             await _userManager.ResetAccessFailedCountAsync(user);
             await _userManager.SetLockoutEndDateAsync(user, null);
             var now = DateTimeOffset.UtcNow;
-            await _dbContext.UserSessions.Where(session => session.UserId == user.Id && session.RevokedAtUtc == null)
-                .ExecuteUpdateAsync(setters => setters.SetProperty(session => session.RevokedAtUtc, now));
+            await _authSessionRepository.RevokeAllSessionsForUserAsync(user.Id, now, CancellationToken.None);
             await SendForgotPasswordMail(user, temporaryPassword);
             _logger.LogInformation("Temporary password generated successfully for user {UserId} with email {Email}.", user.Id, user.Email);
             return response.Success("A temporary password has been sent to your email.");

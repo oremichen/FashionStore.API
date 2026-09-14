@@ -190,4 +190,155 @@ public sealed class OrderRepository : IOrderRepository
             }
         }, cancellationToken);
     }
+
+    public Task<Address?> GetAddressByIdAsync(string addressId, CancellationToken cancellationToken)
+    {
+        return _dbContext.Addresses
+            .AsNoTracking()
+            .SingleOrDefaultAsync(address => address.Id == addressId, cancellationToken);
+    }
+
+    public async Task<IReadOnlyDictionary<string, Address>> GetAddressesByIdsAsync(IEnumerable<string> addressIds, CancellationToken cancellationToken)
+    {
+        var ids = addressIds.Distinct().ToList();
+        if (ids.Count == 0)
+            return new Dictionary<string, Address>();
+
+        return await _dbContext.Addresses
+            .AsNoTracking()
+            .Where(address => ids.Contains(address.Id))
+            .ToDictionaryAsync(address => address.Id, cancellationToken);
+    }
+
+    public async Task<IReadOnlyDictionary<string, string?>> GetPrimaryProductImagesAsync(IEnumerable<string> productIds, CancellationToken cancellationToken)
+    {
+        var ids = productIds.Distinct().ToList();
+        if (ids.Count == 0)
+            return new Dictionary<string, string?>();
+
+        var result = await (
+            from product in _dbContext.Products
+            from image in product.Images
+            where ids.Contains(product.Id) && image.IsPrimary
+            select new { product.Id, image.SmallUrl, image.MediumUrl, image.BigUrl })
+            .ToDictionaryAsync(
+                item => item.Id,
+                item => (string?)(item.SmallUrl ?? item.MediumUrl ?? item.BigUrl),
+                cancellationToken);
+
+        return result;
+    }
+
+    public Task<Order?> GetOrderByIdWithDetailsAsync(string orderId, bool trackChanges, CancellationToken cancellationToken)
+    {
+        IQueryable<Order> query = _dbContext.Orders
+            .Include(item => item.User)
+            .Include(item => item.Items);
+
+        if (!trackChanges)
+            query = query.AsNoTracking();
+
+        return query.SingleOrDefaultAsync(item => item.Id == orderId, cancellationToken);
+    }
+
+    public async Task<(Order Order, Address? Address, IReadOnlyDictionary<string, string?> ProductImages)?> GetOrderByIdWithResponseDetailsAsync(
+        string orderId,
+        string? userId,
+        bool admin,
+        CancellationToken cancellationToken)
+    {
+        IQueryable<Order> query = _dbContext.Orders
+            .Include(item => item.User)
+            .Include(item => item.Items)
+            .AsNoTracking();
+
+        if (!admin)
+            query = query.Where(item => item.UserId == userId);
+
+        var order = await query.SingleOrDefaultAsync(item => item.Id == orderId, cancellationToken);
+        if (order is null)
+            return null;
+
+        var productIds = order.Items.Select(item => item.ProductId).Distinct().ToList();
+        var productImages = await GetPrimaryProductImagesAsync(productIds, cancellationToken);
+        var address = await GetAddressByIdAsync(order.AddressId, cancellationToken);
+
+        return (order, address, productImages);
+    }
+
+    public async Task<(Order Order, Address? Address, IReadOnlyDictionary<string, string?> ProductImages)?> GetOrderByIdOrTrackIdWithResponseDetailsAsync(
+        string id,
+        string? userId,
+        bool admin,
+        CancellationToken cancellationToken)
+    {
+        IQueryable<Order> query = _dbContext.Orders
+            .Include(item => item.User)
+            .Include(item => item.Items)
+            .AsNoTracking();
+
+        if (!admin)
+            query = query.Where(item => item.UserId == userId);
+
+        var order = await query.SingleOrDefaultAsync(item => item.Id == id || item.TrackOrderId == id, cancellationToken);
+        if (order is null)
+            return null;
+
+        var productIds = order.Items.Select(item => item.ProductId).Distinct().ToList();
+        var productImages = await GetPrimaryProductImagesAsync(productIds, cancellationToken);
+        var address = await GetAddressByIdAsync(order.AddressId, cancellationToken);
+
+        return (order, address, productImages);
+    }
+
+    public async Task<(IReadOnlyList<Order> Items, int TotalCount, IReadOnlyDictionary<string, Address> Addresses, IReadOnlyDictionary<string, string?> ProductImages)> GetPagedOrdersAsync(
+        string? userId,
+        int page,
+        int pageSize,
+        bool admin,
+        string? status,
+        string? search,
+        DateTimeOffset? from,
+        DateTimeOffset? to,
+        CancellationToken cancellationToken)
+    {
+        var orders = admin ? _dbContext.Orders.AsNoTracking() : _dbContext.Orders.AsNoTracking().Where(item => item.UserId == userId);
+
+        if (!string.IsNullOrWhiteSpace(status))
+            orders = orders.Where(item => item.Status == status);
+
+        if (from.HasValue)
+            orders = orders.Where(item => item.CreatedAt >= from.Value);
+
+        if (to.HasValue)
+            orders = orders.Where(item => item.CreatedAt <= to.Value);
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var normalizedSearch = search.Trim().ToLower();
+            orders = orders.Where(item =>
+                item.TrackOrderId.ToLower().Contains(normalizedSearch) ||
+                item.Email.ToLower().Contains(normalizedSearch) ||
+                item.User.FirstName.ToLower().Contains(normalizedSearch) ||
+                item.User.LastName.ToLower().Contains(normalizedSearch));
+        }
+
+        var totalCount = await orders.CountAsync(cancellationToken);
+
+        var items = await orders
+            .Include(item => item.User)
+            .Include(item => item.Items)
+            .OrderByDescending(item => item.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        var productIds = items.SelectMany(order => order.Items).Select(item => item.ProductId).Distinct().ToList();
+        var productImages = await GetPrimaryProductImagesAsync(productIds, cancellationToken);
+
+        var addressIds = items.Select(order => order.AddressId).Distinct().ToList();
+        var addresses = await GetAddressesByIdsAsync(addressIds, cancellationToken);
+
+        return (items, totalCount, addresses, productImages);
+    }
 }

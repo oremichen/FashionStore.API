@@ -20,6 +20,37 @@ public interface IOrderRepository
     Task<TResult> ExecuteInRetriableTransactionAsync<TResult>(
         Func<IOrderTransaction, CancellationToken, Task<TResult>> operation,
         CancellationToken cancellationToken);
+
+    Task<Address?> GetAddressByIdAsync(string addressId, CancellationToken cancellationToken);
+
+    Task<IReadOnlyDictionary<string, Address>> GetAddressesByIdsAsync(IEnumerable<string> addressIds, CancellationToken cancellationToken);
+
+    Task<IReadOnlyDictionary<string, string?>> GetPrimaryProductImagesAsync(IEnumerable<string> productIds, CancellationToken cancellationToken);
+
+    Task<Order?> GetOrderByIdWithDetailsAsync(string orderId, bool trackChanges, CancellationToken cancellationToken);
+
+    Task<(Order Order, Address? Address, IReadOnlyDictionary<string, string?> ProductImages)?> GetOrderByIdWithResponseDetailsAsync(
+        string orderId,
+        string? userId,
+        bool admin,
+        CancellationToken cancellationToken);
+
+    Task<(Order Order, Address? Address, IReadOnlyDictionary<string, string?> ProductImages)?> GetOrderByIdOrTrackIdWithResponseDetailsAsync(
+        string id,
+        string? userId,
+        bool admin,
+        CancellationToken cancellationToken);
+
+    Task<(IReadOnlyList<Order> Items, int TotalCount, IReadOnlyDictionary<string, Address> Addresses, IReadOnlyDictionary<string, string?> ProductImages)> GetPagedOrdersAsync(
+        string? userId,
+        int page,
+        int pageSize,
+        bool admin,
+        string? status,
+        string? search,
+        DateTimeOffset? from,
+        DateTimeOffset? to,
+        CancellationToken cancellationToken);
 }
 
 public interface IOrderTransaction : IAsyncDisposable

@@ -1,3 +1,6 @@
+using FashionStore.Domain.Abstractions.CatalogOptions;
+using FashionStore.Domain.Abstractions.Contacts;
+
 namespace FashionStore.API.Features.Payments.InitializePaystack;
 
 public sealed class InitializePaystackService : IInitializePaystackService
@@ -7,27 +10,31 @@ public sealed class InitializePaystackService : IInitializePaystackService
     private readonly IOrderRepository _orderRepository;
     private readonly IDeliveryRepository _deliveryRepository;
     private readonly IConfiguration _configuration;
-    private readonly FashionStoreDbContext _dbContext;
     private readonly ILogger<InitializePaystackService> _logger;
     private readonly IDeliveryMethodClassifier _deliveryClassifier;
     private readonly IDeliveryMethodFactory _deliveryFactory;
     private readonly IPaymentGatewayFactory _paymentGatewayFactory;
+    private readonly ICatalogOptionRepository _catalogOptionRepository;
+    private readonly IContactUsConfigurationRepository _contactConfigRepository;
     private readonly TimeSpan _reservationLifetime;
 
     public InitializePaystackService(IProductRepository productRepository, IOrderRepository orderRepository,
-        IConfiguration configuration, FashionStoreDbContext dbContext, IDeliveryRepository deliveryRepository,
+        IConfiguration configuration, IDeliveryRepository deliveryRepository,
         ILogger<InitializePaystackService> logger, IDeliveryMethodClassifier deliveryClassifier, IDeliveryMethodFactory deliveryFactory,
-        IPaymentGatewayFactory paymentGatewayFactory)
+        IPaymentGatewayFactory paymentGatewayFactory,
+        ICatalogOptionRepository catalogOptionRepository,
+        IContactUsConfigurationRepository contactConfigRepository)
     {
         _productRepository = productRepository;
         _orderRepository = orderRepository;
         _deliveryRepository = deliveryRepository;
         _configuration = configuration;
-        _dbContext = dbContext;
         _logger = logger;
         _deliveryClassifier = deliveryClassifier;
         _deliveryFactory = deliveryFactory;
         _paymentGatewayFactory = paymentGatewayFactory;
+        _catalogOptionRepository = catalogOptionRepository;
+        _contactConfigRepository = contactConfigRepository;
 
         if (!double.TryParse(_configuration["AppSettings:Inventory:ReservationExpiryHours"], out var configuredHours)
             || configuredHours <= 0)
@@ -71,7 +78,7 @@ public sealed class InitializePaystackService : IInitializePaystackService
         if (string.IsNullOrWhiteSpace(request.DeliveryId))
             return response.Fail("A delivery option is required.", ResponseCodes.INVALID_ACTION);
 
-        var address = await _dbContext.Addresses.FindAsync([request.AddressId], cancellationToken);
+        var address = await _orderRepository.GetAddressByIdAsync(request.AddressId, cancellationToken);
         if (address is null)
             return response.Fail("The selected address was not found.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
 
@@ -185,9 +192,7 @@ public sealed class InitializePaystackService : IInitializePaystackService
         string userId,
         CancellationToken cancellationToken)
     {
-        var activeContacts = await _dbContext.ContactUsConfigurations.AsNoTracking()
-            .ToListAsync(cancellationToken);
-        var activeContact = activeContacts.SingleOrDefault(IsActiveContact);
+        var activeContact = await _contactConfigRepository.GetActiveAsync(cancellationToken);
 
         var pickupMethod = await _deliveryRepository.GetMethodByIdAsync(deliveryId, cancellationToken);
         var pickupStrategy = pickupMethod is null ? null : _deliveryFactory.GetForMethod(pickupMethod);
@@ -268,15 +273,13 @@ public sealed class InitializePaystackService : IInitializePaystackService
 
                 if (!string.IsNullOrWhiteSpace(variant.SizeId))
                 {
-                    var size = await _dbContext.Sizes.AsNoTracking()
-                        .FirstOrDefaultAsync(s => s.Id == variant.SizeId, cancellationToken);
+                    var size = await _catalogOptionRepository.GetSizeByIdAsync(variant.SizeId, cancellationToken);
                     sizeName = size?.DisplayName ?? size?.Name;
                 }
 
                 if (!string.IsNullOrWhiteSpace(variant.ColorId))
                 {
-                    var color = await _dbContext.Colors.AsNoTracking()
-                        .FirstOrDefaultAsync(c => c.Id == variant.ColorId, cancellationToken);
+                    var color = await _catalogOptionRepository.GetColorByIdAsync(variant.ColorId, cancellationToken);
                     colorName = color?.Name;
                 }
             }
@@ -289,8 +292,7 @@ public sealed class InitializePaystackService : IInitializePaystackService
 
             if (!string.IsNullOrWhiteSpace(requestedItem.ColorId))
             {
-                var color = await _dbContext.Colors.AsNoTracking()
-                    .FirstOrDefaultAsync(c => c.Id == requestedItem.ColorId, cancellationToken);
+                var color = await _catalogOptionRepository.GetColorByIdAsync(requestedItem.ColorId, cancellationToken);
                 if (color is null)
                 {
                     _logger.LogWarning("User {UserId} selected invalid color {ColorId} for product {ProductId}.",

@@ -41,6 +41,8 @@ namespace FashionStore.Infrastructure
                 Repository.OrderRepo.OrderRepository>();
             services.AddScoped<FashionStore.Domain.Abstractions.Delivery.IDeliveryRepository,
                 Repository.DeliveryRepo.DeliveryRepository>();
+            services.AddScoped<FashionStore.Domain.Abstractions.Auth.IAuthSessionRepository,
+                Repository.AuthRepo.AuthSessionRepository>();
             services.AddScoped<FashionStore.Domain.Abstractions.Delivery.IDeliveryMethodClassifier,
                 Delivery.DeliveryMethodClassifier>();
             services.AddScoped<Delivery.PickupDeliveryStrategy>();

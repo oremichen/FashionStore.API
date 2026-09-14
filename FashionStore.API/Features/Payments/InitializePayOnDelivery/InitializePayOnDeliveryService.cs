@@ -1,3 +1,6 @@
+using FashionStore.Domain.Abstractions.CatalogOptions;
+using FashionStore.Domain.Abstractions.Contacts;
+
 namespace FashionStore.API.Features.Payments.InitializePayOnDelivery;
 
 public sealed class InitializePayOnDeliveryService : IInitializePayOnDeliveryService
@@ -8,7 +11,6 @@ public sealed class InitializePayOnDeliveryService : IInitializePayOnDeliverySer
     private readonly IOrderRepository _orderRepository;
     private readonly IDeliveryRepository _deliveryRepository;
     private readonly IConfiguration _configuration;
-    private readonly FashionStoreDbContext _dbContext;
     private readonly ILogger<InitializePayOnDeliveryService> _logger;
     private readonly IDeliveryMethodClassifier _deliveryClassifier;
     private readonly IDeliveryMethodFactory _deliveryFactory;
@@ -16,12 +18,12 @@ public sealed class InitializePayOnDeliveryService : IInitializePayOnDeliverySer
     private readonly IEmailTemplateRenderer _templateRenderer;
     private readonly IContactUsConfigurationRepository _contactConfigRepository;
     private readonly IOrderItemHtmlRendererService _orderItemHtmlRenderer;
+    private readonly ICatalogOptionRepository _catalogOptionRepository;
 
     public InitializePayOnDeliveryService(
         IProductRepository productRepository,
         IOrderRepository orderRepository,
         IConfiguration configuration,
-        FashionStoreDbContext dbContext,
         IDeliveryRepository deliveryRepository,
         ILogger<InitializePayOnDeliveryService> logger,
         IDeliveryMethodClassifier deliveryClassifier,
@@ -29,12 +31,12 @@ public sealed class InitializePayOnDeliveryService : IInitializePayOnDeliverySer
         IEmailNotificationService emailService,
         IEmailTemplateRenderer templateRenderer,
         IContactUsConfigurationRepository contactConfigRepository,
-        IOrderItemHtmlRendererService orderItemHtmlRenderer)
+        IOrderItemHtmlRendererService orderItemHtmlRenderer,
+        ICatalogOptionRepository catalogOptionRepository)
     {
         _productRepository = productRepository;
         _orderRepository = orderRepository;
         _configuration = configuration;
-        _dbContext = dbContext;
         _deliveryRepository = deliveryRepository;
         _logger = logger;
         _deliveryClassifier = deliveryClassifier;
@@ -43,6 +45,7 @@ public sealed class InitializePayOnDeliveryService : IInitializePayOnDeliverySer
         _templateRenderer = templateRenderer;
         _contactConfigRepository = contactConfigRepository;
         _orderItemHtmlRenderer = orderItemHtmlRenderer;
+        _catalogOptionRepository = catalogOptionRepository;
     }
 
     public async Task<ResponseResult<PayOnDeliveryInitializationResponse>> ExecuteAsync(
@@ -91,7 +94,7 @@ public sealed class InitializePayOnDeliveryService : IInitializePayOnDeliverySer
         if (string.IsNullOrWhiteSpace(request.DeliveryId))
             return response.Fail("A delivery option is required.", ResponseCodes.INVALID_ACTION);
 
-        var address = await _dbContext.Addresses.FindAsync([request.AddressId], cancellationToken);
+        var address = await _orderRepository.GetAddressByIdAsync(request.AddressId, cancellationToken);
         if (address is null)
             return response.Fail("The selected address was not found.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
 
@@ -284,9 +287,7 @@ public sealed class InitializePayOnDeliveryService : IInitializePayOnDeliverySer
         string userId,
         CancellationToken cancellationToken)
     {
-        var activeContacts = await _dbContext.ContactUsConfigurations.AsNoTracking()
-            .ToListAsync(cancellationToken);
-        var activeContact = activeContacts.SingleOrDefault(IsActiveContact);
+        var activeContact = await _contactConfigRepository.GetActiveAsync(cancellationToken);
 
         var pickupMethod = await _deliveryRepository.GetMethodByIdAsync(deliveryId, cancellationToken);
         var pickupStrategy = pickupMethod is null ? null : _deliveryFactory.GetForMethod(pickupMethod);
@@ -367,15 +368,13 @@ public sealed class InitializePayOnDeliveryService : IInitializePayOnDeliverySer
 
                 if (!string.IsNullOrWhiteSpace(variant.SizeId))
                 {
-                    var size = await _dbContext.Sizes.AsNoTracking()
-                        .FirstOrDefaultAsync(s => s.Id == variant.SizeId, cancellationToken);
+                    var size = await _catalogOptionRepository.GetSizeByIdAsync(variant.SizeId, cancellationToken);
                     sizeName = size?.DisplayName ?? size?.Name;
                 }
 
                 if (!string.IsNullOrWhiteSpace(variant.ColorId))
                 {
-                    var color = await _dbContext.Colors.AsNoTracking()
-                        .FirstOrDefaultAsync(c => c.Id == variant.ColorId, cancellationToken);
+                    var color = await _catalogOptionRepository.GetColorByIdAsync(variant.ColorId, cancellationToken);
                     colorName = color?.Name;
                 }
             }
@@ -388,8 +387,7 @@ public sealed class InitializePayOnDeliveryService : IInitializePayOnDeliverySer
 
             if (!string.IsNullOrWhiteSpace(requestedItem.ColorId))
             {
-                var color = await _dbContext.Colors.AsNoTracking()
-                    .FirstOrDefaultAsync(c => c.Id == requestedItem.ColorId, cancellationToken);
+                var color = await _catalogOptionRepository.GetColorByIdAsync(requestedItem.ColorId, cancellationToken);
                 if (color is null)
                 {
                     _logger.LogWarning("User {UserId} selected invalid color {ColorId} for product {ProductId}.",

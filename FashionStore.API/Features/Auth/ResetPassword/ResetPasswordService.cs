@@ -15,8 +15,8 @@ namespace FashionStore.API.Features.Auth.ResetPassword
         private readonly IEmailTemplateRenderer _emailTemplateRenderer;
         private readonly ILogger<ResetPasswordService> _logger;
         private readonly IConfiguration _configuration;
-        private readonly FashionStoreDbContext _dbContext;
-        public ResetPasswordService(UserManager<ApplicationUser> userManager, ITokenService tokenService, IEmailNotificationService emailNotificationService, IEmailTemplateRenderer emailTemplateRenderer, ILogger<ResetPasswordService> logger, IConfiguration configuration, FashionStoreDbContext dbContext)
+        private readonly IAuthSessionRepository _authSessionRepository;
+        public ResetPasswordService(UserManager<ApplicationUser> userManager, ITokenService tokenService, IEmailNotificationService emailNotificationService, IEmailTemplateRenderer emailTemplateRenderer, ILogger<ResetPasswordService> logger, IConfiguration configuration, IAuthSessionRepository authSessionRepository)
         {
             _userManager = userManager;
             _tokenService = tokenService;
@@ -24,7 +24,7 @@ namespace FashionStore.API.Features.Auth.ResetPassword
             _emailTemplateRenderer = emailTemplateRenderer;
             _logger = logger;
             _configuration = configuration;
-            _dbContext = dbContext;
+            _authSessionRepository = authSessionRepository;
         }
 
         public async Task<ResponseResult> ExecuteAsync(string userId, ResetPasswordRequest request, CancellationToken cancellationToken)
@@ -65,8 +65,7 @@ namespace FashionStore.API.Features.Auth.ResetPassword
 
             await _userManager.UpdateSecurityStampAsync(user);
             var now = DateTimeOffset.UtcNow;
-            await _dbContext.UserSessions.Where(session => session.UserId == user.Id && session.RevokedAtUtc == null)
-                .ExecuteUpdateAsync(setters => setters.SetProperty(session => session.RevokedAtUtc, now), cancellationToken);
+            await _authSessionRepository.RevokeAllSessionsForUserAsync(user.Id, now, cancellationToken);
             _logger.LogInformation("Password reset successful and all sessions revoked for user {UserId}.", user.Id);
             return response.Success("Password updated successfully. Sign in again on your devices.");
         }
