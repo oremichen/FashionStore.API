@@ -48,6 +48,16 @@ global using FashionStore.Infrastructure.Data;
 global using Microsoft.EntityFrameworkCore;
 global using FashionStore.API.RateLimiting;
 global using Microsoft.AspNetCore.RateLimiting;
+global using System.Globalization;
+global using System.Text.Encodings.Web;
+global using FashionStore.API.Features.Payments.Shared;
+global using FashionStore.Domain.Abstractions.Contacts;
+global using FashionStore.Domain.Abstractions.Delivery;
+global using FashionStore.Domain.Abstractions.Orders;
+global using FashionStore.Domain.Abstractions.Products;
+global using FashionStore.Domain.Constants;
+global using Npgsql;
+global using FashionStore.Domain.Abstractions.Payments;
 
 
 

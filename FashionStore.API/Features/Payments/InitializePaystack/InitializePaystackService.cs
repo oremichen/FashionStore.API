@@ -1,13 +1,3 @@
-using FashionStore.API.Features.Payments.Shared;
-using FashionStore.Domain.Abstractions.Orders;
-using FashionStore.Domain.Abstractions.Delivery;
-using FashionStore.Domain.Abstractions.Payments;
-using FashionStore.Domain.Abstractions.Products;
-using FashionStore.Domain.Constants;
-using FashionStore.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
-using Npgsql;
-
 namespace FashionStore.API.Features.Payments.InitializePaystack;
 
 public sealed class InitializePaystackService : IInitializePaystackService
@@ -328,16 +318,5 @@ public sealed class InitializePaystackService : IInitializePaystackService
     private static bool IsActiveContact(FashionStore.Domain.Entities.ContactUsConfiguration contact)
     {
         return contact.IsActive;
-    }
-
-    private sealed class DeliveryResolutionResult
-    {
-        public bool IsPickup { get; set; }
-        public string DeliveryMethodName { get; set; } = null!;
-        public string DeliveryRateId { get; set; } = null!;
-        public int? EstimatedDaysMin { get; set; }
-        public int? EstimatedDaysMax { get; set; }
-        public decimal DeliveryFee { get; set; }
-        public string? ErrorMessage { get; set; }
     }
 }
