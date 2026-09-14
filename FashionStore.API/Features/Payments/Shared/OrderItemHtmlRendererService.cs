@@ -4,12 +4,7 @@ using FashionStore.Domain.Entities;
 
 namespace FashionStore.API.Features.Payments.Shared;
 
-public interface IOrderItemHtmlRenderer
-{
-    string Render(IEnumerable<OrderItem> items, bool includeSku);
-}
-
-public sealed class OrderItemHtmlRendererService : IOrderItemHtmlRenderer
+public sealed class OrderItemHtmlRendererService : IOrderItemHtmlRendererService
 {
     private readonly IDeliveryMethodClassifier _deliveryClassifier;
 

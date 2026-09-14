@@ -13,7 +13,7 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
     private readonly IDeliveryMethodClassifier _deliveryClassifier;
     private readonly IDeliveryMethodFactory _deliveryFactory;
     private readonly IPaymentGatewayFactory _paymentGatewayFactory;
-    private readonly IOrderItemHtmlRenderer _orderItemHtmlRenderer;
+    private readonly IOrderItemHtmlRendererService _orderItemHtmlRenderer;
 
     public VerifyPaystackService(
         IOrderRepository orderRepository,
@@ -25,7 +25,7 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
         IDeliveryMethodClassifier deliveryClassifier,
         IDeliveryMethodFactory deliveryFactory,
         IPaymentGatewayFactory paymentGatewayFactory,
-        IOrderItemHtmlRenderer orderItemHtmlRenderer)
+        IOrderItemHtmlRendererService orderItemHtmlRenderer)
     {
         _orderRepository = orderRepository;
         _emailService = emailService;

@@ -15,7 +15,7 @@ public sealed class InitializePayOnDeliveryService : IInitializePayOnDeliverySer
     private readonly IEmailNotificationService _emailService;
     private readonly IEmailTemplateRenderer _templateRenderer;
     private readonly IContactUsConfigurationRepository _contactConfigRepository;
-    private readonly IOrderItemHtmlRenderer _orderItemHtmlRenderer;
+    private readonly IOrderItemHtmlRendererService _orderItemHtmlRenderer;
 
     public InitializePayOnDeliveryService(
         IProductRepository productRepository,
@@ -29,7 +29,7 @@ public sealed class InitializePayOnDeliveryService : IInitializePayOnDeliverySer
         IEmailNotificationService emailService,
         IEmailTemplateRenderer templateRenderer,
         IContactUsConfigurationRepository contactConfigRepository,
-        IOrderItemHtmlRenderer orderItemHtmlRenderer)
+        IOrderItemHtmlRendererService orderItemHtmlRenderer)
     {
         _productRepository = productRepository;
         _orderRepository = orderRepository;
