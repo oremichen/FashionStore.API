@@ -77,7 +77,10 @@ public sealed class Order
             DeliveryFee = deliveryFee,
             Total = subtotal + deliveryFee,
             PaymentReference = paymentReference,
-            PaymentProvider = normalizedProvider
+            PaymentProvider = normalizedProvider,
+            Status = string.Equals(normalizedProvider, PaymentProviderKeys.PayOnDelivery, StringComparison.OrdinalIgnoreCase)
+                ? OrderStatuses.Processing
+                : OrderStatuses.PendingPayment
         };
         order._items.AddRange(items);
         if (order._items.Count == 0) throw new ArgumentException("An order must contain at least one item.");
