@@ -58,7 +58,18 @@ global using FashionStore.Domain.Abstractions.Products;
 global using FashionStore.Domain.Constants;
 global using Npgsql;
 global using FashionStore.Domain.Abstractions.Payments;
-
+global using FashionStore.API.Features.Users.GetUserByEmail;
+global using FashionStore.API.Features.Users.CreateUserAddress;
+global using FashionStore.API.Features.Users.DeleteUserAddress;
+global using FashionStore.API.Features.Users.GetAllUserAddresses;
+global using FashionStore.API.Features.Users.UpdateUserAddress;
+global using FashionStore.API.Features.Users.GetUsers;
+global using FashionStore.API.Features.Users.ChangeUserStatus;
+global using FashionStore.API.Features.Users.ResetAdminPassword;
+global using FashionStore.API.Features.Users.GetAdminRoles;
+global using FashionStore.API.Features.Users.UpdateAdminUser;
+global using FashionStore.API.Features.Users.AdminUpdateUser;
+global using FashionStore.API.Features.Users.GetPickupAddress;
 
 
 
