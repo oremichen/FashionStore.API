@@ -2,7 +2,7 @@ using FashionStore.API.Features.Payments.Shared;
 
 namespace FashionStore.API.Features.Payments.InitializePaystack;
 
-public sealed class InitializePaystackRequest
+public class InitializePaystackRequest
 {
     public string IdempotencyKey { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
