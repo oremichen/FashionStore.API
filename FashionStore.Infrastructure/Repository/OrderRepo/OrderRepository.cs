@@ -216,15 +216,23 @@ public sealed class OrderRepository : IOrderRepository
         if (ids.Count == 0)
             return new Dictionary<string, string?>();
 
-        var result = await (
-            from product in _dbContext.Products
-            from image in product.Images
-            where ids.Contains(product.Id) && image.IsPrimary
-            select new { product.Id, image.SmallUrl, image.MediumUrl, image.BigUrl })
-            .ToDictionaryAsync(
-                item => item.Id,
-                item => (string?)(item.SmallUrl ?? item.MediumUrl ?? item.BigUrl),
-                cancellationToken);
+        var images = await (
+            from image in _dbContext.ProductImages.AsNoTracking()
+            where ids.Contains(image.ProductId)
+            orderby image.IsPrimary descending, image.SortOrder
+            select new { image.ProductId, image.SmallUrl, image.MediumUrl, image.BigUrl })
+            .ToListAsync(cancellationToken);
+
+        var result = new Dictionary<string, string?>();
+        foreach (var image in images)
+        {
+            if (result.ContainsKey(image.ProductId))
+                continue;
+
+            var imageUrl = image.SmallUrl ?? image.MediumUrl ?? image.BigUrl;
+            if (!string.IsNullOrWhiteSpace(imageUrl))
+                result[image.ProductId] = imageUrl;
+        }
 
         return result;
     }

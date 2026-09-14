@@ -19,6 +19,7 @@ public sealed class InitializePayOnDeliveryService : IInitializePayOnDeliverySer
     private readonly IContactUsConfigurationRepository _contactConfigRepository;
     private readonly IOrderItemHtmlRendererService _orderItemHtmlRenderer;
     private readonly ICatalogOptionRepository _catalogOptionRepository;
+    private readonly UserManager<ApplicationUser> _userManager;
 
     public InitializePayOnDeliveryService(
         IProductRepository productRepository,
@@ -32,7 +33,8 @@ public sealed class InitializePayOnDeliveryService : IInitializePayOnDeliverySer
         IEmailTemplateRenderer templateRenderer,
         IContactUsConfigurationRepository contactConfigRepository,
         IOrderItemHtmlRendererService orderItemHtmlRenderer,
-        ICatalogOptionRepository catalogOptionRepository)
+        ICatalogOptionRepository catalogOptionRepository,
+        UserManager<ApplicationUser> userManager)
     {
         _productRepository = productRepository;
         _orderRepository = orderRepository;
@@ -46,6 +48,7 @@ public sealed class InitializePayOnDeliveryService : IInitializePayOnDeliverySer
         _contactConfigRepository = contactConfigRepository;
         _orderItemHtmlRenderer = orderItemHtmlRenderer;
         _catalogOptionRepository = catalogOptionRepository;
+        _userManager = userManager;
     }
 
     public async Task<ResponseResult<PayOnDeliveryInitializationResponse>> ExecuteAsync(
@@ -187,7 +190,8 @@ public sealed class InitializePayOnDeliveryService : IInitializePayOnDeliverySer
             order.Id, order.TrackOrderId);
         try
         {
-            await SendOrderEmailsAsync(order, address, cancellationToken);
+            var user = await _userManager.FindByIdAsync(order.UserId);
+            await SendOrderEmailsAsync(order, address, user, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -207,7 +211,11 @@ public sealed class InitializePayOnDeliveryService : IInitializePayOnDeliverySer
             "Order placed successfully. Payment will be collected on delivery.");
     }
 
-    private async Task SendOrderEmailsAsync(Order order, Address? address, CancellationToken cancellationToken)
+    private async Task SendOrderEmailsAsync(
+        Order order,
+        Address? address,
+        ApplicationUser? user,
+        CancellationToken cancellationToken)
     {
         var appName = _configuration["AppSettings:AppName"] ?? "MaisonDeLola";
         var websiteUrl = _configuration["AppSettings:WebsiteUrl"] ?? "themaisondelola.com";
@@ -217,8 +225,9 @@ public sealed class InitializePayOnDeliveryService : IInitializePayOnDeliverySer
             ?? "support@themaisondelola.com";
         var businessEmail = contactConfig?.BusinessEmail;
 
-        var customerName = !string.IsNullOrWhiteSpace(order.Email)
-            ? HtmlEncoder.Default.Encode(order.Email)
+        var customerDisplayName = $"{user?.FirstName} {user?.LastName}".Trim();
+        var customerName = !string.IsNullOrWhiteSpace(customerDisplayName)
+            ? HtmlEncoder.Default.Encode(customerDisplayName)
             : "Customer";
 
         var recipientName = customerName;

@@ -75,7 +75,7 @@ public class UpdateProductService(IProductRepository repository, IImageProcessor
         if (request.IsOldNewPrice && (request.NewPrice < 0 || request.OldPrice < 0)) return "OldPrice and NewPrice must be non-negative.";
         if (request.IsMinMaxPrice && (!request.MinPrice.HasValue || !request.MaxPrice.HasValue)) return "MinPrice and MaxPrice are required when IsMinMaxPrice is true.";
         if (request.IsMinMaxPrice && (request.MinPrice < 0 || request.MaxPrice < 0 || request.MinPrice > request.MaxPrice)) return "MinPrice and MaxPrice must be non-negative and MinPrice cannot exceed MaxPrice.";
-        if (request.ProductVariants.Any(x => x.Price < 0 || x.Quantity < 0 || string.IsNullOrWhiteSpace(x.SizeId))) return "Each product variant must have a size and non-negative price and quantity.";
+        if (request.ProductVariants.Any(x => x.Price < 0 || x.Quantity < 0)) return "Each product variant must have a non-negative price and quantity.";
         if (request.ProductVariants.GroupBy(x => x.SizeId, StringComparer.OrdinalIgnoreCase).Any(x => x.Count() > 1)) return "Duplicate product size variants are not allowed.";
         return null;
     }
