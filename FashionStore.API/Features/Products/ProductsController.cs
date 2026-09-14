@@ -15,7 +15,7 @@ namespace FashionStore.API.Features.Products;
 
 [Route("api/products")]
 [ApiController]
-[Authorize(Roles = "SuperAdmin,BusinessAdmin")]
+[Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}")]
 public sealed class ProductsController(
     IGetStorefrontService getStorefrontService,
     IGetProductCollectionService getProductCollectionService,

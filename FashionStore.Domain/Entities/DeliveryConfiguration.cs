@@ -38,4 +38,24 @@ public sealed class DeliveryRate
     public bool IsActive { get; set; } = true;
     public DeliveryZone Zone { get; set; } = null!;
     public DeliveryMethod Method { get; set; } = null!;
+
+    public void Update(
+        string zoneId,
+        string methodId,
+        long priceKobo,
+        int? estimatedDaysMin,
+        int? estimatedDaysMax,
+        bool isActive,
+        DeliveryZone zone,
+        DeliveryMethod method)
+    {
+        ZoneId = zoneId;
+        MethodId = methodId;
+        PriceKobo = priceKobo;
+        EstimatedDaysMin = estimatedDaysMin;
+        EstimatedDaysMax = estimatedDaysMax;
+        IsActive = isActive;
+        Zone = zone;
+        Method = method;
+    }
 }

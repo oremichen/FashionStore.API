@@ -1,3 +1,4 @@
+using FashionStore.API.Features.Payments.InitializePayOnDelivery;
 using FashionStore.API.Features.Payments.InitializePaystack;
 using FashionStore.API.Features.Payments.ProcessPaystackWebhook;
 using FashionStore.API.Features.Payments.Shared;
@@ -5,40 +6,56 @@ using FashionStore.API.Features.Payments.VerifyPaystack;
 
 namespace FashionStore.API.Features.Payments;
 
-[Route("api/payments/paystack")]
+[Route("api/payments")]
 [ApiController]
 public sealed class PaymentsController : BaseApiController
 {
     private readonly IInitializePaystackService _initializePaystackService;
+    private readonly IInitializePayOnDeliveryService _initializePayOnDeliveryService;
     private readonly IVerifyPaystackService _verifyPaystackService;
     private readonly IProcessPaystackWebhookService _processPaystackWebhookService;
     private readonly ILogger<PaymentsController> _logger;
 
-    public PaymentsController(IInitializePaystackService initializePaystackService,
+    public PaymentsController(
+        IInitializePaystackService initializePaystackService,
+        IInitializePayOnDeliveryService initializePayOnDeliveryService,
         IVerifyPaystackService verifyPaystackService,
         IProcessPaystackWebhookService processPaystackWebhookService,
         ILogger<PaymentsController> logger)
     {
         _initializePaystackService = initializePaystackService;
+        _initializePayOnDeliveryService = initializePayOnDeliveryService;
         _verifyPaystackService = verifyPaystackService;
         _processPaystackWebhookService = processPaystackWebhookService;
         _logger = logger;
     }
 
     [Authorize]
-    [HttpPost("initialize")]
+    [HttpPost("paystack/initialize")]
     [ProducesResponseType(typeof(ResponseResult<PaystackInitializationResponse>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Initialize([FromBody] InitializePaystackRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> InitializePaystack([FromBody] InitializePaystackRequest request, CancellationToken cancellationToken)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
         return ProcessResponse(await _initializePaystackService.ExecuteAsync(userId, request, cancellationToken));
     }
 
+    [Authorize]
+    [HttpPost("payondelivery/initialize")]
+    [ProducesResponseType(typeof(ResponseResult<PayOnDeliveryInitializationResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> InitializePayOnDelivery(
+        [FromBody] InitializePayOnDeliveryRequest request,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
+        return ProcessResponse(await _initializePayOnDeliveryService.ExecuteAsync(userId, request, cancellationToken));
+    }
+
     [Authorize(Policy = "RequireAuthenticatedUserIdOrExpiredSignedUserId")]
-    [HttpGet("verify/{reference}")]
+    [HttpGet("paystack/verify/{reference}")]
     [ProducesResponseType(typeof(ResponseResult<PaymentVerificationResponse>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Verify(string reference, CancellationToken cancellationToken)
+    public async Task<IActionResult> VerifyPaystack(string reference, CancellationToken cancellationToken)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
@@ -46,11 +63,11 @@ public sealed class PaymentsController : BaseApiController
     }
 
     [AllowAnonymous]
-    [HttpPost("webhook")]
+    [HttpPost("paystack/webhook")]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Webhook(CancellationToken cancellationToken)
+    public async Task<IActionResult> PaystackWebhook(CancellationToken cancellationToken)
     {
         var signature = Request.Headers["x-paystack-signature"].ToString();
         using var reader = new StreamReader(Request.Body);

@@ -27,6 +27,7 @@ public sealed class Order
     public string Status { get; private set; } = OrderStatuses.PendingPayment;
     public string? RefundedReason { get; private set; }
     public string PaymentReference { get; private set; } = null!;
+    public string PaymentProvider { get; private set; } = PaymentProviderKeys.Paystack;
     public string? AuthorizationUrl { get; private set; }
     public string PaymentStatus { get; private set; } = PaymentStatuses.Pending;
     public DateTimeOffset CreatedAt { get; private set; } = DateTimeOffset.UtcNow;
@@ -46,7 +47,8 @@ public sealed class Order
 
     public static Order Create(string userId, string idempotencyKey, string addressId, string email, string deliveryMethod,
         string deliveryRateId, int? estimatedDaysMin, int? estimatedDaysMax,
-        decimal subtotal, decimal deliveryFee, string paymentReference, IEnumerable<OrderItem> items)
+        decimal subtotal, decimal deliveryFee, string paymentReference, IEnumerable<OrderItem> items,
+        string? paymentProvider = null)
     {
         if (string.IsNullOrWhiteSpace(userId)) throw new ArgumentException("User id is required.");
         if (string.IsNullOrWhiteSpace(idempotencyKey)) throw new ArgumentException("Idempotency key is required.");
@@ -54,6 +56,10 @@ public sealed class Order
         if (string.IsNullOrWhiteSpace(email)) throw new ArgumentException("Email is required.");
         if (string.IsNullOrWhiteSpace(deliveryRateId)) throw new ArgumentException("Delivery rate is required.");
         if (subtotal < 0 || deliveryFee < 0) throw new ArgumentException("Order amounts cannot be negative.");
+
+        var normalizedProvider = string.IsNullOrWhiteSpace(paymentProvider)
+            ? PaymentProviderKeys.Paystack
+            : paymentProvider.Trim().ToLowerInvariant();
 
         var order = new Order
         {
@@ -70,7 +76,11 @@ public sealed class Order
             Subtotal = subtotal,
             DeliveryFee = deliveryFee,
             Total = subtotal + deliveryFee,
-            PaymentReference = paymentReference
+            PaymentReference = paymentReference,
+            PaymentProvider = normalizedProvider,
+            Status = string.Equals(normalizedProvider, PaymentProviderKeys.PayOnDelivery, StringComparison.OrdinalIgnoreCase)
+                ? OrderStatuses.Processing
+                : OrderStatuses.PendingPayment
         };
         order._items.AddRange(items);
         if (order._items.Count == 0) throw new ArgumentException("An order must contain at least one item.");
@@ -131,6 +141,14 @@ public sealed class Order
             RefundedReason = statusMessage.Trim();
             if (PaymentStatus == PaymentStatuses.Success)
                 PaymentStatus = PaymentStatuses.Refunded;
+        }
+        if (normalized == OrderStatuses.Delivered &&
+            PaymentProvider.Equals(PaymentProviderKeys.PayOnDelivery, StringComparison.OrdinalIgnoreCase) &&
+            PaymentStatus != PaymentStatuses.Success &&
+            PaymentStatus != PaymentStatuses.Refunded)
+        {
+            PaymentStatus = PaymentStatuses.Success;
+            PaidAt = DateTimeOffset.UtcNow;
         }
         Status = normalized;
     }

@@ -11,7 +11,7 @@ namespace FashionStore.API.Features.PromotionVideos;
 [ApiController]
 public sealed class PromotionVideosController(IGetPromotionVideosService getAllService, IGetPromotionVideoBySlugService getBySlugService, IGetActivePromotionVideoService getActiveService, ICreatePromotionVideoService createService, IUpdatePromotionVideoService updateService, IDeletePromotionVideoService deleteService) : BaseApiController
 {
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpGet]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}"), HttpGet]
     [ProducesResponseType(typeof(ResponseResult<PagedResponse<PromotionVideoResponse>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
@@ -22,7 +22,7 @@ public sealed class PromotionVideosController(IGetPromotionVideosService getAllS
         return ProcessResponse(await getAllService.ExecuteAsync(query, cancellationToken));
     }
 
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpGet("slug/{slug}")]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}"), HttpGet("slug/{slug}")]
     [ProducesResponseType(typeof(ResponseResult<PromotionVideoResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status403Forbidden)]
@@ -42,7 +42,7 @@ public sealed class PromotionVideosController(IGetPromotionVideosService getAllS
         return ProcessResponse(await getActiveService.ExecuteAsync(cancellationToken));
     }
 
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpPost]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}"), HttpPost]
     [EnableRateLimiting(RateLimitPolicies.AdminUpload)]
     [Consumes("multipart/form-data"), RequestSizeLimit(100 * 1024 * 1024)]
     [ProducesResponseType(typeof(ResponseResult<PromotionVideoResponse>), StatusCodes.Status201Created)]
@@ -59,7 +59,7 @@ public sealed class PromotionVideosController(IGetPromotionVideosService getAllS
         return ProcessResponse(await createService.ExecuteAsync(request, cancellationToken));
     }
 
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpPut("{id}")]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}"), HttpPut("{id}")]
     [ProducesResponseType(typeof(ResponseResult<PromotionVideoResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
@@ -72,7 +72,7 @@ public sealed class PromotionVideosController(IGetPromotionVideosService getAllS
         return ProcessResponse(await updateService.ExecuteAsync(id, request, cancellationToken));
     }
 
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpDelete("{id}")]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}"), HttpDelete("{id}")]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status403Forbidden)]

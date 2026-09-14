@@ -14,5 +14,6 @@ public interface IDeliveryRepository
     Task<DeliveryMethod?> GetMethodByIdAsync(string id, CancellationToken cancellationToken);
     Task<bool> RateExistsAsync(string zoneId, string methodId, string? excludingId, CancellationToken cancellationToken);
     Task AddRateAsync(DeliveryRate rate, CancellationToken cancellationToken);
+    Task DeleteRateAsync(DeliveryRate rate, CancellationToken cancellationToken);
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }

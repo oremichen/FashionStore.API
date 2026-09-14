@@ -100,18 +100,33 @@ namespace FashionStore.API.Features.Users
             return ProcessResponse(response);
         }
 
+        /// <summary>
+        /// This is a superadmin updating an admin user.
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         [Authorize(Roles = RoleConstants.SuperAdmin)]
         [HttpPut("{userId}")]
         public async Task<IActionResult> UpdateAdminUser(
             string userId,
             [FromBody] UpdateAdminUserRequest request)
         {
-            var response = await _updateAdminUserService.ExecuteAsync(userId, request);
+            var actorId = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(actorId)) return Unauthorized();
+            var response = await _updateAdminUserService.ExecuteAsync(actorId, userId, request);
 
             return ProcessResponse(response);
         }
 
-        [Authorize(Roles = "Admin,SuperAdmin,BusinessAdmin")]
+        /// <summary>
+        /// This is for an admin updating their own profile.
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <param name="request"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        [Authorize(Roles = RoleConstants.SuperAdmin)]
         [HttpPut("admin/{userId}")]
         public async Task<IActionResult> UpdateAdminUserProfile(string userId, [FromForm] AdminUpdateUserRequest request, CancellationToken cancellationToken)
         {
@@ -150,7 +165,7 @@ namespace FashionStore.API.Features.Users
             return ProcessResponse(response);
         }
 
-        [Authorize(Roles = "SuperAdmin")]
+        [Authorize(Roles = RoleConstants.SuperAdmin)]
         [HttpPost]
         [Produces("application/json")]
         [ProducesResponseType(typeof(ResponseResult<UserDetailsResponse>), StatusCodes.Status200OK)]

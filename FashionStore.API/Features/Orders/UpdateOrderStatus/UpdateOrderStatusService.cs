@@ -1,27 +1,27 @@
 using FashionStore.API.Features.Orders.Shared;
 using FashionStore.Domain.Abstractions.Contacts;
+using FashionStore.Domain.Abstractions.Delivery;
 using FashionStore.Domain.Abstractions.Notification;
-using FashionStore.Domain.Constants;
+using FashionStore.Domain.Abstractions.Orders;
 using FashionStore.Domain.Entities;
-using FashionStore.Domain.Enums;
-using FashionStore.Infrastructure.Data;
 using FashionStore.Shared.Constants;
-using Microsoft.EntityFrameworkCore;
 using System.Text.Encodings.Web;
 
 namespace FashionStore.API.Features.Orders.UpdateOrderStatus;
 
 public sealed class UpdateOrderStatusService(
-    FashionStoreDbContext db,
+    IOrderRepository orderRepository,
     IEmailNotificationService emailService,
     IEmailTemplateRenderer templateRenderer,
     IContactUsConfigurationRepository contactRepository,
     IConfiguration configuration,
-    ILogger<UpdateOrderStatusService> logger) : IUpdateOrderStatusService
+    ILogger<UpdateOrderStatusService> logger,
+    IDeliveryMethodClassifier deliveryClassifier,
+    IDeliveryMethodFactory deliveryFactory) : IUpdateOrderStatusService
 {
     public async Task<ResponseResult<OrderResponse>> ExecuteAsync(string id, UpdateOrderStatusRequest request, CancellationToken cancellationToken)
     {
-        var order = await db.Orders.Include("User").Include("Items").SingleOrDefaultAsync(item => item.Id == id, cancellationToken);
+        var order = await orderRepository.GetOrderByIdWithDetailsAsync(id, trackChanges: true, cancellationToken);
         if (order is null)
             return new ResponseResult<OrderResponse>().Fail("Order was not found.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
 
@@ -34,12 +34,12 @@ public sealed class UpdateOrderStatusService(
             return new ResponseResult<OrderResponse>().Fail(exception.Message, ResponseCodes.INVALID_ACTION);
         }
 
-        await db.SaveChangesAsync(cancellationToken);
-        var address = await db.Addresses.AsNoTracking().SingleOrDefaultAsync(item => item.Id == order.AddressId, cancellationToken);
-        if (request.Status.Equals(OrderStatuses.Shipped, StringComparison.OrdinalIgnoreCase) ||
-            request.Status.Equals(OrderStatuses.Delivered, StringComparison.OrdinalIgnoreCase) ||
-            request.Status.Equals(OrderStatuses.Cancelled, StringComparison.OrdinalIgnoreCase) ||
-            request.Status.Equals(OrderStatuses.Returned, StringComparison.OrdinalIgnoreCase))
+        await orderRepository.SaveChangesAsync(cancellationToken);
+        var address = await orderRepository.GetAddressByIdAsync(order.AddressId, cancellationToken);
+        if (request.Status.Equals(Domain.Constants.OrderStatuses.Shipped, StringComparison.OrdinalIgnoreCase) ||
+            request.Status.Equals(Domain.Constants.OrderStatuses.Delivered, StringComparison.OrdinalIgnoreCase) ||
+            request.Status.Equals(Domain.Constants.OrderStatuses.Cancelled, StringComparison.OrdinalIgnoreCase) ||
+            request.Status.Equals(Domain.Constants.OrderStatuses.Returned, StringComparison.OrdinalIgnoreCase))
         {
             try
             {
@@ -54,11 +54,7 @@ public sealed class UpdateOrderStatusService(
             .Select(item => item.ProductId)
             .Distinct()
             .ToList();
-        var productImages = await (from product in db.Products
-                                   from image in product.Images
-                                   where productIds.Contains(product.Id) && image.IsPrimary
-                                   select new { product.Id, image.SmallUrl, image.MediumUrl, image.BigUrl })
-            .ToDictionaryAsync(item => item.Id, item => item.SmallUrl ?? item.MediumUrl ?? item.BigUrl, cancellationToken);
+        var productImages = await orderRepository.GetPrimaryProductImagesAsync(productIds, cancellationToken);
 
         return new ResponseResult<OrderResponse>()
             .Success(OrderResponseMapper.Map(
@@ -77,43 +73,36 @@ public sealed class UpdateOrderStatusService(
         AddRecipient(recipients, contactEmail);
         AddRecipient(recipients, contact?.BusinessEmail);
 
-        var status = GetStatusLabel(order.Status);
+        var strategy = deliveryFactory.GetForMethod(order.DeliveryMethod);
+        var status = strategy.GetStatusLabel(order.Status);
+
+        var deliveryAddress = strategy.ShowAddressInEmails
+            ? deliveryClassifier.FormatDeliveryAddress(address)
+            : HtmlEncoder.Default.Encode(string.Empty);
+
         var tokens = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             ["appName"] = HtmlEncoder.Default.Encode(appName),
             ["customerName"] = HtmlEncoder.Default.Encode(order.User?.FirstName ?? order.Email),
             ["trackOrderId"] = HtmlEncoder.Default.Encode(order.TrackOrderId),
             ["status"] = HtmlEncoder.Default.Encode(status),
-            ["statusMessage"] = HtmlEncoder.Default.Encode(statusMessage ?? GetDefaultMessage(order.Status)),
-            ["deliveryAddress"] = BuildAddress(address),
+            ["statusMessage"] = HtmlEncoder.Default.Encode(statusMessage ?? strategy.GetCustomerStatusMessage(order.Status)),
+            ["deliveryAddress"] = deliveryAddress,
             ["phoneNumber"] = HtmlEncoder.Default.Encode(address?.PhoneNumber ?? order.User?.PhoneNumber ?? "Not provided"),
             ["orderItemsHtml"] = BuildOrderItemsHtml(order.Items),
             ["year"] = DateTime.UtcNow.Year.ToString()
         };
-        var customerBody = await templateRenderer.RenderAsync(EmailNotificationTypeEnum.OrderStatusUpdate, tokens);
+        var customerBody = await templateRenderer.RenderAsync(Domain.Enums.EmailNotificationTypeEnum.OrderStatusUpdate, tokens);
         var adminTokens = new Dictionary<string, string>(tokens, StringComparer.OrdinalIgnoreCase)
         {
-            ["statusMessage"] = HtmlEncoder.Default.Encode(statusMessage ?? GetAdminMessage(order.Status))
+            ["statusMessage"] = HtmlEncoder.Default.Encode(statusMessage ?? strategy.GetAdminStatusMessage(order.Status))
         };
-        var adminBody = await templateRenderer.RenderAsync(EmailNotificationTypeEnum.OrderStatusInternalUpdate, adminTokens);
+        var adminBody = await templateRenderer.RenderAsync(Domain.Enums.EmailNotificationTypeEnum.OrderStatusInternalUpdate, adminTokens);
         var customerSubject = $"Order {status} – {order.TrackOrderId}";
         var adminSubject = $"Order update: {order.TrackOrderId} – {status}";
-        await emailService.QueueEmailAsync(new EmailNotification { To = [order.Email], Subject = customerSubject, Body = customerBody }, cancellationToken);
+        await emailService.QueueEmailAsync(new Domain.Entities.EmailNotification { To = [order.Email], Subject = customerSubject, Body = customerBody }, cancellationToken);
         if (recipients.Count > 0)
-            await emailService.QueueEmailAsync(new EmailNotification { To = recipients, ReplyTo = order.Email, Subject = adminSubject, Body = adminBody }, cancellationToken);
-    }
-
-    private static string BuildAddress(Address? address)
-    {
-        if (address is null) return "Address not available";
-        var parts = new List<string>();
-        AddPart(parts, address.Street);
-        AddPart(parts, address.City);
-        AddPart(parts, address.State);
-        AddPart(parts, address.Country);
-        AddPart(parts, address.PostalCode);
-        AddPart(parts, address.Landmark);
-        return HtmlEncoder.Default.Encode(string.Join(", ", parts));
+            await emailService.QueueEmailAsync(new Domain.Entities.EmailNotification { To = recipients, ReplyTo = order.Email, Subject = adminSubject, Body = adminBody }, cancellationToken);
     }
 
     private static string BuildOrderItemsHtml(IEnumerable<OrderItem> items)
@@ -142,29 +131,5 @@ public sealed class UpdateOrderStatusService(
     {
         if (!string.IsNullOrWhiteSpace(email) && !recipients.Contains(email, StringComparer.OrdinalIgnoreCase))
             recipients.Add(email);
-    }
-
-    private static string GetStatusLabel(string status)
-    {
-        if (status.Equals(OrderStatuses.Shipped, StringComparison.OrdinalIgnoreCase)) return "Shipping";
-        if (status.Equals(OrderStatuses.Delivered, StringComparison.OrdinalIgnoreCase)) return "Delivered";
-        if (status.Equals(OrderStatuses.Cancelled, StringComparison.OrdinalIgnoreCase)) return "Cancelled";
-        return "Returned";
-    }
-
-    private static string GetDefaultMessage(string status)
-    {
-        if (status.Equals(OrderStatuses.Shipped, StringComparison.OrdinalIgnoreCase)) return "Your order has been shipped and is on its way to you.";
-        if (status.Equals(OrderStatuses.Delivered, StringComparison.OrdinalIgnoreCase)) return "Your order has been delivered. We hope you enjoy your purchase.";
-        if (status.Equals(OrderStatuses.Cancelled, StringComparison.OrdinalIgnoreCase)) return "Your order has been cancelled. If a refund applies, it will be processed according to our policy.";
-        return "Your returned order has been received and is being reviewed.";
-    }
-
-    private static string GetAdminMessage(string status)
-    {
-        if (status.Equals(OrderStatuses.Shipped, StringComparison.OrdinalIgnoreCase)) return "Action recorded: the order has been marked as shipped. Confirm courier handover and tracking details are available to the customer.";
-        if (status.Equals(OrderStatuses.Delivered, StringComparison.OrdinalIgnoreCase)) return "Action recorded: the order has been marked as delivered. Confirm delivery completion and resolve any outstanding fulfilment tasks.";
-        if (status.Equals(OrderStatuses.Cancelled, StringComparison.OrdinalIgnoreCase)) return "Action recorded: the order has been cancelled. Review the cancellation reason and process any applicable refund or stock adjustment.";
-        return "Action recorded: the order has been marked as returned. Inspect the returned items and update the refund or restocking outcome.";
     }
 }

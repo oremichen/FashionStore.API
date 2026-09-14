@@ -15,5 +15,7 @@ namespace FashionStore.Domain.Enums
         OrderInternalNotification,
         OrderStatusUpdate,
         OrderStatusInternalUpdate,
+        OrderCustomerPickupConfirmation,
+        OrderInternalPickupNotification,
     }
 }

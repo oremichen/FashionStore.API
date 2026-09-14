@@ -1,7 +1,9 @@
+using FashionStore.Domain.Abstractions.Auth;
+
 namespace FashionStore.API.Features.Auth.Refresh;
 
 public sealed class RefreshService(
-    FashionStoreDbContext dbContext,
+    IAuthSessionRepository authSessionRepository,
     UserManager<ApplicationUser> userManager,
     ITokenService tokenService,
     IHttpContextAccessor httpContextAccessor,
@@ -12,8 +14,7 @@ public sealed class RefreshService(
         var response = new ResponseResult<LoginResponse>();
         var now = DateTimeOffset.UtcNow;
         var hash = SessionPolicy.HashRefreshToken(request.RefreshToken);
-        var session = await dbContext.UserSessions.Include(item => item.User)
-            .SingleOrDefaultAsync(item => item.RefreshTokenHash == hash);
+        var session = await authSessionRepository.GetByRefreshTokenHashWithUserAsync(hash, CancellationToken.None);
 
         if (session is null || session.RevokedAtUtc is not null || session.AbsoluteExpiresAtUtc <= now ||
             session.IdleExpiresAtUtc <= now || session.SecurityStamp != (session.User.SecurityStamp ?? string.Empty) ||
@@ -22,7 +23,7 @@ public sealed class RefreshService(
             if (session is not null && session.RevokedAtUtc is null)
             {
                 session.RevokedAtUtc = now;
-                await dbContext.SaveChangesAsync();
+                await authSessionRepository.SaveChangesAsync(CancellationToken.None);
             }
             return response.Fail("The session has expired. Please sign in again.", ResponseCodes.INVALID_TOKEN);
         }
@@ -36,7 +37,7 @@ public sealed class RefreshService(
         session.IdleExpiresAtUtc = isAdmin
             ? now.Add(SessionPolicy.AdminIdleLifetime)
             : Min(now.Add(SessionPolicy.CustomerRollingLifetime), session.AbsoluteExpiresAtUtc);
-        await dbContext.SaveChangesAsync();
+        await authSessionRepository.SaveChangesAsync(CancellationToken.None);
 
         var accessExpiry = Min(
             now.Add(isAdmin ? SessionPolicy.AdminAccessLifetime : SessionPolicy.CustomerAccessLifetime),

@@ -60,5 +60,10 @@ public sealed class DeliveryRepository(FashionStoreDbContext dbContext) : IDeliv
     public Task<DeliveryMethod?> GetMethodByIdAsync(string id, CancellationToken cancellationToken) => dbContext.DeliveryMethods.SingleOrDefaultAsync(method => method.Id == id, cancellationToken);
     public Task<bool> RateExistsAsync(string zoneId, string methodId, string? excludingId, CancellationToken cancellationToken) => dbContext.DeliveryRates.AnyAsync(rate => rate.ZoneId == zoneId && rate.MethodId == methodId && rate.Id != excludingId, cancellationToken);
     public Task AddRateAsync(DeliveryRate rate, CancellationToken cancellationToken) => dbContext.DeliveryRates.AddAsync(rate, cancellationToken).AsTask();
+    public async Task DeleteRateAsync(DeliveryRate rate, CancellationToken cancellationToken)
+    {
+        dbContext.DeliveryRates.Remove(rate);
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
     public Task SaveChangesAsync(CancellationToken cancellationToken) => dbContext.SaveChangesAsync(cancellationToken);
 }

@@ -37,7 +37,7 @@ namespace FashionStore.API.Features.Auth
             _adminForgotPasswordService = adminForgotPasswordService;
         }
 
-        [Authorize(Roles = "Admin,SuperAdmin,BusinessAdmin")]
+        [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}")]
         [HttpPost("admin/{userId}/forgot-password")]
         public async Task<IActionResult> AdminForgotPassword(string userId, [FromBody] AdminForgotPasswordRequest request)
         {

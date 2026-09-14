@@ -18,7 +18,7 @@ public sealed class ContactUsController(
     IGetActiveContactService getActiveService,
     ISubmitContactService submitContactService) : BaseApiController
 {
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpGet]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}"), HttpGet]
     [Produces("application/json")]
     [ProducesResponseType(typeof(ResponseResult<IReadOnlyList<ContactUsResponse>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
@@ -29,7 +29,7 @@ public sealed class ContactUsController(
         return ProcessResponse(await getAllService.ExecuteAsync(cancellationToken));
     }
 
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpPost]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}"), HttpPost]
     [Consumes("application/json")]
     [Produces("application/json")]
     [ProducesResponseType(typeof(ResponseResult<ContactUsResponse>), StatusCodes.Status201Created)]
@@ -42,7 +42,7 @@ public sealed class ContactUsController(
         return ProcessResponse(await createService.ExecuteAsync(request, cancellationToken));
     }
 
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpPut("{id}")]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}"), HttpPut("{id}")]
     [Consumes("application/json")]
     [Produces("application/json")]
     [ProducesResponseType(typeof(ResponseResult<ContactUsResponse>), StatusCodes.Status200OK)]
@@ -56,7 +56,7 @@ public sealed class ContactUsController(
         return ProcessResponse(await updateService.ExecuteAsync(id, request, cancellationToken));
     }
 
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpDelete("{id}")]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}"), HttpDelete("{id}")]
     [Produces("application/json")]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status404NotFound)]

@@ -15,9 +15,9 @@ namespace FashionStore.API.Features.Auth.Login
         private readonly IEmailTemplateRenderer _emailTemplateRenderer;
         private readonly ILogger<LoginService> _logger;
         private readonly IConfiguration _configuration;
-        private readonly FashionStoreDbContext _dbContext;
+        private readonly IAuthSessionRepository _authSessionRepository;
         private readonly IHttpContextAccessor _httpContextAccessor;
-        public LoginService(UserManager<ApplicationUser> userManager, ITokenService tokenService, IEmailNotificationService emailNotificationService, IEmailTemplateRenderer emailTemplateRenderer, ILogger<LoginService> logger, IConfiguration configuration, FashionStoreDbContext dbContext, IHttpContextAccessor httpContextAccessor)
+        public LoginService(UserManager<ApplicationUser> userManager, ITokenService tokenService, IEmailNotificationService emailNotificationService, IEmailTemplateRenderer emailTemplateRenderer, ILogger<LoginService> logger, IConfiguration configuration, IAuthSessionRepository authSessionRepository, IHttpContextAccessor httpContextAccessor)
         {
             _userManager = userManager;
             _tokenService = tokenService;
@@ -25,7 +25,7 @@ namespace FashionStore.API.Features.Auth.Login
             _emailTemplateRenderer = emailTemplateRenderer;
             _logger = logger;
             _configuration = configuration;
-            _dbContext = dbContext;
+            _authSessionRepository = authSessionRepository;
             _httpContextAccessor = httpContextAccessor;
         }
 
@@ -77,8 +77,7 @@ namespace FashionStore.API.Features.Auth.Login
                 UserAgent = _httpContextAccessor.HttpContext?.Request.Headers.UserAgent.ToString(),
                 IpAddress = _httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString()
             };
-            _dbContext.UserSessions.Add(session);
-            await _dbContext.SaveChangesAsync();
+            await _authSessionRepository.AddSessionAsync(session, CancellationToken.None);
             var token = _tokenService.GenerateJwtToken(user, roles, tokenExpiry, session.Id);
             user.LastLoginDate = DateTimeOffset.UtcNow;
             await _userManager.UpdateAsync(user);

@@ -1,3 +1,4 @@
+using FashionStore.Domain.Abstractions.Auth;
 using System.Text;
 using Microsoft.AspNetCore.WebUtilities;
 
@@ -5,7 +6,7 @@ namespace FashionStore.API.Features.Users.UpdateUser;
 
 public sealed class UpdateUserService(
     UserManager<ApplicationUser> userManager,
-    FashionStoreDbContext dbContext,
+    IAuthSessionRepository authSessionRepository,
     IEmailNotificationService emailNotificationService,
     IEmailTemplateRenderer emailTemplateRenderer,
     IConfiguration configuration,
@@ -52,8 +53,7 @@ public sealed class UpdateUserService(
         {
             await userManager.UpdateSecurityStampAsync(user);
             var now = DateTimeOffset.UtcNow;
-            await dbContext.UserSessions.Where(session => session.UserId == user.Id && session.RevokedAtUtc == null)
-                .ExecuteUpdateAsync(setters => setters.SetProperty(session => session.RevokedAtUtc, now), cancellationToken);
+            await authSessionRepository.RevokeAllSessionsForUserAsync(user.Id, now, cancellationToken);
             await SendEmailChangeNotificationsAsync(user, oldEmail);
         }
 

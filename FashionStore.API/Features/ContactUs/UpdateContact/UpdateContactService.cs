@@ -1,3 +1,4 @@
+using FashionStore.API.Caching;
 using FashionStore.API.Features.ContactUs.Shared;
 using FashionStore.Domain.Abstractions.Contacts;
 
@@ -8,7 +9,9 @@ public interface IUpdateContactService
     Task<ResponseResult<ContactUsResponse>> ExecuteAsync(string id, ContactUsRequest request, CancellationToken cancellationToken);
 }
 
-public sealed class UpdateContactService(IContactUsConfigurationRepository repository) : IUpdateContactService
+public sealed class UpdateContactService(
+    IContactUsConfigurationRepository repository,
+    IRedisCacheService cacheService) : IUpdateContactService
 {
     public async Task<ResponseResult<ContactUsResponse>> ExecuteAsync(string id, ContactUsRequest request, CancellationToken cancellationToken)
     {
@@ -40,6 +43,7 @@ public sealed class UpdateContactService(IContactUsConfigurationRepository repos
                 request.BusinessEmail, 
                 request.IsActive);
             await repository.SaveChangesAsync(cancellationToken);
+            await cacheService.InvalidateTagAsync("contacts");
             return response.Success(ContactUsMapper.Map(contact), "Contact updated successfully.");
         }
         catch (ArgumentException exception)

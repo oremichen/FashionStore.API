@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Reflection;
 using System.Text.Json;
 using FashionStore.Shared.Common;
 using FashionStore.Shared.Constants;
@@ -96,6 +97,13 @@ namespace FashionStore.API.Middleware
                     null,
                     LogLevel.Warning),
 
+                var ex when IsDbUpdateUniqueViolation(ex, out var constraintMessage) => (
+                    StatusCodes.Status409Conflict,
+                    ResponseCodes.DUPLICATE_RECORD,
+                    constraintMessage,
+                    null,
+                    LogLevel.Warning),
+
                 _ => (
                     StatusCodes.Status500InternalServerError,
                     ResponseCodes.SYSTEM_MALFUNCTION,
@@ -139,6 +147,63 @@ namespace FashionStore.API.Middleware
                 description = response.Description,
                 data = response.ErrorData
             }));
+        }
+
+        private static bool IsDbUpdateUniqueViolation(Exception exception, out string message)
+        {
+            message = null!;
+
+            const string dbUpdateExceptionTypeName = "Microsoft.EntityFrameworkCore.DbUpdateException";
+            var isDbUpdate = string.Equals(exception.GetType().FullName, dbUpdateExceptionTypeName, StringComparison.Ordinal)
+                              || exception.InnerException is not null && string.Equals(exception.GetType().BaseType?.FullName, dbUpdateExceptionTypeName, StringComparison.Ordinal);
+
+            if (!isDbUpdate && exception.InnerException is null)
+                return false;
+
+            var inner = exception.InnerException;
+            if (inner is null)
+                return false;
+
+            string? constraintName = TryGetConstraintName(inner);
+
+            if (string.IsNullOrWhiteSpace(constraintName) && inner.Message is not null && inner.Message.Contains("UQ_DeliveryRate_ZoneId_MethodId", StringComparison.Ordinal))
+            {
+                constraintName = "UQ_DeliveryRate_ZoneId_MethodId";
+            }
+
+            switch (constraintName)
+            {
+                case "UQ_DeliveryRate_ZoneId_MethodId":
+                    message = "A delivery rate already exists for this zone and method combination. Each zone can only have one rate per delivery method. Please update the existing rate instead.";
+                    return true;
+                default:
+                    if (!string.IsNullOrWhiteSpace(constraintName))
+                    {
+                        message = $"A duplicate record was detected (constraint: {constraintName}).";
+                        return true;
+                    }
+                    return false;
+            }
+        }
+
+        private static string? TryGetConstraintName(Exception innerException)
+        {
+            var constraintNameProp = innerException.GetType().GetProperty("ConstraintName", BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase);
+            if (constraintNameProp is not null && typeof(string).IsAssignableFrom(constraintNameProp.PropertyType))
+            {
+                return constraintNameProp.GetValue(innerException) as string;
+            }
+
+            if (innerException.Data is not null)
+            {
+                foreach (var key in innerException.Data.Keys)
+                {
+                    if (key?.ToString()?.Contains("Constraint", StringComparison.OrdinalIgnoreCase) == true)
+                        return innerException.Data[key] as string;
+                }
+            }
+
+            return null;
         }
     }
 }

@@ -7,15 +7,3 @@ public sealed class CheckoutItemRequest
     public string? ColorId { get; set; }
     public int Quantity { get; set; }
 }
-
-public sealed class InitializePaystackRequest
-{
-    public string IdempotencyKey { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
-    public string AddressId { get; set; } = string.Empty;
-    public string DeliveryId { get; set; } = string.Empty;
-    public IReadOnlyList<CheckoutItemRequest> Items { get; set; } = [];
-}
-
-public sealed record PaystackInitializationResponse(string AuthorizationUrl, string AccessCode, string Reference);
-public sealed record PaymentVerificationResponse(string Reference, string OrderId, string Status);

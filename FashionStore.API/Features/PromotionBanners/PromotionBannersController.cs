@@ -18,7 +18,7 @@ public sealed class PromotionBannersController(IGetPromotionBannersService getAl
         return ProcessResponse(await getAllService.ExecuteAsync(cancellationToken));
     }
 
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpGet("{id}")]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}"), HttpGet("{id}")]
     [ProducesResponseType(typeof(ResponseResult<PromotionBannerResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status403Forbidden)]
@@ -29,7 +29,7 @@ public sealed class PromotionBannersController(IGetPromotionBannersService getAl
         return ProcessResponse(await getByIdService.ExecuteAsync(id, cancellationToken));
     }
 
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpPost]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}"), HttpPost]
     [EnableRateLimiting(RateLimitPolicies.AdminUpload)]
     [Consumes("multipart/form-data"), RequestSizeLimit(5 * 1024 * 1024)]
     [ProducesResponseType(typeof(ResponseResult<PromotionBannerResponse>), StatusCodes.Status201Created)]
@@ -45,7 +45,7 @@ public sealed class PromotionBannersController(IGetPromotionBannersService getAl
         return ProcessResponse(await createService.ExecuteAsync(request, cancellationToken));
     }
 
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpPut("{id}")]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}"), HttpPut("{id}")]
     [EnableRateLimiting(RateLimitPolicies.AdminUpload)]
     [Consumes("multipart/form-data"), RequestSizeLimit(5 * 1024 * 1024)]
     [ProducesResponseType(typeof(ResponseResult<PromotionBannerResponse>), StatusCodes.Status200OK)]
@@ -62,7 +62,7 @@ public sealed class PromotionBannersController(IGetPromotionBannersService getAl
         return ProcessResponse(await updateService.ExecuteAsync(id, request, cancellationToken));
     }
 
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpDelete("{id}")]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}"), HttpDelete("{id}")]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status403Forbidden)]
