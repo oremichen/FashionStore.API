@@ -1,7 +1,6 @@
-using FashionStore.Domain.Abstractions.Delivery;
 using FashionStore.Domain.Entities;
 
-namespace FashionStore.API.Features.Payments.Shared;
+namespace FashionStore.Domain.Abstractions.Orders;
 
 public interface IOrderItemHtmlRendererService
 {

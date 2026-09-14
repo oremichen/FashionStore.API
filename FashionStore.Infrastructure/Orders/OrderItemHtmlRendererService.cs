@@ -1,8 +1,9 @@
 using System.Text.Encodings.Web;
 using FashionStore.Domain.Abstractions.Delivery;
+using FashionStore.Domain.Abstractions.Orders;
 using FashionStore.Domain.Entities;
 
-namespace FashionStore.API.Features.Payments.Shared;
+namespace FashionStore.Infrastructure.Orders;
 
 public sealed class OrderItemHtmlRendererService : IOrderItemHtmlRendererService
 {
