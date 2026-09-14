@@ -21,11 +21,12 @@ public sealed class InitializePaystackService : IInitializePaystackService
     private readonly FashionStoreDbContext _dbContext;
     private readonly ILogger<InitializePaystackService> _logger;
     private readonly IDeliveryMethodClassifier _deliveryClassifier;
+    private readonly IDeliveryMethodFactory _deliveryFactory;
     private readonly TimeSpan _reservationLifetime;
 
     public InitializePaystackService(IProductRepository productRepository, IOrderRepository orderRepository,
         IPaystackClient paystackClient, IConfiguration configuration, FashionStoreDbContext dbContext, IDeliveryRepository deliveryRepository,
-        ILogger<InitializePaystackService> logger, IDeliveryMethodClassifier deliveryClassifier)
+        ILogger<InitializePaystackService> logger, IDeliveryMethodClassifier deliveryClassifier, IDeliveryMethodFactory deliveryFactory)
     {
         _productRepository = productRepository;
         _orderRepository = orderRepository;
@@ -35,6 +36,7 @@ public sealed class InitializePaystackService : IInitializePaystackService
         _dbContext = dbContext;
         _logger = logger;
         _deliveryClassifier = deliveryClassifier;
+        _deliveryFactory = deliveryFactory;
 
         if (!double.TryParse(_configuration["AppSettings:Inventory:ReservationExpiryHours"], out var configuredHours)
             || configuredHours <= 0)
@@ -191,8 +193,9 @@ public sealed class InitializePaystackService : IInitializePaystackService
         var activeContact = activeContacts.SingleOrDefault(IsActiveContact);
 
         var pickupMethod = await _deliveryRepository.GetMethodByIdAsync(deliveryId, cancellationToken);
-        var isPickupOrder = pickupMethod is not null
-            && _deliveryClassifier.IsPickup(pickupMethod.Name)
+        var pickupStrategy = pickupMethod is null ? null : _deliveryFactory.GetForMethod(pickupMethod);
+        var isPickupOrder = pickupStrategy is not null
+            && pickupStrategy.RequiresStoreAddressValidation
             && activeContact?.AddressId == addressId;
 
         if (isPickupOrder)
@@ -214,8 +217,9 @@ public sealed class InitializePaystackService : IInitializePaystackService
             ? null
             : await _deliveryRepository.GetMethodByIdAsync(requestedRate.MethodId, cancellationToken);
 
+        var requestedMethodStrategy = requestedMethod is null ? null : _deliveryFactory.GetForMethod(requestedMethod);
         var isPickupAddress = activeContact?.AddressId == addressId &&
-            _deliveryClassifier.IsPickup(requestedMethod?.Name);
+            requestedMethodStrategy?.RequiresStoreAddressValidation == true;
 
         var deliveryRate = await _deliveryRepository.GetActiveRateForStateAsync(deliveryId, state, cancellationToken);
         if (deliveryRate is null)

@@ -6,9 +6,7 @@ using FashionStore.Domain.Abstractions.Delivery;
 using FashionStore.Domain.Abstractions.Notification;
 using FashionStore.Domain.Abstractions.Orders;
 using FashionStore.Domain.Abstractions.Payments;
-using FashionStore.Domain.Constants;
 using FashionStore.Domain.Entities;
-using FashionStore.Domain.Enums;
 
 namespace FashionStore.API.Features.Payments.VerifyPaystack;
 
@@ -24,6 +22,7 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
     private readonly IConfiguration _configuration;
     private readonly ILogger<VerifyPaystackService> _logger;
     private readonly IDeliveryMethodClassifier _deliveryClassifier;
+    private readonly IDeliveryMethodFactory _deliveryFactory;
 
     public VerifyPaystackService(
         IOrderRepository orderRepository,
@@ -33,7 +32,8 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
         IContactUsConfigurationRepository contactConfigRepository,
         IConfiguration configuration,
         ILogger<VerifyPaystackService> logger,
-        IDeliveryMethodClassifier deliveryClassifier)
+        IDeliveryMethodClassifier deliveryClassifier,
+        IDeliveryMethodFactory deliveryFactory)
     {
         _orderRepository = orderRepository;
         _paystackClient = paystackClient;
@@ -43,6 +43,7 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
         _configuration = configuration;
         _logger = logger;
         _deliveryClassifier = deliveryClassifier;
+        _deliveryFactory = deliveryFactory;
     }
 
     public async Task<ResponseResult<PaymentVerificationResponse>> ExecuteAsync(string reference, string? userId, CancellationToken cancellationToken)
@@ -61,12 +62,12 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
             _logger.LogWarning("Payment verification could not locate reference {Reference} for user {UserId}.", reference, userId);
             return response.Fail("Payment reference was not found.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
         }
-        if (order.PaymentStatus == PaymentStatuses.Success)
-            return response.Success(new PaymentVerificationResponse(reference, order.Id, PaymentStatuses.Success), "Payment already verified.");
+        if (order.PaymentStatus == Domain.Constants.PaymentStatuses.Success)
+            return response.Success(new PaymentVerificationResponse(reference, order.Id, Domain.Constants.PaymentStatuses.Success), "Payment already verified.");
 
         var cutoff = DateTimeOffset.UtcNow.Add(ReservationVerificationGrace);
         var expiringReservation = order.InventoryReservations.FirstOrDefault(item =>
-            item.Status == InventoryReservationStatuses.Reserved && item.ExpiresAt <= cutoff);
+            item.Status == Domain.Constants.InventoryReservationStatuses.Reserved && item.ExpiresAt <= cutoff);
         if (expiringReservation is not null)
         {
             _logger.LogWarning(
@@ -98,9 +99,9 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
             return response.Fail("Payment details did not match the order.", ResponseCodes.SECURITY_VIOLATION);
         }
 
-        var paymentSucceeded = string.Equals(transaction.Status, PaymentStatuses.Success, StringComparison.OrdinalIgnoreCase);
+        var paymentSucceeded = string.Equals(transaction.Status, Domain.Constants.PaymentStatuses.Success, StringComparison.OrdinalIgnoreCase);
         var paidAt = transaction.PaidAt ?? DateTimeOffset.UtcNow;
-        var failedStatus = paymentSucceeded ? PaymentStatuses.Failed : (transaction.Status ?? PaymentStatuses.Failed);
+        var failedStatus = paymentSucceeded ? Domain.Constants.PaymentStatuses.Failed : (transaction.Status ?? Domain.Constants.PaymentStatuses.Failed);
 
         var (commitSucceeded, conflictMessage) = await _orderRepository.ExecuteInRetriableTransactionAsync(async (orderTransaction, ct) =>
         {
@@ -108,7 +109,7 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
             if (paymentSucceeded)
             {
                 order.MarkPaid(paidAt);
-                foreach (var reservation in order.InventoryReservations.Where(item => item.Status == InventoryReservationStatuses.Reserved))
+                foreach (var reservation in order.InventoryReservations.Where(item => item.Status == Domain.Constants.InventoryReservationStatuses.Reserved))
                 {
                     var consumed = await _orderRepository.ConsumeInventoryReservationAsync(reservation.Id, ct);
                     if (!consumed)
@@ -123,9 +124,9 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
             else
             {
                 order.MarkPaymentFailed(failedStatus);
-                foreach (var reservation in order.InventoryReservations.Where(item => item.Status == InventoryReservationStatuses.Reserved))
+                foreach (var reservation in order.InventoryReservations.Where(item => item.Status == Domain.Constants.InventoryReservationStatuses.Reserved))
                 {
-                    var released = await _orderRepository.ReleaseInventoryReservationAsync(reservation.Id, InventoryReservationStatuses.Released, ct);
+                    var released = await _orderRepository.ReleaseInventoryReservationAsync(reservation.Id, Domain.Constants.InventoryReservationStatuses.Released, ct);
                     if (!released)
                     {
                         reservationConflictMessage =
@@ -194,29 +195,15 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
         var customerOrderItemsHtml = BuildOrderItemsHtml(order.Items, includeSku: false);
         var internalOrderItemsHtml = BuildOrderItemsHtml(order.Items, includeSku: true);
         var totalQuantity = order.Items.Sum(i => i.Quantity);
-        var isPickup = _deliveryClassifier.IsPickup(order.DeliveryMethod);
 
-        string deliveryMethod;
-        string deliveryWindow;
-        string fullAddress;
+        var strategy = _deliveryFactory.GetForMethod(order.DeliveryMethod);
+        var deliveryMethod = strategy.GetDeliveryMethodDisplay(order.DeliveryMethod, order.EstimatedDaysMin, order.EstimatedDaysMax);
+        var deliveryWindow = strategy.GetDefaultDeliveryWindowDisplay(order.EstimatedDaysMin, order.EstimatedDaysMax);
+        var fullAddress = strategy.ShowAddressInEmails
+            ? _deliveryClassifier.FormatDeliveryAddress(address)
+            : HtmlEncoder.Default.Encode(string.Empty);
 
-        if (isPickup)
-        {
-            deliveryMethod = HtmlEncoder.Default.Encode("Pickup");
-            deliveryWindow = HtmlEncoder.Default.Encode("To be confirmed");
-            fullAddress = HtmlEncoder.Default.Encode(string.Empty);
-        }
-        else
-        {
-            deliveryMethod = HtmlEncoder.Default.Encode(order.DeliveryMethod);
-            deliveryWindow = _deliveryClassifier.FormatDeliveryWindow(order.EstimatedDaysMin, order.EstimatedDaysMax);
-            fullAddress = _deliveryClassifier.FormatDeliveryAddress(address);
-        }
-
-        var customerTemplate = isPickup
-            ? EmailNotificationTypeEnum.OrderCustomerPickupConfirmation
-            : EmailNotificationTypeEnum.OrderCustomerConfirmation;
-
+        var customerTemplate = strategy.GetOrderConfirmationTemplate(isInternal: false);
         var customerTokens = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             ["appName"] = HtmlEncoder.Default.Encode(appName),
@@ -253,10 +240,7 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
             internalRecipients.Add(businessEmail);
         }
 
-        var internalTemplate = isPickup
-            ? EmailNotificationTypeEnum.OrderInternalPickupNotification
-            : EmailNotificationTypeEnum.OrderInternalNotification;
-
+        var internalTemplate = strategy.GetOrderConfirmationTemplate(isInternal: true);
         var internalTokens = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             ["appName"] = HtmlEncoder.Default.Encode(appName),

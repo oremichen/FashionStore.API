@@ -43,6 +43,10 @@ namespace FashionStore.Infrastructure
                 Repository.DeliveryRepo.DeliveryRepository>();
             services.AddScoped<FashionStore.Domain.Abstractions.Delivery.IDeliveryMethodClassifier,
                 Delivery.DeliveryMethodClassifier>();
+            services.AddScoped<Delivery.PickupDeliveryStrategy>();
+            services.AddScoped<Delivery.ShippingDeliveryStrategy>();
+            services.AddScoped<FashionStore.Domain.Abstractions.Delivery.IDeliveryMethodFactory,
+                Delivery.DeliveryMethodFactory>();
             services.AddOptions<Payments.PaystackSettings>()
                 .BindConfiguration(Payments.PaystackSettings.SectionName)
                 .ValidateDataAnnotations()
