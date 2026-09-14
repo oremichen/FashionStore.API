@@ -61,6 +61,12 @@ public sealed class InitializePayOnDeliveryService : IInitializePayOnDeliverySer
             string.IsNullOrWhiteSpace(request.AddressId) ||
             request.Items.Count == 0)
         {
+            _logger.LogError("PayOnDelivery validation failed for user {UserId}: required fields missing (idempotency={HasIdempotency}, email={HasEmail}, address={HasAddress}, items={ItemCount}).",
+                userId,
+                !string.IsNullOrWhiteSpace(request.IdempotencyKey),
+                !string.IsNullOrWhiteSpace(request.Email),
+                !string.IsNullOrWhiteSpace(request.AddressId),
+                request.Items.Count);
             return response.Fail(
                 "Idempotency key, email, address and at least one order item are required.",
                 ResponseCodes.INVALID_ACTION);
@@ -73,11 +79,14 @@ public sealed class InitializePayOnDeliveryService : IInitializePayOnDeliverySer
             return response.Fail("Idempotency key cannot exceed 100 characters.", ResponseCodes.INVALID_ACTION);
         }
 
+        _logger.LogInformation("Checking idempotency for user {UserId}, key {IdempotencyKey}.", userId, idempotencyKey);
         var existingOrder = await _orderRepository.GetByIdempotencyKeyAsync(userId, idempotencyKey, false, cancellationToken);
         if (existingOrder is not null)
         {
             if (string.Equals(existingOrder.PaymentProvider, PaymentProviderKeys.PayOnDelivery, StringComparison.OrdinalIgnoreCase))
             {
+                _logger.LogInformation("Returning existing PayOnDelivery order {OrderId} ({TrackOrderId}) for user {UserId}, key {IdempotencyKey}.",
+                    existingOrder.Id, existingOrder.TrackOrderId, userId, idempotencyKey);
                 return response.Success(
                     new PayOnDeliveryInitializationResponse(
                         existingOrder.Id,
@@ -86,38 +95,64 @@ public sealed class InitializePayOnDeliveryService : IInitializePayOnDeliverySer
                         existingOrder.PaymentStatus),
                     "Returning the existing Pay On Delivery order.");
             }
+            _logger.LogError("Idempotency key {IdempotencyKey} for user {UserId} is already tied to payment provider {Provider}; cannot reuse for PayOnDelivery.",
+                idempotencyKey, userId, existingOrder.PaymentProvider);
             return response.Fail(
                 "This checkout is already being initialized with a different payment method. Please start a new order.",
                 ResponseCodes.REQUEST_IN_PROGRESS);
         }
 
         if (string.IsNullOrWhiteSpace(request.DeliveryId))
+        {
+            _logger.LogError("PayOnDelivery validation failed for user {UserId}, key {IdempotencyKey}: delivery option missing.", userId, idempotencyKey);
             return response.Fail("A delivery option is required.", ResponseCodes.INVALID_ACTION);
+        }
 
+        _logger.LogInformation("Fetching address {AddressId} for user {UserId}, key {IdempotencyKey}.", request.AddressId, userId, idempotencyKey);
         var address = await _orderRepository.GetAddressByIdAsync(request.AddressId, cancellationToken);
         if (address is null)
+        {
+            _logger.LogError("Address {AddressId} was not found for user {UserId}, key {IdempotencyKey}.", request.AddressId, userId, idempotencyKey);
             return response.Fail("The selected address was not found.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
+        }
 
+        _logger.LogInformation("Resolving delivery info for delivery {DeliveryId} / address {AddressId}, user {UserId}, key {IdempotencyKey}.",
+            request.DeliveryId, request.AddressId, userId, idempotencyKey);
         var deliveryResolution = await ResolveDeliveryInfoAsync(
             request.DeliveryId, request.AddressId, address.State, userId, cancellationToken);
         if (deliveryResolution is null)
+        {
+            _logger.LogError("Delivery resolution returned null for delivery {DeliveryId} / address {AddressId}, user {UserId}, key {IdempotencyKey}.",
+                request.DeliveryId, request.AddressId, userId, idempotencyKey);
             return response.Fail("The selected delivery option could not be resolved.", ResponseCodes.INVALID_ACTION);
+        }
         if (deliveryResolution.ErrorMessage is not null)
+        {
+            _logger.LogError("Delivery resolution failed for delivery {DeliveryId} / address {AddressId}, user {UserId}, key {IdempotencyKey}: {Error}.",
+                request.DeliveryId, request.AddressId, userId, idempotencyKey, deliveryResolution.ErrorMessage);
             return response.Fail(deliveryResolution.ErrorMessage, ResponseCodes.INVALID_ACTION);
+        }
 
         if (!deliveryResolution.IsPickup
             && !await _orderRepository.AddressBelongsToUserAsync(request.AddressId, userId, cancellationToken))
         {
-            _logger.LogError("User {UserId} attempted checkout with unavailable address {AddressId}.", userId, request.AddressId);
+            _logger.LogError("User {UserId} attempted checkout with unavailable address {AddressId}, key {IdempotencyKey}.", userId, request.AddressId, idempotencyKey);
             return response.Fail("The selected address was not found.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
         }
 
+        _logger.LogInformation("Building order items ({ItemCount} requested) for user {UserId}, key {IdempotencyKey}.",
+            request.Items.Count, userId, idempotencyKey);
         var orderItems = await BuildOrderItemsAsync(request.Items, userId, cancellationToken);
         if (orderItems is null)
+        {
+            _logger.LogError("Failed to build order items for user {UserId}, key {IdempotencyKey}: one or more products unavailable/invalid.", userId, idempotencyKey);
             return response.Fail("One or more products are unavailable.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
+        }
 
         var subtotal = orderItems.Sum(item => item.LineTotal);
         var reference = "FS-COD-" + Guid.NewGuid().ToString("N").ToUpperInvariant();
+        _logger.LogInformation("Creating PayOnDelivery order reference {Reference} for user {UserId}, key {IdempotencyKey}, subtotal={Subtotal} NGN, delivery={DeliveryFee} NGN, method={Method}.",
+            reference, userId, idempotencyKey, subtotal, deliveryResolution.DeliveryFee, deliveryResolution.DeliveryMethodName);
 
         var order = Order.Create(
             userId,
@@ -137,6 +172,8 @@ public sealed class InitializePayOnDeliveryService : IInitializePayOnDeliverySer
         var reservationExpiresAt = DateTimeOffset.UtcNow
             .AddDays(PayOnDeliveryReservationExpiryDays);
 
+        _logger.LogInformation("Persisting PayOnDelivery order and inventory reservations for user {UserId}, key {IdempotencyKey}, reservation expires {ExpiresAt}.",
+            userId, idempotencyKey, reservationExpiresAt);
         try
         {
             await _orderRepository.CreateWithInventoryReservationsAsync(order, reservationExpiresAt, cancellationToken);
@@ -147,6 +184,8 @@ public sealed class InitializePayOnDeliveryService : IInitializePayOnDeliverySer
             return response.Fail(exception.MessageText, ResponseCodes.INVALID_ACTION);
         }
 
+        _logger.LogInformation("Sending PayOnDelivery order confirmation emails for order {OrderId} ({TrackOrderId}).",
+            order.Id, order.TrackOrderId);
         try
         {
             await SendOrderEmailsAsync(order, address, cancellationToken);
@@ -390,7 +429,7 @@ public sealed class InitializePayOnDeliveryService : IInitializePayOnDeliverySer
                 var color = await _catalogOptionRepository.GetColorByIdAsync(requestedItem.ColorId, cancellationToken);
                 if (color is null)
                 {
-                    _logger.LogWarning("User {UserId} selected invalid color {ColorId} for product {ProductId}.",
+                    _logger.LogError("User {UserId} selected invalid color {ColorId} for product {ProductId}.",
                         userId, requestedItem.ColorId, product.Id);
                     return null;
                 }
