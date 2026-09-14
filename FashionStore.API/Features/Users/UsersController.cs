@@ -1,18 +1,3 @@
-using FashionStore.API.Features.Users.CreateUser;
-using FashionStore.API.Features.Users.GetUserByEmail;
-using FashionStore.API.Features.Users.UpdateUser;
-using FashionStore.API.Features.Users.CreateUserAddress;
-using FashionStore.API.Features.Users.DeleteUserAddress;
-using FashionStore.API.Features.Users.GetAllUserAddresses;
-using FashionStore.API.Features.Users.UpdateUserAddress;
-using FashionStore.API.Features.Users.GetUsers;
-using FashionStore.API.Features.Users.ChangeUserStatus;
-using FashionStore.API.Features.Users.ResetAdminPassword;
-using FashionStore.API.Features.Users.GetAdminRoles;
-using FashionStore.API.Features.Users.UpdateAdminUser;
-using FashionStore.API.Features.Users.AdminUpdateUser;
-using FashionStore.API.Features.Users.GetPickupAddress;
-
 namespace FashionStore.API.Features.Users
 {
     [Authorize]
