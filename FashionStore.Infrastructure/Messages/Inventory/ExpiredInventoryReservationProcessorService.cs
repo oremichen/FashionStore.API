@@ -11,10 +11,6 @@ public sealed class ExpiredInventoryReservationProcessorService(
     IServiceScopeFactory scopeFactory,
     ILogger<ExpiredInventoryReservationProcessorService> logger) : BackgroundService
 {
-    private const string VerifyPaystackInterfaceTypeName
-        = "FashionStore.API.Features.Payments.VerifyPaystack.IVerifyPaystackService, FashionStore.API";
-    private const string SuccessfulStatuses = "00";
-
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         using var timer = new PeriodicTimer(TimeSpan.FromMinutes(1));
@@ -24,7 +20,7 @@ public sealed class ExpiredInventoryReservationProcessorService(
             {
                 using var scope = scopeFactory.CreateScope();
                 var orderRepository = scope.ServiceProvider.GetRequiredService<IOrderRepository>();
-                var paystackClient = scope.ServiceProvider.GetRequiredService<IPaystackClient>();
+                var paymentGatewayFactory = scope.ServiceProvider.GetRequiredService<IPaymentGatewayFactory>();
 
                 var expired = await orderRepository.GetExpiredReservationsAsync(DateTimeOffset.UtcNow, stoppingToken);
                 if (expired.Count == 0) continue;
@@ -53,72 +49,41 @@ public sealed class ExpiredInventoryReservationProcessorService(
                         continue;
                     }
 
-                    PaystackVerificationResult paystackResult;
-                    try
-                    {
-                        paystackResult = await paystackClient.VerifyAsync(order.PaymentReference, stoppingToken);
-                    }
-                    catch (HttpRequestException paystackHttpEx)
-                    {
-                        ordersDeferred++;
-                        logger.LogWarning(paystackHttpEx,
-                            "Expiry worker could not reach Paystack for order {TrackOrderId} ({PaymentReference}). " +
-                            "Deferring reservation release until next run.",
-                            order.TrackOrderId, order.PaymentReference);
-                        continue;
-                    }
-                    catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
-                    {
-                        throw;
-                    }
-                    catch (Exception paystackEx)
+                    var providerKey = order.PaymentProvider ?? PaymentProviderKeys.Paystack;
+                    var verificationOutcome = await VerifyPaymentOutcomeAsync(
+                        order, providerKey, paymentGatewayFactory, stoppingToken);
+
+                    if (verificationOutcome == PaymentCheckOutcome.Deferred)
                     {
                         ordersDeferred++;
-                        logger.LogError(paystackEx,
-                            "Expiry worker got unexpected error from Paystack Verify on order {TrackOrderId} ({PaymentReference}). " +
-                            "Deferring reservation release until next run.",
-                            order.TrackOrderId, order.PaymentReference);
                         continue;
                     }
 
-                    if (string.Equals(paystackResult.Status, PaymentStatuses.Success, StringComparison.OrdinalIgnoreCase))
+                    if (verificationOutcome == PaymentCheckOutcome.Paid)
                     {
                         logger.LogWarning(
-                            "Expiry worker detected paid-but-not-marked order {TrackOrderId} ({PaymentReference}). " +
-                            "Attempting rescue through Verify service (mark paid, consume reservations, send emails).",
-                            order.TrackOrderId, order.PaymentReference);
-                        try
+                            "Expiry worker detected paid-but-not-marked order {TrackOrderId} ({PaymentReference}, provider: {Provider}). " +
+                            "Attempting rescue (mark paid, consume reservations).",
+                            order.TrackOrderId, order.PaymentReference, providerKey);
+
+                        var rescueSucceeded = await TryRescuePaidOrderInlineAsync(
+                            orderRepository, order, stoppingToken);
+
+                        if (rescueSucceeded)
                         {
-                            var rescueSucceeded = await TryRescuePaidOrderViaVerifyServiceAsync(
-                                scope.ServiceProvider, order.PaymentReference, stoppingToken);
-                            if (rescueSucceeded)
-                            {
-                                ordersAutoRescued++;
-                                logger.LogInformation(
-                                    "Expiry worker successfully rescued order {TrackOrderId} ({PaymentReference}). " +
-                                    "Reservations consumed.",
-                                    order.TrackOrderId, order.PaymentReference);
-                            }
-                            else
-                            {
-                                logger.LogWarning(
-                                    "Expiry worker rescue attempt for order {TrackOrderId} ({PaymentReference}) did not confirm success. " +
-                                    "Deferring reservation release until next run.",
-                                    order.TrackOrderId, order.PaymentReference);
-                                ordersDeferred++;
-                            }
+                            ordersAutoRescued++;
+                            logger.LogInformation(
+                                "Expiry worker successfully rescued order {TrackOrderId} ({PaymentReference}). " +
+                                "Reservations consumed.",
+                                order.TrackOrderId, order.PaymentReference);
                         }
-                        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                        else
                         {
-                            throw;
-                        }
-                        catch (Exception rescueEx)
-                        {
-                            ordersDeferred++;
-                            logger.LogError(rescueEx,
-                                "Expiry worker rescue attempt threw for order {TrackOrderId} ({PaymentReference}). " +
+                            logger.LogWarning(
+                                "Expiry worker rescue attempt for order {TrackOrderId} ({PaymentReference}) did not confirm success. " +
                                 "Deferring reservation release until next run.",
                                 order.TrackOrderId, order.PaymentReference);
+                            ordersDeferred++;
                         }
                         continue;
                     }
@@ -169,7 +134,7 @@ public sealed class ExpiredInventoryReservationProcessorService(
                     "Expiry inventory run complete. Examined {ExpiredCandidates} reservations across {OrderCount} orders. " +
                     "Auto-rescued paid bug-affected orders: {Rescued}. " +
                     "Released abandoned orders: {ReleasedOrders} ({ReleasedReservations} reservations). " +
-                    "Deferred due to transient Paystack/verify errors: {DeferredOrders}.",
+                    "Deferred due to transient payment-provider/rescue errors: {DeferredOrders}.",
                     expired.Count, candidatesByOrder.Count,
                     ordersAutoRescued, ordersReleased, reservationsReleasedCount, ordersDeferred);
             }
@@ -181,36 +146,139 @@ public sealed class ExpiredInventoryReservationProcessorService(
         }
     }
 
-    private static async Task<bool> TryRescuePaidOrderViaVerifyServiceAsync(
-        IServiceProvider serviceProvider, string paymentReference, CancellationToken cancellationToken)
+    private enum PaymentCheckOutcome
     {
-        var verifyServiceType = Type.GetType(VerifyPaystackInterfaceTypeName, throwOnError: true)!;
-        var verifyService = serviceProvider.GetRequiredService(verifyServiceType);
-        var executeAsyncMethod = verifyServiceType.GetMethod(
-            nameof(IVerifyPaystackShim.ExecuteAsync),
-            new[] { typeof(string), typeof(string), typeof(CancellationToken) });
-        if (executeAsyncMethod is null)
+        NotPaid,
+        Paid,
+        Deferred
+    }
+
+    private async Task<PaymentCheckOutcome> VerifyPaymentOutcomeAsync(
+        Order order,
+        string providerKey,
+        IPaymentGatewayFactory paymentGatewayFactory,
+        CancellationToken cancellationToken)
+    {
+        if (string.Equals(providerKey, PaymentProviderKeys.PayOnDelivery, StringComparison.OrdinalIgnoreCase))
         {
-            throw new InvalidOperationException(
-                $"Could not locate ExecuteAsync(string, string, CancellationToken) on {verifyServiceType.FullName}.");
+            return PaymentCheckOutcome.NotPaid;
         }
 
-        object?[] parameters = new object?[] { paymentReference, null, cancellationToken };
-        var task = (Task)executeAsyncMethod.Invoke(verifyService, parameters)!;
-        await task.ConfigureAwait(false);
+        IPaymentGateway gateway;
+        try
+        {
+            gateway = paymentGatewayFactory.Get(providerKey);
+        }
+        catch (ArgumentException gatewayEx)
+        {
+            logger.LogWarning(gatewayEx,
+                "Expiry worker could not resolve payment gateway for order {TrackOrderId} ({PaymentReference}, provider: {Provider}). " +
+                "Deferring reservation release until next run.",
+                order.TrackOrderId, order.PaymentReference, providerKey);
+            return PaymentCheckOutcome.Deferred;
+        }
 
-        var resultProperty = task.GetType().GetProperty("Result");
-        if (resultProperty is null) return false;
-        var responseResult = resultProperty.GetValue(task);
-        if (responseResult is null) return false;
+        PaymentVerificationResult verification;
+        try
+        {
+            verification = await gateway.VerifyByMerchantReferenceAsync(order.PaymentReference, cancellationToken);
+        }
+        catch (HttpRequestException httpEx)
+        {
+            logger.LogWarning(httpEx,
+                "Expiry worker could not reach payment provider {Provider} for order {TrackOrderId} ({PaymentReference}). " +
+                "Deferring reservation release until next run.",
+                providerKey, order.TrackOrderId, order.PaymentReference);
+            return PaymentCheckOutcome.Deferred;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception verifyEx)
+        {
+            logger.LogError(verifyEx,
+                "Expiry worker got unexpected error verifying order {TrackOrderId} ({PaymentReference}, provider: {Provider}). " +
+                "Deferring reservation release until next run.",
+                order.TrackOrderId, order.PaymentReference, providerKey);
+            return PaymentCheckOutcome.Deferred;
+        }
 
-        var statusProperty = responseResult.GetType().GetProperty("Status");
-        var statusValue = statusProperty?.GetValue(responseResult) as string;
-        return string.Equals(statusValue, ResponseCodes.SUCCESS, StringComparison.Ordinal);
+        if (!verification.IsSuccess)
+        {
+            return PaymentCheckOutcome.NotPaid;
+        }
+
+        var expectedAmount = checked(decimal.ToInt64(order.Total * 100m));
+        var detailsMatch =
+            string.Equals(verification.MerchantReference, order.PaymentReference, StringComparison.Ordinal) &&
+            verification.AmountKobo == expectedAmount &&
+            string.Equals(verification.Currency, order.Currency, StringComparison.OrdinalIgnoreCase);
+
+        if (!detailsMatch)
+        {
+            logger.LogError(
+                "Expiry worker verification mismatch for order {TrackOrderId} ({PaymentReference}, provider: {Provider}). " +
+                "Expected amount {ExpectedAmount} {Currency}; received {PaidAmount} {PaidCurrency}. " +
+                "Releasing reservations.",
+                order.TrackOrderId, order.PaymentReference, providerKey,
+                expectedAmount, order.Currency, verification.AmountKobo, verification.Currency);
+            return PaymentCheckOutcome.NotPaid;
+        }
+
+        return PaymentCheckOutcome.Paid;
     }
-}
 
-internal interface IVerifyPaystackShim
-{
-    Task<object?> ExecuteAsync(string reference, string? userId, CancellationToken cancellationToken);
+    private async Task<bool> TryRescuePaidOrderInlineAsync(
+        IOrderRepository orderRepository,
+        Order order,
+        CancellationToken cancellationToken)
+    {
+        var paidAt = DateTimeOffset.UtcNow;
+        try
+        {
+            var (commitSucceeded, _) = await orderRepository.ExecuteInRetriableTransactionAsync(async (tx, ct) =>
+            {
+                string? conflictMessage = null;
+                order.MarkPaid(paidAt);
+                foreach (var reservation in order.InventoryReservations.Where(item =>
+                    item.Status == InventoryReservationStatuses.Reserved))
+                {
+                    var consumed = await orderRepository.ConsumeInventoryReservationAsync(reservation.Id, ct);
+                    if (!consumed)
+                    {
+                        conflictMessage =
+                            $"Inventory reservation {reservation.Id} for order {order.Id} could not be consumed. " +
+                            "It was likely released or expired concurrently.";
+                        break;
+                    }
+                }
+
+                if (conflictMessage is not null)
+                {
+                    logger.LogWarning("{Message} Rolling back rescue for order {OrderId}.",
+                        conflictMessage, order.Id);
+                    await tx.RollbackAsync(ct);
+                    return (Success: false, ConflictMessage: conflictMessage);
+                }
+
+                await orderRepository.SaveChangesAsync(ct);
+                await tx.CommitAsync(ct);
+                return (Success: true, ConflictMessage: (string?)null);
+            }, cancellationToken);
+
+            return commitSucceeded;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception rescueEx)
+        {
+            logger.LogError(rescueEx,
+                "Expiry worker inline rescue threw for order {TrackOrderId} ({PaymentReference}).",
+                order.TrackOrderId, order.PaymentReference);
+            return false;
+        }
+    }
 }
