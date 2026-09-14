@@ -89,7 +89,6 @@ public sealed class InitializePayOnDeliveryService : IInitializePayOnDeliverySer
                     existingOrder.Id, existingOrder.TrackOrderId, userId, idempotencyKey);
                 return response.Success(
                     new PayOnDeliveryInitializationResponse(
-                        existingOrder.Id,
                         existingOrder.TrackOrderId,
                         existingOrder.PaymentReference,
                         existingOrder.PaymentStatus),
@@ -202,7 +201,6 @@ public sealed class InitializePayOnDeliveryService : IInitializePayOnDeliverySer
 
         return response.Success(
             new PayOnDeliveryInitializationResponse(
-                order.Id,
                 order.TrackOrderId,
                 reference,
                 order.PaymentStatus),
