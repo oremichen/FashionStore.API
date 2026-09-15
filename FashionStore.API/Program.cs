@@ -529,7 +529,16 @@ if (isVercel)
 }
 else
 {
-    await DatabaseInitializer.InitializeAsync(app.Services, app.Configuration, startupLogger);
+    try
+    {
+        await DatabaseInitializer.InitializeAsync(app.Services, app.Configuration, startupLogger);
+    }
+    catch (Exception ex)
+    {
+        startupLogger.LogError(
+            ex,
+            "Database migration or seed initialization failed. The API will continue starting, but database-dependent requests may be unavailable.");
+    }
 }
 
 if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Docker"))
