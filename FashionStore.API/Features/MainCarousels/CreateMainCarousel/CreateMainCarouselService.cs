@@ -23,7 +23,7 @@ public sealed class CreateMainCarouselService(IMainCarouselRepository repository
         catch (ArgumentException exception)
         {
             logger.LogError(exception, "Main carousel creation validation failed.");
-            return response.Fail(exception.Message, ResponseCodes.INVALID_ACTION);
+            return response.Fail("The carousel details are invalid.", ResponseCodes.INVALID_ACTION);
         }
     }
 

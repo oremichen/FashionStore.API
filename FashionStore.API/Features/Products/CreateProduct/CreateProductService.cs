@@ -58,7 +58,7 @@ public class CreateProductService(IProductRepository repository, IImageProcessor
         catch (ArgumentException ex)
         {
             logger.LogError(ex, "Product creation failed validation for slug {ProductSlug}.", request.Slug);
-            return new ResponseResult<ProductResponse>().Fail(ex.Message, ResponseCodes.INVALID_ACTION);
+            return new ResponseResult<ProductResponse>().Fail("The product details are invalid.", ResponseCodes.INVALID_ACTION);
         }
     }
 

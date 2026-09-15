@@ -75,7 +75,7 @@ namespace FashionStore.API.Features.Auth.Register
             }
             catch (Exception exception)
             {
-                await ReverseUserCreationAsync(user, "post-creation registration failure", exception.Message);
+                await ReverseUserCreationAsync(user, "post-creation registration failure", "Registration failed after the account was created.");
                 _logger.LogError(exception, "Registration failed after creating user {UserId} with email {Email}. User creation was reversed.", user.Id, user.Email);
                 return response.Fail("Registration could not be completed. Please try again.", ResponseCodes.ACTION_FAILED);
             }

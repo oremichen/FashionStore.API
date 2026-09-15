@@ -1,7 +1,7 @@
 using FashionStore.Domain.Abstractions.CatalogOptions;
 
 namespace FashionStore.API.Features.Colors.CreateColor;
-public sealed class CreateColorService(ICatalogOptionRepository repository) : ICreateColorService
+public sealed class CreateColorService(ICatalogOptionRepository repository, ILogger<CreateColorService> logger) : ICreateColorService
 {
     public async Task<ResponseResult<ColorResponse>> ExecuteAsync(CreateColorRequest request, CancellationToken cancellationToken)
     {
@@ -19,7 +19,8 @@ public sealed class CreateColorService(ICatalogOptionRepository repository) : IC
         }
         catch (ArgumentException exception)
         {
-            return response.Fail(exception.Message, ResponseCodes.INVALID_ACTION);
+            logger.LogWarning(exception, "Color creation validation failed for {ColorName}.", request.Name);
+            return response.Fail("The color details are invalid.", ResponseCodes.INVALID_ACTION);
         }
     }
 

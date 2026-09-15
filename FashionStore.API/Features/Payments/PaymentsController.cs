@@ -36,7 +36,7 @@ public sealed class PaymentsController : BaseApiController
     public async Task<IActionResult> InitializePaystack([FromBody] InitializePaystackRequest request, CancellationToken cancellationToken)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
+        if (string.IsNullOrWhiteSpace(userId)) return ProcessResponse(new ResponseResult().Fail("You are not authorized to perform this action.", ResponseCodes.INVALID_TOKEN));
         return ProcessResponse(await _initializePaystackService.ExecuteAsync(userId, request, cancellationToken));
     }
 
@@ -48,7 +48,7 @@ public sealed class PaymentsController : BaseApiController
         CancellationToken cancellationToken)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
+        if (string.IsNullOrWhiteSpace(userId)) return ProcessResponse(new ResponseResult().Fail("You are not authorized to perform this action.", ResponseCodes.INVALID_TOKEN));
         return ProcessResponse(await _initializePayOnDeliveryService.ExecuteAsync(userId, request, cancellationToken));
     }
 
@@ -58,7 +58,7 @@ public sealed class PaymentsController : BaseApiController
     public async Task<IActionResult> VerifyPaystack(string reference, CancellationToken cancellationToken)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
+        if (string.IsNullOrWhiteSpace(userId)) return ProcessResponse(new ResponseResult().Fail("You are not authorized to perform this action.", ResponseCodes.INVALID_TOKEN));
         return ProcessResponse(await _verifyPaystackService.ExecuteAsync(reference, userId, cancellationToken));
     }
 

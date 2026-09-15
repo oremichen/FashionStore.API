@@ -37,49 +37,49 @@ namespace FashionStore.API.Middleware
                 ValidationException validationException => (
                     StatusCodes.Status400BadRequest,
                     ResponseCodes.UNPROCESSABLE,
-                    validationException.Message,
+                    "The request contains invalid data.",
                     (object?)validationException.ValidationResult?.MemberNames,
                     LogLevel.Warning),
 
                 ArgumentException argumentException => (
                     StatusCodes.Status400BadRequest,
                     ResponseCodes.INVALID_ACTION,
-                    argumentException.Message,
+                    ResponseCodeDescriptions.GetDescription(ResponseCodes.INVALID_ACTION),
                     null,
                     LogLevel.Warning),
 
                 KeyNotFoundException keyNotFoundException => (
                     StatusCodes.Status404NotFound,
                     ResponseCodes.UNABLE_TO_LOCATE_RECORD,
-                    keyNotFoundException.Message,
+                    ResponseCodeDescriptions.GetDescription(ResponseCodes.UNABLE_TO_LOCATE_RECORD),
                     null,
                     LogLevel.Warning),
 
                 UnauthorizedAccessException unauthorizedAccessException => (
                     StatusCodes.Status401Unauthorized,
                     ResponseCodes.INVALID_TOKEN,
-                    unauthorizedAccessException.Message,
+                    ResponseCodeDescriptions.GetDescription(ResponseCodes.INVALID_TOKEN),
                     null,
                     LogLevel.Error),
 
                 SecurityTokenException securityTokenException => (
                     StatusCodes.Status401Unauthorized,
                     ResponseCodes.INVALID_TOKEN,
-                    securityTokenException.Message,
+                    ResponseCodeDescriptions.GetDescription(ResponseCodes.INVALID_TOKEN),
                     null,
                     LogLevel.Error),
 
                 NotImplementedException notImplementedException => (
                     StatusCodes.Status501NotImplemented,
                     ResponseCodes.NOT_IMPLEMENTED,
-                    notImplementedException.Message,
+                    ResponseCodeDescriptions.GetDescription(ResponseCodes.NOT_IMPLEMENTED),
                     null,
                     LogLevel.Error),
 
                 TimeoutException timeoutException => (
                     StatusCodes.Status408RequestTimeout,
                     ResponseCodes.TIMEOUT,
-                    timeoutException.Message,
+                    ResponseCodeDescriptions.GetDescription(ResponseCodes.TIMEOUT),
                     null,
                     LogLevel.Error),
 
@@ -93,7 +93,7 @@ namespace FashionStore.API.Middleware
                 OperationCanceledException operationCanceledException => (
                     StatusCodes.Status408RequestTimeout,
                     ResponseCodes.TIMEOUT,
-                    operationCanceledException.Message,
+                    ResponseCodeDescriptions.GetDescription(ResponseCodes.TIMEOUT),
                     null,
                     LogLevel.Error),
 
@@ -168,7 +168,7 @@ namespace FashionStore.API.Middleware
                 default:
                     if (!string.IsNullOrWhiteSpace(constraintName))
                     {
-                        message = $"A duplicate record was detected (constraint: {constraintName}).";
+                        message = ResponseCodeDescriptions.GetDescription(ResponseCodes.DUPLICATE_RECORD);
                         return true;
                     }
                     return false;

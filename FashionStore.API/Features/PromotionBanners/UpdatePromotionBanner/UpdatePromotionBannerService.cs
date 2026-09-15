@@ -2,7 +2,7 @@ using FashionStore.Domain.Abstractions.PromotionBanners;
 using FashionStore.Domain.Abstractions.Images;
 
 namespace FashionStore.API.Features.PromotionBanners.UpdatePromotionBanner;
-public sealed class UpdatePromotionBannerService(IPromotionBannerRepository repository, ICloudinaryImageService cloudinary) : IUpdatePromotionBannerService
+public sealed class UpdatePromotionBannerService(IPromotionBannerRepository repository, ICloudinaryImageService cloudinary, ILogger<UpdatePromotionBannerService> logger) : IUpdatePromotionBannerService
 {
     public async Task<ResponseResult<PromotionBannerResponse>> ExecuteAsync(string id, UpdatePromotionBannerRequest request, CancellationToken cancellationToken)
     {
@@ -30,7 +30,8 @@ public sealed class UpdatePromotionBannerService(IPromotionBannerRepository repo
         }
         catch (ArgumentException exception)
         {
-            return response.Fail(exception.Message, ResponseCodes.INVALID_ACTION);
+            logger.LogWarning(exception, "Promotion banner update validation failed for {PromotionBannerId}.", id);
+            return response.Fail("The promotion banner details are invalid.", ResponseCodes.INVALID_ACTION);
         }
     }
 

@@ -6,7 +6,8 @@ namespace FashionStore.API.Features.ContactUs.CreateContact;
 
 public sealed class CreateContactService(
     IContactUsConfigurationRepository repository,
-    IRedisCacheService cacheService) : ICreateContactService
+    IRedisCacheService cacheService,
+    ILogger<CreateContactService> logger) : ICreateContactService
 {
     public async Task<ResponseResult<ContactUsResponse>> ExecuteAsync(ContactUsRequest request, CancellationToken cancellationToken)
     {
@@ -43,7 +44,8 @@ public sealed class CreateContactService(
         }
         catch (ArgumentException exception)
         {
-            return response.Fail(exception.Message, ResponseCodes.INVALID_ACTION);
+            logger.LogWarning(exception, "Contact creation validation failed.");
+            return response.Fail("The contact details are invalid.", ResponseCodes.INVALID_ACTION);
         }
     }
 

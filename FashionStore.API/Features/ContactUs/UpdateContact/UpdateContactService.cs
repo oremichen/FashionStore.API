@@ -11,7 +11,8 @@ public interface IUpdateContactService
 
 public sealed class UpdateContactService(
     IContactUsConfigurationRepository repository,
-    IRedisCacheService cacheService) : IUpdateContactService
+    IRedisCacheService cacheService,
+    ILogger<UpdateContactService> logger) : IUpdateContactService
 {
     public async Task<ResponseResult<ContactUsResponse>> ExecuteAsync(string id, ContactUsRequest request, CancellationToken cancellationToken)
     {
@@ -48,7 +49,8 @@ public sealed class UpdateContactService(
         }
         catch (ArgumentException exception)
         {
-            return response.Fail(exception.Message, ResponseCodes.INVALID_ACTION);
+            logger.LogWarning(exception, "Contact update validation failed for {ContactId}.", id);
+            return response.Fail("The contact details are invalid.", ResponseCodes.INVALID_ACTION);
         }
     }
 

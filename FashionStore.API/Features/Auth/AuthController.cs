@@ -42,7 +42,7 @@ namespace FashionStore.API.Features.Auth
         public async Task<IActionResult> AdminForgotPassword(string userId, [FromBody] AdminForgotPasswordRequest request)
         {
             var actorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrWhiteSpace(actorId)) return Unauthorized();
+            if (string.IsNullOrWhiteSpace(actorId)) return ProcessResponse(new ResponseResult().Fail("You are not authorized to perform this action.", ResponseCodes.INVALID_TOKEN));
             return ProcessResponse(await _adminForgotPasswordService.ExecuteAsync(actorId, userId, request));
         }
 
@@ -116,7 +116,7 @@ namespace FashionStore.API.Features.Auth
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
+            if (string.IsNullOrWhiteSpace(userId)) return ProcessResponse(new ResponseResult().Fail("You are not authorized to perform this action.", ResponseCodes.INVALID_TOKEN));
             var response = await _resetPasswordService.ExecuteAsync(userId, request, HttpContext.RequestAborted);
             return ProcessResponse(response);
         }

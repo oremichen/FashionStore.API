@@ -146,8 +146,9 @@ builder.Services.AddRateLimiter(options =>
 
         await context.HttpContext.Response.WriteAsJsonAsync(new
         {
-            StatusCode = StatusCodes.Status429TooManyRequests,
-            Message = "Too many requests. Please try again later."
+            statusCode = ResponseCodes.LIMIT_EXCEEDED,
+            description = "Too many requests. Please try again later.",
+            data = (object?)null
         }, cancellationToken);
     };
 });
@@ -372,8 +373,9 @@ builder.Services.AddAuthentication(options =>
 
             var response = System.Text.Json.JsonSerializer.Serialize(new
             {
-                StatusCode = 401,
-                Message = "You are not authorized. Please provide a valid token."
+                statusCode = ResponseCodes.INVALID_TOKEN,
+                description = "You are not authorized. Please provide a valid token.",
+                data = (object?)null
             });
 
             return context.Response.WriteAsync(response);
@@ -390,8 +392,9 @@ builder.Services.AddAuthentication(options =>
 
             var response = System.Text.Json.JsonSerializer.Serialize(new
             {
-                StatusCode = 403,
-                Message = "You do not have permission to access this resource."
+                statusCode = ResponseCodes.ACTION_NOT_PERMITTED,
+                description = "You do not have permission to access this resource.",
+                data = (object?)null
             });
 
             return context.Response.WriteAsync(response);
