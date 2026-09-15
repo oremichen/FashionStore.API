@@ -60,49 +60,49 @@ namespace FashionStore.API.Middleware
                     ResponseCodes.INVALID_TOKEN,
                     unauthorizedAccessException.Message,
                     null,
-                    LogLevel.Warning),
+                    LogLevel.Error),
 
                 SecurityTokenException securityTokenException => (
                     StatusCodes.Status401Unauthorized,
                     ResponseCodes.INVALID_TOKEN,
                     securityTokenException.Message,
                     null,
-                    LogLevel.Warning),
+                    LogLevel.Error),
 
                 NotImplementedException notImplementedException => (
                     StatusCodes.Status501NotImplemented,
                     ResponseCodes.NOT_IMPLEMENTED,
                     notImplementedException.Message,
                     null,
-                    LogLevel.Warning),
+                    LogLevel.Error),
 
                 TimeoutException timeoutException => (
                     StatusCodes.Status408RequestTimeout,
                     ResponseCodes.TIMEOUT,
                     timeoutException.Message,
                     null,
-                    LogLevel.Warning),
+                    LogLevel.Error),
 
                 OperationCanceledException _ when context.RequestAborted.IsCancellationRequested => (
                     499,
                     ResponseCodes.TIMEOUT,
                     "The request was cancelled by the client.",
                     null,
-                    LogLevel.Warning),
+                    LogLevel.Error),
 
                 OperationCanceledException operationCanceledException => (
                     StatusCodes.Status408RequestTimeout,
                     ResponseCodes.TIMEOUT,
                     operationCanceledException.Message,
                     null,
-                    LogLevel.Warning),
+                    LogLevel.Error),
 
                 var ex when IsDbUpdateUniqueViolation(ex, out var constraintMessage) => (
                     StatusCodes.Status409Conflict,
                     ResponseCodes.DUPLICATE_RECORD,
                     constraintMessage,
                     null,
-                    LogLevel.Warning),
+                    LogLevel.Error),
 
                 _ => (
                     StatusCodes.Status500InternalServerError,
@@ -112,22 +112,14 @@ namespace FashionStore.API.Middleware
                     LogLevel.Error)
             };
 
-            if (logLevel == LogLevel.Error)
-            {
-                _logger.LogError(
-                    exception,
-                    "Unhandled exception for {Method} {Path}.",
-                    context.Request.Method,
-                    context.Request.Path);
-            }
-            else
-            {
-                _logger.LogError(
-                    exception,
-                    "Handled exception for {Method} {Path}.",
-                    context.Request.Method,
-                    context.Request.Path);
-            }
+            _logger.Log(
+                logLevel,
+                exception,
+                logLevel == LogLevel.Error
+                    ? "Unhandled exception for {Method} {Path}."
+                    : "Handled exception for {Method} {Path}.",
+                context.Request.Method,
+                context.Request.Path);
 
             if (context.Response.HasStarted)
             {
@@ -153,20 +145,17 @@ namespace FashionStore.API.Middleware
         {
             message = null!;
 
-            const string dbUpdateExceptionTypeName = "Microsoft.EntityFrameworkCore.DbUpdateException";
-            var isDbUpdate = string.Equals(exception.GetType().FullName, dbUpdateExceptionTypeName, StringComparison.Ordinal)
-                              || exception.InnerException is not null && string.Equals(exception.GetType().BaseType?.FullName, dbUpdateExceptionTypeName, StringComparison.Ordinal);
-
-            if (!isDbUpdate && exception.InnerException is null)
+            if (!IsDbUpdateException(exception))
                 return false;
 
             var inner = exception.InnerException;
             if (inner is null)
                 return false;
 
-            string? constraintName = TryGetConstraintName(inner);
+            var constraintName = TryGetConstraintName(inner);
 
-            if (string.IsNullOrWhiteSpace(constraintName) && inner.Message is not null && inner.Message.Contains("UQ_DeliveryRate_ZoneId_MethodId", StringComparison.Ordinal))
+            if (string.IsNullOrWhiteSpace(constraintName) &&
+                inner.Message?.Contains("UQ_DeliveryRate_ZoneId_MethodId", StringComparison.Ordinal) == true)
             {
                 constraintName = "UQ_DeliveryRate_ZoneId_MethodId";
             }
@@ -184,6 +173,19 @@ namespace FashionStore.API.Middleware
                     }
                     return false;
             }
+        }
+
+        private static bool IsDbUpdateException(Exception exception)
+        {
+            const string dbUpdateExceptionTypeName = "Microsoft.EntityFrameworkCore.DbUpdateException";
+
+            for (var type = exception.GetType(); type is not null; type = type.BaseType)
+            {
+                if (string.Equals(type.FullName, dbUpdateExceptionTypeName, StringComparison.Ordinal))
+                    return true;
+            }
+
+            return false;
         }
 
         private static string? TryGetConstraintName(Exception innerException)
