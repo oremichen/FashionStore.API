@@ -72,7 +72,7 @@ public sealed class SubmitContactService(
         catch (ArgumentException exception)
         {
             logger.LogError(exception, "Contact submission validation failed for field {Field}.", exception.ParamName);
-            return response.Fail(exception.Message, ResponseCodes.INVALID_ACTION);
+            return response.Fail("The contact submission is invalid.", ResponseCodes.INVALID_ACTION);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {

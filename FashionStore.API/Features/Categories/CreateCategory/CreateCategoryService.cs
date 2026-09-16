@@ -36,7 +36,7 @@ public sealed class CreateCategoryService(ICategoryRepository repository, ILogge
         catch (ArgumentException exception)
         {
             logger.LogError(exception, "Category creation validation failed for slug {Slug}.", request.Slug);
-            return response.Fail(exception.Message, ResponseCodes.INVALID_ACTION);
+            return response.Fail("The category details are invalid.", ResponseCodes.INVALID_ACTION);
         }
     }
 

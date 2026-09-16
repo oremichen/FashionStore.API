@@ -1,13 +1,15 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using FashionStore.Domain.Abstractions.Notification;
+using FashionStore.Shared.Common;
+using FashionStore.Shared.Constants;
 
 namespace FashionStore.API.Controllers;
 
 [ApiController]
 [Route("api/twilio-sms-message")]
 [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}")]
-public sealed class TwilioSmsMessageController : ControllerBase
+public sealed class TwilioSmsMessageController : BaseApiController
 {
     private readonly ISmsProvider _smsProvider;
 
@@ -24,14 +26,16 @@ public sealed class TwilioSmsMessageController : ControllerBase
     {
         if (string.IsNullOrWhiteSpace(request.To) || string.IsNullOrWhiteSpace(request.Body))
         {
-            return BadRequest("To and Body are required.");
+            return ProcessResponse(new ResponseResult().Fail(
+                "To and Body are required.", ResponseCodes.INVALID_ACTION));
         }
 
         var result = await _smsProvider.SendAsync(
             new SmsMessage(request.To, request.Body, request.From), cancellationToken);
         if (!result.IsSuccessful)
         {
-            return StatusCode(StatusCodes.Status502BadGateway, result.Error);
+            return ProcessResponse(new ResponseResult().Fail(
+                "The SMS could not be sent. Please try again later.", ResponseCodes.GATEWAY_TIMEOUT));
         }
 
         return Ok(new TwilioSmsMessageResponse(result.MessageSid, "queued"));

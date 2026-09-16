@@ -38,7 +38,7 @@ public sealed class UpdateMainCarouselService(IMainCarouselRepository repository
         catch (ArgumentException exception)
         {
             logger.LogError(exception, "Main carousel update validation failed for {CarouselId}.", id);
-            return response.Fail(exception.Message, ResponseCodes.INVALID_ACTION);
+            return response.Fail("The carousel details are invalid.", ResponseCodes.INVALID_ACTION);
         }
     }
 

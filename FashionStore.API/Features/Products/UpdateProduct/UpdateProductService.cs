@@ -64,7 +64,7 @@ public class UpdateProductService(IProductRepository repository, IImageProcessor
         catch (ArgumentException ex)
         {
             logger.LogError(ex, "Product {ProductId} update failed validation.", request.ProductId);
-            return new ResponseResult<ProductResponse>().Fail(ex.Message, ResponseCodes.INVALID_ACTION);
+            return new ResponseResult<ProductResponse>().Fail("The product details are invalid.", ResponseCodes.INVALID_ACTION);
         }
     }
 

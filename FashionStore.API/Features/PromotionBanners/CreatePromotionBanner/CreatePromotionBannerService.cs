@@ -2,7 +2,7 @@ using FashionStore.Domain.Abstractions.PromotionBanners;
 using FashionStore.Domain.Abstractions.Images;
 
 namespace FashionStore.API.Features.PromotionBanners.CreatePromotionBanner;
-public sealed class CreatePromotionBannerService(IPromotionBannerRepository repository, ICloudinaryImageService cloudinary) : ICreatePromotionBannerService
+public sealed class CreatePromotionBannerService(IPromotionBannerRepository repository, ICloudinaryImageService cloudinary, ILogger<CreatePromotionBannerService> logger) : ICreatePromotionBannerService
 {
     public async Task<ResponseResult<PromotionBannerResponse>> ExecuteAsync(CreatePromotionBannerRequest request, CancellationToken cancellationToken)
     {
@@ -19,7 +19,8 @@ public sealed class CreatePromotionBannerService(IPromotionBannerRepository repo
         }
         catch (ArgumentException exception)
         {
-            return response.Fail(exception.Message, ResponseCodes.INVALID_ACTION);
+            logger.LogWarning(exception, "Promotion banner creation validation failed for {Slot}.", request.Slot);
+            return response.Fail("The promotion banner details are invalid.", ResponseCodes.INVALID_ACTION);
         }
     }
 

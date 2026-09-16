@@ -98,7 +98,7 @@ namespace FashionStore.API.Features.Users
             [FromBody] UpdateAdminUserRequest request)
         {
             var actorId = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
-            if (string.IsNullOrWhiteSpace(actorId)) return Unauthorized();
+            if (string.IsNullOrWhiteSpace(actorId)) return ProcessResponse(new ResponseResult().Fail("You are not authorized to perform this action.", ResponseCodes.INVALID_TOKEN));
             var response = await _updateAdminUserService.ExecuteAsync(actorId, userId, request);
 
             return ProcessResponse(response);
@@ -116,7 +116,7 @@ namespace FashionStore.API.Features.Users
         public async Task<IActionResult> UpdateAdminUserProfile(string userId, [FromForm] AdminUpdateUserRequest request, CancellationToken cancellationToken)
         {
             var actorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrWhiteSpace(actorId)) return Unauthorized();
+            if (string.IsNullOrWhiteSpace(actorId)) return ProcessResponse(new ResponseResult().Fail("You are not authorized to perform this action.", ResponseCodes.INVALID_TOKEN));
             return ProcessResponse(await _adminUpdateUserService.ExecuteAsync(actorId, userId, request, cancellationToken));
         }
 
@@ -129,7 +129,7 @@ namespace FashionStore.API.Features.Users
         public async Task<IActionResult> GetCurrentUser()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
+            if (string.IsNullOrWhiteSpace(userId)) return ProcessResponse(new ResponseResult().Fail("You are not authorized to perform this action.", ResponseCodes.INVALID_TOKEN));
             var response = await _getUserByEmailService.ExecuteAsync(userId);
             return ProcessResponse(response);
         }
@@ -145,7 +145,7 @@ namespace FashionStore.API.Features.Users
         public async Task<IActionResult> Update([FromBody] UpdateUserDetailsRequest request, CancellationToken cancellationToken)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
+            if (string.IsNullOrWhiteSpace(userId)) return ProcessResponse(new ResponseResult().Fail("You are not authorized to perform this action.", ResponseCodes.INVALID_TOKEN));
             var response = await _updateUserService.ExecuteAsync(userId, request, cancellationToken);
             return ProcessResponse(response);
         }
@@ -172,7 +172,7 @@ namespace FashionStore.API.Features.Users
         public async Task<IActionResult> GetAllUserAddresses(CancellationToken cancellationToken)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
+            if (string.IsNullOrWhiteSpace(userId)) return ProcessResponse(new ResponseResult().Fail("You are not authorized to perform this action.", ResponseCodes.INVALID_TOKEN));
             return ProcessResponse(await _getAllUserAddressesService.ExecuteAsync(userId, cancellationToken));
         }
 
@@ -194,7 +194,7 @@ namespace FashionStore.API.Features.Users
         public async Task<IActionResult> CreateUserAddress([FromBody] UserAddressRequest request, CancellationToken cancellationToken)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
+            if (string.IsNullOrWhiteSpace(userId)) return ProcessResponse(new ResponseResult().Fail("You are not authorized to perform this action.", ResponseCodes.INVALID_TOKEN));
             return ProcessResponse(await _createUserAddressService.ExecuteAsync(userId, request, cancellationToken));
         }
 
@@ -207,7 +207,7 @@ namespace FashionStore.API.Features.Users
         public async Task<IActionResult> UpdateUserAddress(string addressId, [FromBody] UserAddressRequest request, CancellationToken cancellationToken)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
+            if (string.IsNullOrWhiteSpace(userId)) return ProcessResponse(new ResponseResult().Fail("You are not authorized to perform this action.", ResponseCodes.INVALID_TOKEN));
             return ProcessResponse(await _updateUserAddressService.ExecuteAsync(userId, addressId, request, cancellationToken));
         }
 
@@ -219,7 +219,7 @@ namespace FashionStore.API.Features.Users
         public async Task<IActionResult> DeleteUserAddress(string addressId, CancellationToken cancellationToken)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
+            if (string.IsNullOrWhiteSpace(userId)) return ProcessResponse(new ResponseResult().Fail("You are not authorized to perform this action.", ResponseCodes.INVALID_TOKEN));
             return ProcessResponse(await _deleteUserAddressService.ExecuteAsync(userId, addressId, cancellationToken));
         }
     }

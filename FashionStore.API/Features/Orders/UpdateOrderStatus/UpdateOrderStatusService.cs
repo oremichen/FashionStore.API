@@ -31,7 +31,8 @@ public sealed class UpdateOrderStatusService(
         }
         catch (ArgumentException exception)
         {
-            return new ResponseResult<OrderResponse>().Fail(exception.Message, ResponseCodes.INVALID_ACTION);
+            logger.LogWarning(exception, "Order status update validation failed for {OrderId}.", id);
+            return new ResponseResult<OrderResponse>().Fail("The order status update is invalid.", ResponseCodes.INVALID_ACTION);
         }
 
         await orderRepository.SaveChangesAsync(cancellationToken);

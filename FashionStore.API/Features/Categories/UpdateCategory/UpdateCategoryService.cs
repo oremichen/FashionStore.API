@@ -33,7 +33,7 @@ public sealed class UpdateCategoryService(ICategoryRepository repository, ILogge
         catch (ArgumentException exception)
         {
             logger.LogError(exception, "Category update validation failed for {CategoryId}.", categoryId);
-            return response.Fail(exception.Message, ResponseCodes.INVALID_ACTION);
+            return response.Fail("The category details are invalid.", ResponseCodes.INVALID_ACTION);
         }
     }
 

@@ -129,7 +129,7 @@ public sealed class InitializePaystackService : IInitializePaystackService
         catch (PostgresException exception) when (exception.SqlState == "P0001")
         {
             _logger.LogError(exception, "Inventory reservation was rejected for checkout {IdempotencyKey}.", idempotencyKey);
-            return response.Fail(exception.MessageText, ResponseCodes.INVALID_ACTION);
+            return response.Fail("Some items are no longer available in the requested quantity.", ResponseCodes.INVALID_ACTION);
         }
 
         try
