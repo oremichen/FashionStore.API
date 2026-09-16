@@ -31,7 +31,7 @@ public sealed class MainCarouselsController(IGetMainCarouselsService getMainCaro
         return ProcessResponse(response);
     }
 
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpPost]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}"), HttpPost]
     [EnableRateLimiting(RateLimitPolicies.AdminUpload)]
     [Consumes("multipart/form-data"), RequestSizeLimit(5 * 1024 * 1024)]
     [Produces("application/json")]
@@ -52,7 +52,7 @@ public sealed class MainCarouselsController(IGetMainCarouselsService getMainCaro
         return ProcessResponse(await createMainCarouselService.ExecuteAsync(request, cancellationToken));
     }
 
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpPut("{id}")]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}"), HttpPut("{id}")]
     [EnableRateLimiting(RateLimitPolicies.AdminUpload)]
     [Consumes("multipart/form-data"), RequestSizeLimit(5 * 1024 * 1024)]
     [Produces("application/json")]
@@ -74,7 +74,7 @@ public sealed class MainCarouselsController(IGetMainCarouselsService getMainCaro
         return ProcessResponse(await updateMainCarouselService.ExecuteAsync(id, request, cancellationToken));
     }
 
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpDelete("{id}")]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}"), HttpDelete("{id}")]
     [Produces("application/json")]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]

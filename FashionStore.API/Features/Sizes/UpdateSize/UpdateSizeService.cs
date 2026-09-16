@@ -2,7 +2,7 @@ using FashionStore.Domain.Abstractions.CatalogOptions;
 
 namespace FashionStore.API.Features.Sizes.UpdateSize;
 
-public sealed class UpdateSizeService(ICatalogOptionRepository repository) : IUpdateSizeService
+public sealed class UpdateSizeService(ICatalogOptionRepository repository, ILogger<UpdateSizeService> logger) : IUpdateSizeService
 {
     public async Task<ResponseResult<SizeResponse>> ExecuteAsync(string id, UpdateSizeRequest request, CancellationToken cancellationToken)
     {
@@ -28,7 +28,8 @@ public sealed class UpdateSizeService(ICatalogOptionRepository repository) : IUp
         }
         catch (ArgumentException exception)
         {
-            return response.Fail(exception.Message, ResponseCodes.INVALID_ACTION);
+            logger.LogWarning(exception, "Size update validation failed for {SizeId}.", sizeId);
+            return response.Fail("The size details are invalid.", ResponseCodes.INVALID_ACTION);
         }
     }
 }

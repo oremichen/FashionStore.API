@@ -25,6 +25,7 @@ public class StorefrontProductFilter
     public string? BrandId { get; init; }
     public decimal? MinPrice { get; init; }
     public decimal? MaxPrice { get; init; }
+    public string? PriceRanges { get; init; }
     public string? Colors { get; init; }
     public string? Sizes { get; init; }
     public bool? InStock { get; init; }

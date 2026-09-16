@@ -12,5 +12,6 @@ public sealed class BrandResponse
     public string? ImageUrl { get; init; }
     public DateTimeOffset CreatedAt { get; init; }
     public DateTimeOffset UpdatedAt { get; init; }
+    public int ProductCount { get; init; }
 }
 

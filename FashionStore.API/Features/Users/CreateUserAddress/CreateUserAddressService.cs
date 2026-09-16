@@ -18,7 +18,7 @@ public sealed class CreateUserAddressService(IUserRepository userRepository) : I
         }
         catch (Exception exception) when (exception is ArgumentException or InvalidOperationException)
         {
-            return response.Fail(exception.Message, ResponseCodes.INVALID_ACTION);
+            return response.Fail("The address details are invalid.", ResponseCodes.INVALID_ACTION);
         }
     }
 }

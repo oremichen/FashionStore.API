@@ -1,7 +1,7 @@
 using FashionStore.Domain.Abstractions.CatalogOptions;
 
 namespace FashionStore.API.Features.Sizes.CreateSize;
-public sealed class CreateSizeService(ICatalogOptionRepository repository) : ICreateSizeService
+public sealed class CreateSizeService(ICatalogOptionRepository repository, ILogger<CreateSizeService> logger) : ICreateSizeService
 {
     public async Task<ResponseResult<SizeResponse>> ExecuteAsync(CreateSizeRequest request, CancellationToken cancellationToken)
     {
@@ -19,7 +19,8 @@ public sealed class CreateSizeService(ICatalogOptionRepository repository) : ICr
         }
         catch (ArgumentException exception)
         {
-            return response.Fail(exception.Message, ResponseCodes.INVALID_ACTION);
+            logger.LogWarning(exception, "Size creation validation failed for {SizeName}.", request.Name);
+            return response.Fail("The size details are invalid.", ResponseCodes.INVALID_ACTION);
         }
     }
 

@@ -1,5 +1,6 @@
 using FashionStore.Domain.Enums;
 using Microsoft.AspNetCore.Hosting;
+using System.Text.RegularExpressions;
 
 namespace FashionStore.Infrastructure.Notification
 {
@@ -27,11 +28,21 @@ namespace FashionStore.Infrastructure.Notification
                 content = content.Replace($"{{{{{token.Key}}}}}", token.Value ?? string.Empty, StringComparison.OrdinalIgnoreCase);
             }
 
+            var unresolvedTokens = Regex.Matches(content, @"{{\s*[A-Za-z][A-Za-z0-9_]*\s*}}")
+                .Select(match => match.Value)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            if (unresolvedTokens.Length > 0)
+                throw new InvalidOperationException($"Email template '{templateType}' contains unresolved tokens: {string.Join(", ", unresolvedTokens)}.");
+
             return content;
         }
 
         private string GetTemplatePath(EmailNotificationTypeEnum templateType)
         {
+            if (templateType == EmailNotificationTypeEnum.OrderStatusInternalUpdate)
+                return Path.Combine(_environment.WebRootPath, "EmailTemplates", "OrderStatusInternalUpdateTemplate.html");
+
             return templateType switch
             {
                 EmailNotificationTypeEnum.Registration => Path.Combine(_environment.WebRootPath, "EmailTemplates", "RegisterTemplate.html"),
@@ -41,6 +52,11 @@ namespace FashionStore.Infrastructure.Notification
                 EmailNotificationTypeEnum.ContactRecipient => Path.Combine(_environment.WebRootPath, "EmailTemplates", "ContactRecipientTemplate.html"),
                 EmailNotificationTypeEnum.ContactCustomer => Path.Combine(_environment.WebRootPath, "EmailTemplates", "ContactCustomerTemplate.html"),
                 EmailNotificationTypeEnum.UserStatusChanged => Path.Combine(_environment.WebRootPath, "EmailTemplates", "UserStatusChangedTemplate.html"),
+                EmailNotificationTypeEnum.OrderCustomerConfirmation => Path.Combine(_environment.WebRootPath, "EmailTemplates", "OrderCustomerConfirmationTemplate.html"),
+                EmailNotificationTypeEnum.OrderInternalNotification => Path.Combine(_environment.WebRootPath, "EmailTemplates", "OrderInternalNotificationTemplate.html"),
+                EmailNotificationTypeEnum.OrderStatusUpdate => Path.Combine(_environment.WebRootPath, "EmailTemplates", "OrderStatusUpdateTemplate.html"),
+                EmailNotificationTypeEnum.OrderCustomerPickupConfirmation => Path.Combine(_environment.WebRootPath, "EmailTemplates", "OrderCustomerPickupConfirmationTemplate.html"),
+                EmailNotificationTypeEnum.OrderInternalPickupNotification => Path.Combine(_environment.WebRootPath, "EmailTemplates", "OrderInternalPickupNotificationTemplate.html"),
                 _ => throw new ArgumentException($"No email template is configured for {templateType}.", nameof(templateType))
             };
         }

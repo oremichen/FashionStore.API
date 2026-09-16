@@ -1,16 +1,3 @@
-using FashionStore.API.Features.Users.CreateUser;
-using FashionStore.API.Features.Users.GetUserByEmail;
-using FashionStore.API.Features.Users.UpdateUser;
-using FashionStore.API.Features.Users.CreateUserAddress;
-using FashionStore.API.Features.Users.DeleteUserAddress;
-using FashionStore.API.Features.Users.GetAllUserAddresses;
-using FashionStore.API.Features.Users.UpdateUserAddress;
-using FashionStore.API.Features.Users.GetUsers;
-using FashionStore.API.Features.Users.ChangeUserStatus;
-using FashionStore.API.Features.Users.ResetAdminPassword;
-using FashionStore.API.Features.Users.GetAdminRoles;
-using FashionStore.API.Features.Users.UpdateAdminUser;
-
 namespace FashionStore.API.Features.Users
 {
     [Authorize]
@@ -30,13 +17,16 @@ namespace FashionStore.API.Features.Users
         private readonly IResetAdminPasswordService _resetAdminPasswordService;
         private readonly IGetAdminRolesService _getAdminRolesService;
         private readonly IUpdateAdminUserService _updateAdminUserService;
+        private readonly IAdminUpdateUserService _adminUpdateUserService;
+        private readonly IGetPickupAddressService _getPickupAddressService;
 
         public UsersController(IGetUserByEmailService getUserByEmailService, IUpdateUserService updateUserService,
             ICreateUserService createUserService, IGetAllUserAddressesService getAllUserAddressesService,
             ICreateUserAddressService createUserAddressService, IUpdateUserAddressService updateUserAddressService,
             IDeleteUserAddressService deleteUserAddressService, IGetUsersService getUsersService,
             IChangeUserStatusService changeUserStatusService, IResetAdminPasswordService resetAdminPasswordService,
-            IGetAdminRolesService getAdminRolesService, IUpdateAdminUserService updateAdminUserService)
+            IGetAdminRolesService getAdminRolesService, IUpdateAdminUserService updateAdminUserService, IAdminUpdateUserService adminUpdateUserService,
+            IGetPickupAddressService getPickupAddressService)
         {
             _getUserByEmailService = getUserByEmailService;
             _updateUserService = updateUserService;
@@ -50,6 +40,8 @@ namespace FashionStore.API.Features.Users
             _resetAdminPasswordService = resetAdminPasswordService;
             _getAdminRolesService = getAdminRolesService;
             _updateAdminUserService = updateAdminUserService;
+            _adminUpdateUserService = adminUpdateUserService;
+            _getPickupAddressService = getPickupAddressService;
         }
 
         [Authorize(Roles = RoleConstants.SuperAdmin)]
@@ -86,26 +78,63 @@ namespace FashionStore.API.Features.Users
 
         [Authorize(Roles = RoleConstants.SuperAdmin)]
         [HttpGet("admin-roles")]
-        public async Task<IActionResult> GetAdminRoles() => ProcessResponse(await _getAdminRolesService.ExecuteAsync());
+        public async Task<IActionResult> GetAdminRoles()
+        {
+            var response = await _getAdminRolesService.ExecuteAsync();
 
+            return ProcessResponse(response);
+        }
+
+        /// <summary>
+        /// This is a superadmin updating an admin user.
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         [Authorize(Roles = RoleConstants.SuperAdmin)]
         [HttpPut("{userId}")]
-        public async Task<IActionResult> UpdateAdminUser(string userId, [FromBody] UpdateAdminUserRequest request)
-            => ProcessResponse(await _updateAdminUserService.ExecuteAsync(userId, request));
+        public async Task<IActionResult> UpdateAdminUser(
+            string userId,
+            [FromBody] UpdateAdminUserRequest request)
+        {
+            var actorId = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(actorId)) return ProcessResponse(new ResponseResult().Fail("You are not authorized to perform this action.", ResponseCodes.INVALID_TOKEN));
+            var response = await _updateAdminUserService.ExecuteAsync(actorId, userId, request);
 
-        [HttpGet("by-email")]
+            return ProcessResponse(response);
+        }
+
+        /// <summary>
+        /// This is for an admin updating their own profile.
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <param name="request"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        [Authorize(Roles = RoleConstants.SuperAdmin)]
+        [HttpPut("admin/{userId}")]
+        public async Task<IActionResult> UpdateAdminUserProfile(string userId, [FromForm] AdminUpdateUserRequest request, CancellationToken cancellationToken)
+        {
+            var actorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(actorId)) return ProcessResponse(new ResponseResult().Fail("You are not authorized to perform this action.", ResponseCodes.INVALID_TOKEN));
+            return ProcessResponse(await _adminUpdateUserService.ExecuteAsync(actorId, userId, request, cancellationToken));
+        }
+
+        [HttpGet("me")]
         [Produces("application/json")]
         [ProducesResponseType(typeof(ResponseResult<UserDetailsResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ResponseResult<UserDetailsResponse>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ResponseResult<UserDetailsResponse>), StatusCodes.Status500InternalServerError)]
-        [EndpointSummary("Get user by email")]
-        public async Task<IActionResult> GetByEmail([FromQuery] string email)
+        [EndpointSummary("Get the authenticated user")]
+        public async Task<IActionResult> GetCurrentUser()
         {
-            var response = await _getUserByEmailService.ExecuteAsync(email);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId)) return ProcessResponse(new ResponseResult().Fail("You are not authorized to perform this action.", ResponseCodes.INVALID_TOKEN));
+            var response = await _getUserByEmailService.ExecuteAsync(userId);
             return ProcessResponse(response);
         }
 
-        [HttpPut]
+        [HttpPut("me")]
         [Produces("application/json")]
         [ProducesResponseType(typeof(ResponseResult<UserDetailsResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ResponseResult<UserDetailsResponse>), StatusCodes.Status400BadRequest)]
@@ -113,13 +142,15 @@ namespace FashionStore.API.Features.Users
         [ProducesResponseType(typeof(ResponseResult<UserDetailsResponse>), StatusCodes.Status409Conflict)]
         [ProducesResponseType(typeof(ResponseResult<UserDetailsResponse>), StatusCodes.Status500InternalServerError)]
         [EndpointSummary("Update user details")]
-        public async Task<IActionResult> Update([FromBody] UpdateUserDetailsRequest request)
+        public async Task<IActionResult> Update([FromBody] UpdateUserDetailsRequest request, CancellationToken cancellationToken)
         {
-            var response = await _updateUserService.ExecuteAsync(request);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId)) return ProcessResponse(new ResponseResult().Fail("You are not authorized to perform this action.", ResponseCodes.INVALID_TOKEN));
+            var response = await _updateUserService.ExecuteAsync(userId, request, cancellationToken);
             return ProcessResponse(response);
         }
 
-        [Authorize(Roles = "SuperAdmin")]
+        [Authorize(Roles = RoleConstants.SuperAdmin)]
         [HttpPost]
         [Produces("application/json")]
         [ProducesResponseType(typeof(ResponseResult<UserDetailsResponse>), StatusCodes.Status200OK)]
@@ -133,58 +164,63 @@ namespace FashionStore.API.Features.Users
             return ProcessResponse(response);
         }
 
-        [HttpGet("{userId}/addresses")]
+        [HttpGet("me/addresses")]
         [ProducesResponseType(typeof(ResponseResult<IReadOnlyList<UserAddressResponse>>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetAllUserAddresses(string userId, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetAllUserAddresses(CancellationToken cancellationToken)
         {
-            if (!CanAccessAddresses(userId)) return Forbid();
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId)) return ProcessResponse(new ResponseResult().Fail("You are not authorized to perform this action.", ResponseCodes.INVALID_TOKEN));
             return ProcessResponse(await _getAllUserAddressesService.ExecuteAsync(userId, cancellationToken));
         }
 
-        [HttpPost("{userId}/addresses")]
+        [AllowAnonymous]
+        [HttpGet("pickup-addresses")]
+        [ProducesResponseType(typeof(ResponseResult<IReadOnlyList<UserAddressResponse>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetPickupAddresses(CancellationToken cancellationToken)
+        {
+            return ProcessResponse(await _getPickupAddressService.ExecuteAsync(cancellationToken));
+        }
+
+        [HttpPost("me/addresses")]
         [ProducesResponseType(typeof(ResponseResult<UserAddressResponse>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> CreateUserAddress(string userId, [FromBody] UserAddressRequest request, CancellationToken cancellationToken)
+        public async Task<IActionResult> CreateUserAddress([FromBody] UserAddressRequest request, CancellationToken cancellationToken)
         {
-            if (!CanAccessAddresses(userId)) return Forbid();
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId)) return ProcessResponse(new ResponseResult().Fail("You are not authorized to perform this action.", ResponseCodes.INVALID_TOKEN));
             return ProcessResponse(await _createUserAddressService.ExecuteAsync(userId, request, cancellationToken));
         }
 
-        [HttpPut("{userId}/addresses/{addressId}")]
+        [HttpPut("me/addresses/{addressId}")]
         [ProducesResponseType(typeof(ResponseResult<UserAddressResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> UpdateUserAddress(string userId, string addressId, [FromBody] UserAddressRequest request, CancellationToken cancellationToken)
+        public async Task<IActionResult> UpdateUserAddress(string addressId, [FromBody] UserAddressRequest request, CancellationToken cancellationToken)
         {
-            if (!CanAccessAddresses(userId)) return Forbid();
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId)) return ProcessResponse(new ResponseResult().Fail("You are not authorized to perform this action.", ResponseCodes.INVALID_TOKEN));
             return ProcessResponse(await _updateUserAddressService.ExecuteAsync(userId, addressId, request, cancellationToken));
         }
 
-        [HttpDelete("{userId}/addresses/{addressId}")]
+        [HttpDelete("me/addresses/{addressId}")]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> DeleteUserAddress(string userId, string addressId, CancellationToken cancellationToken)
+        public async Task<IActionResult> DeleteUserAddress(string addressId, CancellationToken cancellationToken)
         {
-            if (!CanAccessAddresses(userId)) return Forbid();
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId)) return ProcessResponse(new ResponseResult().Fail("You are not authorized to perform this action.", ResponseCodes.INVALID_TOKEN));
             return ProcessResponse(await _deleteUserAddressService.ExecuteAsync(userId, addressId, cancellationToken));
-        }
-
-        private bool CanAccessAddresses(string userId)
-        {
-            var authenticatedUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            return !string.IsNullOrWhiteSpace(authenticatedUserId) &&
-                (string.Equals(authenticatedUserId, userId, StringComparison.Ordinal) ||
-                 User.IsInRole(RoleConstants.SuperAdmin));
         }
     }
 }

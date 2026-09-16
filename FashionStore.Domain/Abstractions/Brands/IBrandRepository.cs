@@ -4,7 +4,7 @@ namespace FashionStore.Domain.Abstractions.Brands;
 
 public interface IBrandRepository
 {
-    Task<IReadOnlyList<Brand>> GetAllAsync(CancellationToken cancellationToken);
+    Task<IReadOnlyList<Brand>> GetAllAsync(bool availableOnly, CancellationToken cancellationToken);
     Task<Brand?> GetByIdAsync(string id, CancellationToken cancellationToken);
     Task<bool> NameOrSlugExistsAsync(string name, string slug, CancellationToken cancellationToken);
     Task<bool> HasProductsAsync(string id, CancellationToken cancellationToken);

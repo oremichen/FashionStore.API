@@ -47,7 +47,10 @@ public class CreateProductService(IProductRepository repository, IImageProcessor
             product.AddImages(await ProcessImagesAsync(request.ImageRequests, ct));
             await repository.AddAsync(product, ct);
             await repository.SetSizesAndColorsAsync(product.Id, sizeIds, colorIds, ct);
-            await repository.SetVariantsAsync(product.Id, request.ProductVariants.Select(x => (x.SizeId, x.Price, x.Quantity)).ToArray(), ct);
+            var variants = request.ProductVariants.Count == 0
+                ? new[] { (SizeId: (string?)null, Price: newPrice, Quantity: request.AvailabilityCount) }
+                : request.ProductVariants.Select(x => (x.SizeId, x.Price, x.Quantity)).ToArray();
+            await repository.SetVariantsAsync(product.Id, variants, ct);
             var saved = await repository.GetByIdAsync(product.Id, false, ct) ?? product;
             logger.LogInformation("Created product {ProductId}.", product.Id);
             return new ResponseResult<ProductResponse>().Success(Map(saved, 5), "Product created successfully.").SetStatusCode(ResponseCodes.CREATED);
@@ -55,7 +58,7 @@ public class CreateProductService(IProductRepository repository, IImageProcessor
         catch (ArgumentException ex)
         {
             logger.LogError(ex, "Product creation failed validation for slug {ProductSlug}.", request.Slug);
-            return new ResponseResult<ProductResponse>().Fail(ex.Message, ResponseCodes.INVALID_ACTION);
+            return new ResponseResult<ProductResponse>().Fail("The product details are invalid.", ResponseCodes.INVALID_ACTION);
         }
     }
 

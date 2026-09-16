@@ -7,20 +7,27 @@ public sealed class ContactUsConfigurationRepository(FashionStoreDbContext dbCon
 {
     public async Task<IReadOnlyList<ContactUsConfiguration>> GetAllAsync(bool trackChanges, CancellationToken cancellationToken)
     {
-        var query = trackChanges ? dbContext.ContactUsConfigurations : dbContext.ContactUsConfigurations.AsNoTracking();
+        var query = (trackChanges ? dbContext.ContactUsConfigurations : dbContext.ContactUsConfigurations.AsNoTracking())
+            .Include(contact => contact.AddressDetails);
         return await query.OrderByDescending(contact => contact.CreatedAt).ToListAsync(cancellationToken);
     }
 
     public Task<ContactUsConfiguration?> GetByIdAsync(string id, bool trackChanges, CancellationToken cancellationToken)
     {
-        var query = trackChanges ? dbContext.ContactUsConfigurations : dbContext.ContactUsConfigurations.AsNoTracking();
+        var query = (trackChanges ? dbContext.ContactUsConfigurations : dbContext.ContactUsConfigurations.AsNoTracking())
+            .Include(contact => contact.AddressDetails);
         return query.SingleOrDefaultAsync(contact => contact.Id == id, cancellationToken);
     }
 
     public Task<ContactUsConfiguration?> GetActiveAsync(CancellationToken cancellationToken)
     {
-        return dbContext.ContactUsConfigurations.AsNoTracking()
+        return dbContext.ContactUsConfigurations.AsNoTracking().Include(contact => contact.AddressDetails)
             .SingleOrDefaultAsync(contact => contact.IsActive, cancellationToken);
+    }
+
+    public async Task AddAddressAsync(Address address, CancellationToken cancellationToken)
+    {
+        await dbContext.Addresses.AddAsync(address, cancellationToken);
     }
 
     public async Task AddAsync(ContactUsConfiguration contact, CancellationToken cancellationToken)

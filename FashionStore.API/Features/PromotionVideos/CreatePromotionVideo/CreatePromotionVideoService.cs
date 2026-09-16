@@ -2,7 +2,7 @@ using FashionStore.Domain.Abstractions.PromotionVideos;
 using FashionStore.Domain.Abstractions.Videos;
 
 namespace FashionStore.API.Features.PromotionVideos.CreatePromotionVideo;
-public sealed class CreatePromotionVideoService(IPromotionVideoRepository repository, ICloudinaryVideoService cloudinary) : ICreatePromotionVideoService
+public sealed class CreatePromotionVideoService(IPromotionVideoRepository repository, ICloudinaryVideoService cloudinary, ILogger<CreatePromotionVideoService> logger) : ICreatePromotionVideoService
 {
     public async Task<ResponseResult<PromotionVideoResponse>> ExecuteAsync(CreatePromotionVideoRequest request, CancellationToken cancellationToken)
     {
@@ -25,7 +25,8 @@ public sealed class CreatePromotionVideoService(IPromotionVideoRepository reposi
         }
         catch (ArgumentException exception)
         {
-            return response.Fail(exception.Message, ResponseCodes.INVALID_ACTION);
+            logger.LogWarning(exception, "Promotion video creation validation failed for {Slug}.", request.Slug);
+            return response.Fail("The promotion video details are invalid.", ResponseCodes.INVALID_ACTION);
         }
     }
 

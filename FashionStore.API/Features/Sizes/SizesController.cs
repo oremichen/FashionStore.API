@@ -13,10 +13,17 @@ public sealed class SizesController(IGetSizesService getSizesService, ICreateSiz
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 25, CancellationToken cancellationToken = default)
     {
-        return ProcessResponse(await getSizesService.ExecuteAsync(page, pageSize, cancellationToken));
+        return ProcessResponse(await getSizesService.ExecuteAsync(page, pageSize, true, cancellationToken));
     }
 
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpPut("{id}")]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}"), HttpGet("~/api/admin/sizes")]
+    [ProducesResponseType(typeof(ResponseResult<PagedResponse<SizeResponse>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAllAdmin([FromQuery] int page = 1, [FromQuery] int pageSize = 25, CancellationToken cancellationToken = default)
+    {
+        return ProcessResponse(await getSizesService.ExecuteAsync(page, pageSize, false, cancellationToken));
+    }
+
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}"), HttpPut("{id}")]
     [ProducesResponseType(typeof(ResponseResult<SizeResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
@@ -29,7 +36,7 @@ public sealed class SizesController(IGetSizesService getSizesService, ICreateSiz
         return ProcessResponse(await updateSizeService.ExecuteAsync(id, request, cancellationToken));
     }
 
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpPost]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}"), HttpPost]
     [ProducesResponseType(typeof(ResponseResult<SizeResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
@@ -41,7 +48,7 @@ public sealed class SizesController(IGetSizesService getSizesService, ICreateSiz
         return ProcessResponse(await createSizeService.ExecuteAsync(request, cancellationToken));
     }
 
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpDelete("{id}")]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}"), HttpDelete("{id}")]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]

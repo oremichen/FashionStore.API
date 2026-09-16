@@ -13,10 +13,33 @@ namespace FashionStore.Domain.Entities
         public bool IsMain { get; set; } = false;
 
         // Foreign Key
-        public string UserId { get; set; }
-        public ApplicationUser User { get; set; }
+        public string? UserId { get; set; }
+        public ApplicationUser? User { get; set; }
 
         public Address() { }
+
+        public static Address CreateForContact(string country, string state, string phoneNumber, string? city, string? street)
+        {
+            return new Address
+            {
+                Country = Rules.Required(country, 100, nameof(country)),
+                State = Rules.Required(state, 100, nameof(state)),
+                City = Rules.Optional(city, 100, nameof(city))!,
+                Street = Rules.Optional(street, 250, nameof(street))!,
+                PhoneNumber = Rules.RequiredPhone(phoneNumber, 50, nameof(phoneNumber)),
+                UserId = null,
+                IsMain = false
+            };
+        }
+
+        public void UpdateForContact(string country, string state, string phoneNumber, string? city, string? street)
+        {
+            Country = Rules.Required(country, 100, nameof(country));
+            State = Rules.Required(state, 100, nameof(state));
+            City = Rules.Optional(city, 100, nameof(city))!;
+            Street = Rules.Optional(street, 250, nameof(street))!;
+            PhoneNumber = Rules.RequiredPhone(phoneNumber, 50, nameof(phoneNumber));
+        }
 
         public static Address Create(
             string userId, 

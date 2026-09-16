@@ -19,9 +19,11 @@ using FashionStore.API.Features.Auth;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Mvc;
 using Serilog.Events;
+using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddHttpClient();
 var vercelEnvironment = Environment.GetEnvironmentVariable("VERCEL");
 var isVercel = string.Equals(vercelEnvironment, "1", StringComparison.OrdinalIgnoreCase)
     || string.Equals(vercelEnvironment, "true", StringComparison.OrdinalIgnoreCase);
@@ -144,8 +146,9 @@ builder.Services.AddRateLimiter(options =>
 
         await context.HttpContext.Response.WriteAsJsonAsync(new
         {
-            StatusCode = StatusCodes.Status429TooManyRequests,
-            Message = "Too many requests. Please try again later."
+            statusCode = ResponseCodes.LIMIT_EXCEEDED,
+            description = "Too many requests. Please try again later.",
+            data = (object?)null
         }, cancellationToken);
     };
 });
@@ -370,8 +373,9 @@ builder.Services.AddAuthentication(options =>
 
             var response = System.Text.Json.JsonSerializer.Serialize(new
             {
-                StatusCode = 401,
-                Message = "You are not authorized. Please provide a valid token."
+                statusCode = ResponseCodes.INVALID_TOKEN,
+                description = "You are not authorized. Please provide a valid token.",
+                data = (object?)null
             });
 
             return context.Response.WriteAsync(response);
@@ -388,13 +392,121 @@ builder.Services.AddAuthentication(options =>
 
             var response = System.Text.Json.JsonSerializer.Serialize(new
             {
-                StatusCode = 403,
-                Message = "You do not have permission to access this resource."
+                statusCode = ResponseCodes.ACTION_NOT_PERMITTED,
+                description = "You do not have permission to access this resource.",
+                data = (object?)null
             });
 
             return context.Response.WriteAsync(response);
         }
     };
+})
+.AddJwtBearer("PaymentVerification", options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = false,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
+        ValidAudience = builder.Configuration["JwtSettings:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:Secret"]!))
+    };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnTokenValidated = async context =>
+        {
+            var userManager = context.HttpContext.RequestServices
+                .GetRequiredService<UserManager<ApplicationUser>>();
+            var dbContext = context.HttpContext.RequestServices
+                .GetRequiredService<FashionStoreDbContext>();
+            var logger = context.HttpContext.RequestServices
+                .GetRequiredService<ILogger<JwtBearerEvents>>();
+
+            var userIdClaim = context.Principal?.FindFirst(
+                System.Security.Claims.ClaimTypes.NameIdentifier);
+
+            if (userIdClaim != null)
+            {
+                var user = await userManager.FindByIdAsync(userIdClaim.Value);
+
+                if (user != null)
+                {
+                    var tokenId = context.Principal?.FindFirst(JwtRegisteredClaimNames.Jti)?.Value;
+                    if (string.IsNullOrWhiteSpace(tokenId))
+                    {
+                        logger.LogError("PaymentVerification token missing JTI for user {UserId}.", user.Id);
+                        context.Fail("Invalid token.");
+                        return;
+                    }
+
+                    var revokedToken = await userManager.GetAuthenticationTokenAsync(
+                        user,
+                        AuthTokenConstants.JwtLoginProvider,
+                        $"{AuthTokenConstants.RevokedTokenPrefix}{tokenId}");
+
+                    if (!string.IsNullOrWhiteSpace(revokedToken))
+                    {
+                        logger.LogError("PaymentVerification rejected revoked token {TokenId} for user {UserId}.", tokenId, user.Id);
+                        context.Fail("Token has been revoked.");
+                        return;
+                    }
+
+                    if (user.IsDeactivated)
+                    {
+                        logger.LogError("PaymentVerification rejected deactivated user {UserId}.", user.Id);
+                        context.Fail("Account is deactivated.");
+                        return;
+                    }
+
+                    var claims = new List<System.Security.Claims.Claim>
+                    {
+                        new(System.Security.Claims.ClaimTypes.NameIdentifier, user.Id),
+                        new(System.Security.Claims.ClaimTypes.Name, user.UserName ?? user.Email ?? string.Empty),
+                        new(System.Security.Claims.ClaimTypes.Email, user.Email!),
+                        new(System.Security.Claims.ClaimTypes.GivenName, user.FirstName ?? string.Empty),
+                        new(System.Security.Claims.ClaimTypes.Surname, user.LastName ?? string.Empty),
+                    };
+
+                    var roles = await userManager.GetRolesAsync(user);
+                    claims.AddRange(roles.Select(role =>
+                        new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, role)));
+
+                    var appIdentity = new System.Security.Claims.ClaimsIdentity(claims);
+                    context.Principal?.AddIdentity(appIdentity);
+
+                    logger.LogInformation(
+                        "PaymentVerification token validated for user: {Email} (lenient lifetime).",
+                        user.Email);
+                }
+                else
+                {
+                    logger.LogError("PaymentVerification user {UserId} not found.", userIdClaim.Value);
+                    context.Fail("User not found.");
+                }
+            }
+            else
+            {
+                logger.LogError("PaymentVerification token missing userId claim.");
+                context.Fail("Invalid token claims.");
+            }
+        }
+    };
+});
+#endregion
+
+#region Authorization Policies
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("RequireAuthenticatedUserIdOrExpiredSignedUserId", policy =>
+    {
+        policy.AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme, "PaymentVerification");
+        policy.RequireAuthenticatedUser();
+        policy.RequireClaim(System.Security.Claims.ClaimTypes.NameIdentifier);
+    });
 });
 #endregion
 
@@ -420,7 +532,16 @@ if (isVercel)
 }
 else
 {
-    await DatabaseInitializer.InitializeAsync(app.Services, app.Configuration, startupLogger);
+    try
+    {
+        await DatabaseInitializer.InitializeAsync(app.Services, app.Configuration, startupLogger);
+    }
+    catch (Exception ex)
+    {
+        startupLogger.LogError(
+            ex,
+            "Database migration or seed initialization failed. The API will continue starting, but database-dependent requests may be unavailable.");
+    }
 }
 
 if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Docker"))
@@ -435,7 +556,7 @@ if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Docker"))
 
 app.UseMiddleware<GlobalErrorMiddleware>(); 
 app.UseMiddleware<RequestPayloadLoggingMiddleware>();
-//app.UseHttpsRedirection();                 
+app.UseHttpsRedirection();                 
 app.UseCors(corsPolicyName);               
 app.UseAuthentication();                   
 app.UseAuthorization();                    

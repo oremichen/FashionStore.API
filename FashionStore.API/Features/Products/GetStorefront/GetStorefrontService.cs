@@ -34,6 +34,8 @@ public class GetStorefrontService(IProductRepository repository, IImageProcessor
             return "The sort value is invalid.";
         if (query.MinPrice < 0 || query.MaxPrice < 0 || query.MinPrice > query.MaxPrice)
             return "The price range is invalid.";
+        if (!PriceRangeParser.TryParse(query.PriceRanges, out _))
+            return "The selected price ranges are invalid.";
         return null;
     }
 
@@ -71,7 +73,7 @@ public class GetStorefrontService(IProductRepository repository, IImageProcessor
             CategoryName = product.Category.Name,
             BrandId = product.BrandId,
             BrandName = product.Brand?.Name,
-            Name = product.Name,
+            Name = ProductNameFormatter.CapitalizeWords(product.Name),
             Slug = product.Slug,
             Description = product.Description,
             AdditionalInformation = product.AdditionalInformation,

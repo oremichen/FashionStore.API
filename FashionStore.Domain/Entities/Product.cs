@@ -104,6 +104,21 @@ public sealed class Product
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 
+    public void ReserveStock(int quantity)
+    {
+        if (quantity <= 0) throw new ArgumentException("Reservation quantity must be greater than zero.", nameof(quantity));
+        if (AvailabilityCount < quantity) throw new InvalidOperationException("Insufficient product inventory.");
+        AvailabilityCount -= quantity;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void ReleaseStock(int quantity)
+    {
+        if (quantity <= 0) throw new ArgumentException("Release quantity must be greater than zero.", nameof(quantity));
+        AvailabilityCount += quantity;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
     public void AddImages(IEnumerable<(string SmallUrl, string MediumUrl, string BigUrl, string ContentType, string FileName)> images)
     {
         var sortOrder = _images.Count == 0 ? 0 : _images.Max(x => x.SortOrder) + 1;

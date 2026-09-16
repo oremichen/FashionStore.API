@@ -1,6 +1,8 @@
+using FashionStore.Domain.Abstractions.Users;
+
 namespace FashionStore.API.Features.Users.GetUsers;
 
-public sealed class GetUsersService(FashionStoreDbContext dbContext) : IGetUsersService
+public sealed class GetUsersService(IUserRepository userRepository) : IGetUsersService
 {
     public async Task<ResponseResult<PagedResponse<GetUsersResponse>>> ExecuteAsync(GetUsersQuery query, CancellationToken cancellationToken)
     {
@@ -10,57 +12,32 @@ public sealed class GetUsersService(FashionStoreDbContext dbContext) : IGetUsers
         if (query.From.HasValue && query.To.HasValue && query.From > query.To)
             return response.Fail("The from date cannot be later than the to date.", ResponseCodes.INVALID_ACTION);
 
-        var users = dbContext.Users.AsNoTracking().AsQueryable();
-        var adminRoles = RoleConstants.AdminRoles.ToArray();
-        users = query.Category == UserCategory.Customer
-            ? users.Where(user => dbContext.UserRoles.Any(userRole => userRole.UserId == user.Id &&
-                dbContext.Roles.Any(role => role.Id == userRole.RoleId && role.Name == RoleConstants.User)))
-            : users.Where(user => dbContext.UserRoles.Any(userRole => userRole.UserId == user.Id &&
-                dbContext.Roles.Any(role => role.Id == userRole.RoleId && role.Name != null && adminRoles.Contains(role.Name))));
+        var repoCategory = query.Category == UserCategory.Customer
+            ? UserRepositoryCategory.Customer
+            : UserRepositoryCategory.Admin;
 
-        users = query.Status switch
+        var repoStatus = query.Status switch
         {
-            UserStatusFilter.Active => users.Where(user => !user.IsDeleted && !user.IsDeactivated),
-            UserStatusFilter.Deactivated => users.Where(user => !user.IsDeleted && user.IsDeactivated),
-            UserStatusFilter.Deleted => users.Where(user => user.IsDeleted),
-            _ => users
+            UserStatusFilter.Active => UserRepositoryStatusFilter.Active,
+            UserStatusFilter.Deactivated => UserRepositoryStatusFilter.Deactivated,
+            UserStatusFilter.Deleted => UserRepositoryStatusFilter.Deleted,
+            _ => UserRepositoryStatusFilter.All
         };
 
-        if (query.From.HasValue) users = users.Where(user => user.CreatedAt >= query.From.Value);
-        if (query.To.HasValue) users = users.Where(user => user.CreatedAt <= query.To.Value);
+        var result = await userRepository.GetPagedUsersAsync(
+            repoCategory,
+            repoStatus,
+            query.From,
+            query.To,
+            query.Search,
+            query.Page,
+            query.PageSize,
+            cancellationToken);
 
-        var search = query.Search?.Trim().ToLower();
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            users = users.Where(user =>
-                user.FirstName.ToLower().Contains(search) ||
-                user.LastName.ToLower().Contains(search) ||
-                (user.Email != null && user.Email.ToLower().Contains(search)) ||
-                (user.PhoneNumber != null && user.PhoneNumber.ToLower().Contains(search)) ||
-                user.Addresses.Any(address =>
-                    address.Street.ToLower().Contains(search) || address.City.ToLower().Contains(search) ||
-                    address.State.ToLower().Contains(search) || address.Country.ToLower().Contains(search) ||
-                    (address.PostalCode != null && address.PostalCode.ToLower().Contains(search)) ||
-                    address.PhoneNumber.ToLower().Contains(search) ||
-                    address.Landmark != null && address.Landmark.ToLower().Contains(search)));
-        }
-
-        var totalCount = await users.CountAsync(cancellationToken);
-        var pageUsers = await users.OrderByDescending(user => user.CreatedAt)
-            .Skip((query.Page - 1) * query.PageSize).Take(query.PageSize)
-            .Include(user => user.Addresses).ToListAsync(cancellationToken);
-        var userIds = pageUsers.Select(user => user.Id).ToArray();
-        var roleRows = await (from userRole in dbContext.UserRoles.AsNoTracking()
-                              join role in dbContext.Roles.AsNoTracking() on userRole.RoleId equals role.Id
-                              where userIds.Contains(userRole.UserId)
-                              select new { userRole.UserId, Role = role.Name! }).ToListAsync(cancellationToken);
-        var rolesByUser = roleRows.GroupBy(item => item.UserId)
-            .ToDictionary(group => group.Key, group => (IReadOnlyList<string>)group.Select(item => item.Role).Order().ToList());
-
-        var items = pageUsers.Select(user => new GetUsersResponse
+        var items = result.Items.Select(user => new GetUsersResponse
         {
             Id = user.Id,
-            Roles = rolesByUser.GetValueOrDefault(user.Id, []),
+            Roles = result.RolesByUser.GetValueOrDefault(user.Id, []),
             FirstName = user.FirstName,
             LastName = user.LastName,
             Addresses = user.Addresses.OrderByDescending(address => address.IsMain).Select(UserAddressResponse.From).ToList(),
@@ -73,8 +50,8 @@ public sealed class GetUsersService(FashionStoreDbContext dbContext) : IGetUsers
 
         return response.Success(new PagedResponse<GetUsersResponse>
         {
-            Items = items, Page = query.Page, PageSize = query.PageSize, TotalCount = totalCount,
-            TotalPages = totalCount == 0 ? 0 : (int)Math.Ceiling(totalCount / (double)query.PageSize)
+            Items = items, Page = query.Page, PageSize = query.PageSize, TotalCount = result.TotalCount,
+            TotalPages = result.TotalCount == 0 ? 0 : (int)Math.Ceiling(result.TotalCount / (double)query.PageSize)
         }, "Users retrieved successfully.");
     }
 }

@@ -12,6 +12,7 @@ namespace FashionStore.API.Features.Auth.Shared
         public string UserFirstName { get; set; } = string.Empty;
 
         public string UserName { get; set; } = string.Empty;
+        public string? ImageUrl { get; set; }
 
         public List<string> UserRoles { get; set; } = [];
         public bool IsAdminSession { get; set; }

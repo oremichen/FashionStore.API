@@ -1,3 +1,4 @@
+using FashionStore.API.Caching;
 using FashionStore.API.Features.ContactUs.Shared;
 using FashionStore.Domain.Abstractions.Contacts;
 
@@ -8,7 +9,10 @@ public interface IUpdateContactService
     Task<ResponseResult<ContactUsResponse>> ExecuteAsync(string id, ContactUsRequest request, CancellationToken cancellationToken);
 }
 
-public sealed class UpdateContactService(IContactUsConfigurationRepository repository) : IUpdateContactService
+public sealed class UpdateContactService(
+    IContactUsConfigurationRepository repository,
+    IRedisCacheService cacheService,
+    ILogger<UpdateContactService> logger) : IUpdateContactService
 {
     public async Task<ResponseResult<ContactUsResponse>> ExecuteAsync(string id, ContactUsRequest request, CancellationToken cancellationToken)
     {
@@ -31,14 +35,22 @@ public sealed class UpdateContactService(IContactUsConfigurationRepository repos
                 await DeactivateOtherContactsAsync(contact.Id, cancellationToken);
             }
 
-            contact.Update(request.Address, request.ContactPhone, request.BusinessPhone,
-                request.ContactEmail, request.BusinessEmail, request.IsActive);
+            contact.AddressDetails?.UpdateForContact(request.Country, request.State, request.ContactPhone, request.City, request.Street);
+            contact.Update(
+                contact.AddressId, 
+                request.ContactPhone, 
+                request.BusinessPhone,
+                request.ContactEmail, 
+                request.BusinessEmail, 
+                request.IsActive);
             await repository.SaveChangesAsync(cancellationToken);
+            await cacheService.InvalidateTagAsync("contacts");
             return response.Success(ContactUsMapper.Map(contact), "Contact updated successfully.");
         }
         catch (ArgumentException exception)
         {
-            return response.Fail(exception.Message, ResponseCodes.INVALID_ACTION);
+            logger.LogWarning(exception, "Contact update validation failed for {ContactId}.", id);
+            return response.Fail("The contact details are invalid.", ResponseCodes.INVALID_ACTION);
         }
     }
 

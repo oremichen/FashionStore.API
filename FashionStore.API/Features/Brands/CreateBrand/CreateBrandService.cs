@@ -30,7 +30,7 @@ public sealed class CreateBrandService(IBrandRepository repository, ICloudinaryI
         catch (ArgumentException ex)
         {
             logger.LogError(ex, "Brand creation validation failed for slug {Slug}.", request.Slug);
-            return response.Fail(ex.Message, ResponseCodes.INVALID_ACTION);
+            return response.Fail("The brand details are invalid.", ResponseCodes.INVALID_ACTION);
         }
     }
 

@@ -31,46 +31,53 @@ namespace FashionStore.Infrastructure.Seed
                 EnsureSucceeded(result, $"create role {item}");
             }
 
-            await SeedSuperAdminAsync(userManager, configuration, logger);
+           // await SeedSuperAdminAsync(userManager, configuration, logger);
         }
 
-        private static async Task SeedSuperAdminAsync(
-            UserManager<ApplicationUser> userManager,
-            IConfiguration configuration,
-            ILogger logger)
-        {
-            var email = configuration["SeedData:SuperAdmin:Email"]
-                ?? "superadmin@fashionstore.com";
-            var password = configuration["SeedData:SuperAdmin:Password"]
-                ?? "SuperAdmin@123";
+        //private static async Task SeedSuperAdminAsync(
+        //    UserManager<ApplicationUser> userManager,
+        //    IConfiguration configuration,
+        //    ILogger logger)
+        //{
+        //    var email = configuration["SeedData:SuperAdmin:Email"]?.Trim();
+        //    if (string.IsNullOrWhiteSpace(email))
+        //    {
+        //        logger.LogWarning("SeedData:SuperAdmin:Email must be explicitly configured for administrator seeding.");
+        //    }
 
-            if (await userManager.FindByEmailAsync(email) != null)
-            {
-                logger.LogInformation("SuperAdmin seed user {Email} already exists. Skipping.", email);
-                return;
-            }
+        //    if (await userManager.FindByEmailAsync(email) != null)
+        //    {
+        //        logger.LogInformation("SuperAdmin seed user {Email} already exists. Skipping.", email);
+        //        return;
+        //    }
 
-            var superAdmin = new ApplicationUser
-            {
-                UserName = email,
-                Email = email,
-                FirstName = configuration["SeedData:SuperAdmin:FirstName"] ?? "Super",
-                LastName = configuration["SeedData:SuperAdmin:LastName"] ?? "Admin",
-                EmailConfirmed = true,
-                EmailVerified = true,
-                UserStatus = "Active",
-                IsPasswordChanged = false
-            };
+        //    var password = configuration["SeedData:SuperAdmin:Password"];
+        //    if (string.IsNullOrWhiteSpace(password))
+        //    {
+        //        logger.LogWarning("SeedData:SuperAdmin:Password must be explicitly configured to create the bootstrap administrator.");
+        //    }
 
-            EnsureSucceeded(
-                await userManager.CreateAsync(superAdmin, password),
-                $"create SuperAdmin user {email}");
-            EnsureSucceeded(
-                await userManager.AddToRoleAsync(superAdmin, RoleEnums.SuperAdmin.ToString()),
-                $"assign SuperAdmin role to {email}");
+        //    var superAdmin = new ApplicationUser
+        //    {
+        //        UserName = email,
+        //        Email = email,
+        //        FirstName = configuration["SeedData:SuperAdmin:FirstName"] ?? "Super",
+        //        LastName = configuration["SeedData:SuperAdmin:LastName"] ?? "Admin",
+        //        EmailConfirmed = true,
+        //        EmailVerified = true,
+        //        UserStatus = "Active",
+        //        IsPasswordChanged = false
+        //    };
 
-            logger.LogInformation("Created SuperAdmin seed user {Email}.", email);
-        }
+        //    EnsureSucceeded(
+        //        await userManager.CreateAsync(superAdmin, password),
+        //        $"create SuperAdmin user {email}");
+        //    EnsureSucceeded(
+        //        await userManager.AddToRoleAsync(superAdmin, RoleEnums.SuperAdmin.ToString()),
+        //        $"assign SuperAdmin role to {email}");
+
+        //    logger.LogInformation("Created SuperAdmin seed user {Email}.", email);
+        //}
 
         private static void EnsureSucceeded(IdentityResult result, string operation)
         {

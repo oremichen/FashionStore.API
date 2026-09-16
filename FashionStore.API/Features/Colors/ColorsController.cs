@@ -12,10 +12,17 @@ public sealed class ColorsController(IGetColorsService getColorsService, ICreate
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 25, CancellationToken cancellationToken = default)
     {
-        return ProcessResponse(await getColorsService.ExecuteAsync(page, pageSize, cancellationToken));
+        return ProcessResponse(await getColorsService.ExecuteAsync(page, pageSize, true, cancellationToken));
     }
 
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpPost]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}"), HttpGet("~/api/admin/colors")]
+    [ProducesResponseType(typeof(ResponseResult<PagedResponse<ColorResponse>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAllAdmin([FromQuery] int page = 1, [FromQuery] int pageSize = 25, CancellationToken cancellationToken = default)
+    {
+        return ProcessResponse(await getColorsService.ExecuteAsync(page, pageSize, false, cancellationToken));
+    }
+
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}"), HttpPost]
     [ProducesResponseType(typeof(ResponseResult<ColorResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
@@ -27,7 +34,7 @@ public sealed class ColorsController(IGetColorsService getColorsService, ICreate
         return ProcessResponse(await createColorService.ExecuteAsync(request, cancellationToken));
     }
 
-    [Authorize(Roles = "SuperAdmin,BusinessAdmin"), HttpDelete("{id}")]
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}"), HttpDelete("{id}")]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]

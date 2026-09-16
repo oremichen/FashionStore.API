@@ -4,11 +4,11 @@ public sealed class ContactUs
 {
     private ContactUs() { }
 
-    private ContactUs(string name, string email, string phone, string subject, string message)
+    private ContactUs(string name, string email, string? phone, string subject, string message)
     {
         Name = Rules.Required(name, 200, nameof(name));
         Email = Rules.RequiredEmail(email, 254, nameof(email));
-        Phone = Rules.RequiredPhone(phone, 50, nameof(phone));
+        Phone = Rules.OptionalPhone(phone, 50, nameof(phone)) ?? string.Empty;
         Subject = Rules.Required(subject, 250, nameof(subject));
         Message = Rules.Required(message, 5000, nameof(message));
         CreatedAt = DateTimeOffset.UtcNow;
@@ -22,6 +22,6 @@ public sealed class ContactUs
     public string Message { get; private set; } = string.Empty;
     public DateTimeOffset CreatedAt { get; private set; }
 
-    public static ContactUs Create(string name, string email, string phone, string subject, string message) =>
+    public static ContactUs Create(string name, string email, string? phone, string subject, string message) =>
         new(name, email, phone, subject, message);
 }

@@ -10,6 +10,8 @@ namespace FashionStore.API.Features.Users.Shared
 
         public string Email { get; set; } = string.Empty;
 
+        public string? ImageUrl { get; set; }
+
         public List<string> Roles { get; set; } = [];
 
         public List<UserAddressResponse> Addresses { get; set; } = [];

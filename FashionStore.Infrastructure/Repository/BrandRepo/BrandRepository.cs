@@ -5,11 +5,15 @@ namespace FashionStore.Infrastructure.Repository.BrandRepo;
 
 public sealed class BrandRepository(FashionStoreDbContext dbContext, ILogger<BrandRepository> logger) : IBrandRepository
 {
-    public async Task<IReadOnlyList<Brand>> GetAllAsync(CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<Brand>> GetAllAsync(bool availableOnly, CancellationToken cancellationToken)
     {
         logger.LogDebug("Querying all brands.");
-        return await dbContext.Brands
+        var query = dbContext.Brands
             .AsNoTracking()
+            .Include(brand => brand.Products).AsQueryable();
+        if (availableOnly)
+            query = query.Where(brand => brand.IsActive && brand.Products.Any(product => !product.IsArchived && product.IsActive && product.PublishedAt != null));
+        return await query
             .OrderByDescending(brand => brand.CreatedAt)
             .ThenBy(brand => brand.Name)
             .ToListAsync(cancellationToken);

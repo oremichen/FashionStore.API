@@ -6,6 +6,7 @@ using FashionStore.API.Features.Auth.Register;
 using FashionStore.API.Features.Auth.ResendConfirmationLink;
 using FashionStore.API.Features.Auth.ResetPassword;
 using FashionStore.API.Features.Auth.Refresh;
+using FashionStore.API.Features.Auth.AdminForgotPassword;
 
 namespace FashionStore.API.Features.Auth
 {
@@ -21,8 +22,9 @@ namespace FashionStore.API.Features.Auth
         private readonly IConfirmEmailService _confirmEmailService;
         private readonly IResendConfirmationLinkService _resendConfirmationLinkService;
         private readonly IRefreshService _refreshService;
+        private readonly IAdminForgotPasswordService _adminForgotPasswordService;
 
-        public AuthController(ILoginService loginService, ILogoutService logoutService, IForgotPasswordService forgotPasswordService, IResetPasswordService resetPasswordService, IRegisterService registerService, IConfirmEmailService confirmEmailService, IResendConfirmationLinkService resendConfirmationLinkService, IRefreshService refreshService)
+        public AuthController(ILoginService loginService, ILogoutService logoutService, IForgotPasswordService forgotPasswordService, IResetPasswordService resetPasswordService, IRegisterService registerService, IConfirmEmailService confirmEmailService, IResendConfirmationLinkService resendConfirmationLinkService, IRefreshService refreshService, IAdminForgotPasswordService adminForgotPasswordService)
         {
             _loginService = loginService;
             _logoutService = logoutService;
@@ -32,6 +34,16 @@ namespace FashionStore.API.Features.Auth
             _confirmEmailService = confirmEmailService;
             _resendConfirmationLinkService = resendConfirmationLinkService;
             _refreshService = refreshService;
+            _adminForgotPasswordService = adminForgotPasswordService;
+        }
+
+        [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}")]
+        [HttpPost("admin/{userId}/forgot-password")]
+        public async Task<IActionResult> AdminForgotPassword(string userId, [FromBody] AdminForgotPasswordRequest request)
+        {
+            var actorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(actorId)) return ProcessResponse(new ResponseResult().Fail("You are not authorized to perform this action.", ResponseCodes.INVALID_TOKEN));
+            return ProcessResponse(await _adminForgotPasswordService.ExecuteAsync(actorId, userId, request));
         }
 
         [HttpPost("refresh")]
@@ -103,11 +115,9 @@ namespace FashionStore.API.Features.Auth
         [EndpointSummary("Reset password for authenticated user")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
         {
-            var username = User.FindFirst(ClaimTypes.Name)?.Value
-                ?? User.FindFirst(ClaimTypes.Email)?.Value
-                ?? string.Empty;
-
-            var response = await _resetPasswordService.ExecuteAsync(username, request);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId)) return ProcessResponse(new ResponseResult().Fail("You are not authorized to perform this action.", ResponseCodes.INVALID_TOKEN));
+            var response = await _resetPasswordService.ExecuteAsync(userId, request, HttpContext.RequestAborted);
             return ProcessResponse(response);
         }
 

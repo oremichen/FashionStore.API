@@ -15,8 +15,8 @@ namespace FashionStore.API.Features.Auth.Logout
         private readonly IEmailTemplateRenderer _emailTemplateRenderer;
         private readonly ILogger<LogoutService> _logger;
         private readonly IConfiguration _configuration;
-        private readonly FashionStoreDbContext _dbContext;
-        public LogoutService(UserManager<ApplicationUser> userManager, ITokenService tokenService, IEmailNotificationService emailNotificationService, IEmailTemplateRenderer emailTemplateRenderer, ILogger<LogoutService> logger, IConfiguration configuration, FashionStoreDbContext dbContext)
+        private readonly IAuthSessionRepository _authSessionRepository;
+        public LogoutService(UserManager<ApplicationUser> userManager, ITokenService tokenService, IEmailNotificationService emailNotificationService, IEmailTemplateRenderer emailTemplateRenderer, ILogger<LogoutService> logger, IConfiguration configuration, IAuthSessionRepository authSessionRepository)
         {
             _userManager = userManager;
             _tokenService = tokenService;
@@ -24,7 +24,7 @@ namespace FashionStore.API.Features.Auth.Logout
             _emailTemplateRenderer = emailTemplateRenderer;
             _logger = logger;
             _configuration = configuration;
-            _dbContext = dbContext;
+            _authSessionRepository = authSessionRepository;
         }
 
         public async Task<ResponseResult> ExecuteAsync(string username, string tokenId)
@@ -44,11 +44,11 @@ namespace FashionStore.API.Features.Auth.Logout
                 return response.Fail("No user was found for the current token.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
             }
 
-            var session = await _dbContext.UserSessions.SingleOrDefaultAsync(item => item.Id == tokenId && item.UserId == user.Id);
+            var session = await _authSessionRepository.GetByIdAndUserIdAsync(tokenId, user.Id, CancellationToken.None);
             if (session is not null)
             {
                 session.RevokedAtUtc = DateTimeOffset.UtcNow;
-                await _dbContext.SaveChangesAsync();
+                await _authSessionRepository.SaveChangesAsync(CancellationToken.None);
             }
             _logger.LogInformation("Logout successful for user {UserId} with username {Username}. Token {TokenId} was revoked.", user.Id, username, tokenId);
             return response.Success("Logout successful.");

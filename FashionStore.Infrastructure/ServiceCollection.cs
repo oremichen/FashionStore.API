@@ -39,22 +39,39 @@ namespace FashionStore.Infrastructure
                 Repository.UserRepo.UserRepository>();
             services.AddScoped<FashionStore.Domain.Abstractions.Orders.IOrderRepository,
                 Repository.OrderRepo.OrderRepository>();
+            services.AddScoped<FashionStore.Domain.Abstractions.Delivery.IDeliveryRepository,
+                Repository.DeliveryRepo.DeliveryRepository>();
+            services.AddScoped<FashionStore.Domain.Abstractions.Auth.IAuthSessionRepository,
+                Repository.AuthRepo.AuthSessionRepository>();
+            services.AddScoped<FashionStore.Domain.Abstractions.Delivery.IDeliveryMethodClassifier,
+                Delivery.DeliveryMethodClassifier>();
+            services.AddScoped<Delivery.PickupDeliveryStrategy>();
+            services.AddScoped<Delivery.ShippingDeliveryStrategy>();
+            services.AddScoped<FashionStore.Domain.Abstractions.Delivery.IDeliveryMethodFactory,
+                Delivery.DeliveryMethodFactory>();
             services.AddOptions<Payments.PaystackSettings>()
                 .BindConfiguration(Payments.PaystackSettings.SectionName)
                 .ValidateDataAnnotations()
                 .ValidateOnStart();
             services.AddHttpClient<FashionStore.Domain.Abstractions.Payments.IPaystackClient,
                 Payments.PaystackClient>();
+            services.AddScoped<Payments.PaystackPaymentGateway>();
+            services.AddScoped<FashionStore.Domain.Abstractions.Payments.IPaymentGatewayFactory,
+                Payments.PaymentGatewayFactory>();
 
             services.AddScoped<IEmailNotificationService, Notification.EmailNotificationService>();
             services.AddScoped<IEmailTemplateRenderer, Notification.EmailTemplateRenderer>();
+            services.AddScoped<FashionStore.Domain.Abstractions.Orders.IOrderItemHtmlRendererService,
+                Orders.OrderItemHtmlRendererService>();
             services.AddScoped<IEmailProvider, Notification.PostmarkEmailProvider>();
             services.AddScoped<IEmailProvider, Notification.AmazonSesEmailProvider>();
+            services.AddHttpClient<ISmsProvider, Notification.TwilioSmsProvider>();
             services.AddSingleton<Messages.NotificationQueue.EmailNotificationQueueService>();
             services.AddSingleton<IEmailNotificationQueueService>(provider =>
                 provider.GetRequiredService<Messages.NotificationQueue.EmailNotificationQueueService>());
             services.AddHostedService<Messages.NotificationQueue.EmailNotificationProcessorService>();
             services.AddHostedService<Messages.NotificationQueue.PendingEmailNotificationProcessorService>();
+            services.AddHostedService<Messages.Inventory.ExpiredInventoryReservationProcessorService>();
             return services;
         }
     }
