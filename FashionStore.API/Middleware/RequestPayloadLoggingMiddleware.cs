@@ -9,13 +9,34 @@ public sealed class RequestPayloadLoggingMiddleware(
     ILogger<RequestPayloadLoggingMiddleware> logger)
 {
     private const int MaxLoggedPayloadCharacters = 512 * 1024;
+    private const long MaxMultipartRequestBytes = 25L * 1024 * 1024;
     private const string RedactedValue = "[REDACTED]";
 
     public async Task InvokeAsync(HttpContext context)
     {
         if (IsMutationRequest(context.Request.Method))
         {
-            var payload = await ReadSanitizedPayloadAsync(context.Request, context.RequestAborted);
+            if (context.Request.HasFormContentType && context.Request.ContentLength > MaxMultipartRequestBytes)
+            {
+                context.Response.StatusCode = StatusCodes.Status413PayloadTooLarge;
+                return;
+            }
+
+            object payload;
+            try
+            {
+                payload = await ReadSanitizedPayloadAsync(context.Request, context.RequestAborted);
+            }
+            catch (IOException exception) when (context.Request.HasFormContentType)
+            {
+                logger.LogWarning(
+                    exception,
+                    "Rejected incomplete multipart request for {Method} {Path}.",
+                    context.Request.Method,
+                    context.Request.Path);
+                context.Response.StatusCode = StatusCodes.Status413PayloadTooLarge;
+                return;
+            }
             logger.LogInformation(
                 "Incoming mutation request {Method} {Path}. TraceId: {TraceId}. ContentType: {ContentType}. Payload: {@RequestPayload}",
                 context.Request.Method,
@@ -42,7 +63,12 @@ public sealed class RequestPayloadLoggingMiddleware(
 
         if (request.HasFormContentType)
         {
-            return await ReadSanitizedFormAsync(request, cancellationToken);
+            return new
+            {
+                status = "omitted",
+                reason = "multipart-payload-not-logged",
+                contentLength = request.ContentLength
+            };
         }
 
         if (request.ContentType?.Contains("json", StringComparison.OrdinalIgnoreCase) != true)
@@ -122,25 +148,6 @@ public sealed class RequestPayloadLoggingMiddleware(
                 contentLength = request.ContentLength
             };
         }
-    }
-
-    private static async Task<object> ReadSanitizedFormAsync(
-        HttpRequest request,
-        CancellationToken cancellationToken)
-    {
-        var form = await request.ReadFormAsync(cancellationToken);
-        var fields = form.ToDictionary(
-            field => field.Key,
-            field => IsSensitive(field.Key) ? RedactedValue : field.Value.ToString());
-        var files = form.Files.Select(file => new
-        {
-            field = file.Name,
-            fileName = Path.GetFileName(file.FileName),
-            file.ContentType,
-            file.Length
-        }).ToArray();
-
-        return new { fields, files };
     }
 
     private static void Redact(JsonNode? node)

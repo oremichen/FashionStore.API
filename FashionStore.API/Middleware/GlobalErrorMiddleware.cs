@@ -83,6 +83,13 @@ namespace FashionStore.API.Middleware
                     null,
                     LogLevel.Error),
 
+                BadHttpRequestException badHttpRequestException => (
+                    StatusCodes.Status413PayloadTooLarge,
+                    ResponseCodes.INVALID_ACTION,
+                    "The request payload is too large.",
+                    null,
+                    LogLevel.Error),
+
                 OperationCanceledException _ when context.RequestAborted.IsCancellationRequested => (
                     499,
                     ResponseCodes.TIMEOUT,
