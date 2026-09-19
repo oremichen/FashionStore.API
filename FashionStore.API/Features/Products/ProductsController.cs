@@ -28,7 +28,8 @@ public sealed class ProductsController(
     IDeleteProductService deleteProductService,
     IGetProductImagesService getProductImagesService,
     IGetProductVarientService getProductVarientService,
-    IDeleteProductImageService deleteProductImageService) : BaseApiController
+    IDeleteProductImageService deleteProductImageService,
+    ILogger<ProductsController> logger) : BaseApiController
 {
     #region User product calls
 
@@ -133,9 +134,51 @@ public sealed class ProductsController(
         return ProcessResponse(await getProductByIdService.ExecuteAsync(productId, cancellationToken));
     }
 
+    //[HttpPost("create")]
+    //[EnableRateLimiting(RateLimitPolicies.AdminUpload)]
+    //[Consumes("multipart/form-data")]
+    //[Produces("application/json")]
+    //[ProducesResponseType(typeof(ResponseResult<ProductResponse>), StatusCodes.Status201Created)]
+    //[ProducesResponseType(typeof(ResponseResult<ProductResponse>), StatusCodes.Status400BadRequest)]
+    //[ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
+    //[ProducesResponseType(typeof(ResponseResult), StatusCodes.Status403Forbidden)]
+    //[ProducesResponseType(typeof(ResponseResult<ProductResponse>), StatusCodes.Status409Conflict)]
+    //[ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
+    //[RequestSizeLimit(25 * 1024 * 1024)]
+    //public async Task<IActionResult> Create([FromForm] CreateProductForm form, CancellationToken cancellationToken)
+    //{
+    //    var images = await ProductImageReader.ReadAsync(form.Images, cancellationToken);
+    //    var request = new CreateProductRequest
+    //    {
+    //        CategoryId = form.CategoryId, 
+    //        BrandId = form.BrandId, 
+    //        Name = form.Name, 
+    //        Slug = form.Slug,
+    //        Description = form.Description, 
+    //        AdditionalInformation = form.AdditionalInformation,
+    //        ShortDescription = form.ShortDescription, 
+    //        OldPrice = form.OldPrice, 
+    //        NewPrice = form.NewPrice,
+    //        MinPrice = form.MinPrice,
+    //        MaxPrice = form.MaxPrice,
+    //        IsOldNewPrice = form.IsOldNewPrice,
+    //        IsMinMaxPrice = form.IsMinMaxPrice,
+    //        CurrencyCode = form.CurrencyCode, 
+    //        AvailabilityCount = form.AvailabilityCount, 
+    //        Weight = form.Weight,
+    //        WeightUnit = form.WeightUnit, 
+    //        IsFeatured = form.IsFeatured, 
+    //        IsNewArrival = form.IsNewArrival,
+    //        Sizes = form.Sizes,
+    //        Colors = form.Colors,
+    //        Status = form.Status, 
+    //        ProductVariants = form.ProductVariants,
+    //        ImageRequests = images
+    //    };
+    //    return ProcessResponse(await createProductService.ExecuteAsync(request, cancellationToken));
+    //}
+
     [HttpPost("create")]
-    [EnableRateLimiting(RateLimitPolicies.AdminUpload)]
-    [Consumes("multipart/form-data")]
     [Produces("application/json")]
     [ProducesResponseType(typeof(ResponseResult<ProductResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ResponseResult<ProductResponse>), StatusCodes.Status400BadRequest)]
@@ -143,38 +186,11 @@ public sealed class ProductsController(
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ResponseResult<ProductResponse>), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
-    [RequestSizeLimit(25 * 1024 * 1024)]
     public async Task<IActionResult> Create([FromForm] CreateProductForm form, CancellationToken cancellationToken)
     {
-        var images = await ProductImageReader.ReadAsync(form.Images, cancellationToken);
-        var request = new CreateProductRequest
-        {
-            CategoryId = form.CategoryId, 
-            BrandId = form.BrandId, 
-            Name = form.Name, 
-            Slug = form.Slug,
-            Description = form.Description, 
-            AdditionalInformation = form.AdditionalInformation,
-            ShortDescription = form.ShortDescription, 
-            OldPrice = form.OldPrice, 
-            NewPrice = form.NewPrice,
-            MinPrice = form.MinPrice,
-            MaxPrice = form.MaxPrice,
-            IsOldNewPrice = form.IsOldNewPrice,
-            IsMinMaxPrice = form.IsMinMaxPrice,
-            CurrencyCode = form.CurrencyCode, 
-            AvailabilityCount = form.AvailabilityCount, 
-            Weight = form.Weight,
-            WeightUnit = form.WeightUnit, 
-            IsFeatured = form.IsFeatured, 
-            IsNewArrival = form.IsNewArrival,
-            Sizes = form.Sizes,
-            Colors = form.Colors,
-            Status = form.Status, 
-            ProductVariants = form.ProductVariants,
-            ImageRequests = images
-        };
-        return ProcessResponse(await createProductService.ExecuteAsync(request, cancellationToken));
+        logger.LogInformation("Create product request received: {@ProductRequest}", form);
+
+        return Ok();
     }
 
     [HttpPut("update")]
