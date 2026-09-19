@@ -148,11 +148,20 @@ public sealed class ProductsController(
     [RequestSizeLimit(5 * 1024 * 1024)]
     public async Task<IActionResult> UploadImage(CancellationToken cancellationToken)
     {
-        logger.LogInformation("Uploading product image.");
+        logger.LogInformation(
+            "Product image upload started. Method: {Method}, Path: {Path}, ContentType: {ContentType}, ContentLength: {ContentLength}, BodyType: {BodyType}, CanRead: {CanRead}, CanSeek: {CanSeek}",
+            Request.Method,
+            Request.Path,
+            Request.ContentType,
+            Request.ContentLength,
+            Request.Body.GetType().FullName,
+            Request.Body.CanRead,
+            Request.Body.CanSeek);
+
         var fileName = Request.Headers["X-File-Name"].FirstOrDefault()
             ?? Request.Query["fileName"].FirstOrDefault();
 
-        logger.LogInformation("File name: {FileName}", fileName);
+        logger.LogInformation("Product image upload filename resolved. FileName: {FileName}", fileName);
 
         if (string.IsNullOrWhiteSpace(fileName))
         {
@@ -162,12 +171,26 @@ public sealed class ProductsController(
         }
 
         var contentType = Request.ContentType?.Split(';', 2)[0].Trim() ?? string.Empty;
+        logger.LogInformation(
+            "Product image upload request body ready. FileName: {FileName}, ContentType: {ContentType}, DeclaredLength: {ContentLength}",
+            fileName,
+            contentType,
+            Request.ContentLength);
+
         var upload = await productUploadService.UploadAsync(
             Request.Body,
             contentType,
             fileName,
             Request.ContentLength,
             cancellationToken);
+
+        logger.LogInformation(
+            "Product image upload completed. UploadId: {UploadId}, FileName: {FileName}, ContentType: {ContentType}, FileSize: {FileSize}, ExpiresAt: {ExpiresAt}",
+            upload.UploadId,
+            upload.FileName,
+            upload.ContentType,
+            upload.FileSize,
+            upload.ExpiresAt);
 
         return ProcessResponse(
             new ResponseResult<ProductImageUploadResponse>()
