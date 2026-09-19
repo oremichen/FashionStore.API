@@ -136,53 +136,7 @@ public sealed class ProductsController(
     {
         return ProcessResponse(await getProductByIdService.ExecuteAsync(productId, cancellationToken));
     }
-
-    [HttpPost("create")]
-    [EnableRateLimiting(RateLimitPolicies.AdminUpload)]
-    [Consumes("multipart/form-data")]
-    [Produces("application/json")]
-    [ProducesResponseType(typeof(ResponseResult<ProductResponse>), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ResponseResult<ProductResponse>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(typeof(ResponseResult<ProductResponse>), StatusCodes.Status409Conflict)]
-    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
-    [RequestSizeLimit(25 * 1024 * 1024)]
-    public async Task<IActionResult> Create([FromForm] CreateProductForm form, CancellationToken cancellationToken)
-    {
-        logger.LogInformation("Create product request received: {@ProductRequest}", form);
-
-        var images = await ProductImageReader.ReadAsync(form.Images, cancellationToken);
-        var request = new CreateProductRequest
-        {
-            CategoryId = form.CategoryId,
-            BrandId = form.BrandId,
-            Name = form.Name,
-            Slug = form.Slug,
-            Description = form.Description,
-            AdditionalInformation = form.AdditionalInformation,
-            ShortDescription = form.ShortDescription,
-            OldPrice = form.OldPrice,
-            NewPrice = form.NewPrice,
-            MinPrice = form.MinPrice,
-            MaxPrice = form.MaxPrice,
-            IsOldNewPrice = form.IsOldNewPrice,
-            IsMinMaxPrice = form.IsMinMaxPrice,
-            CurrencyCode = form.CurrencyCode,
-            AvailabilityCount = form.AvailabilityCount,
-            Weight = form.Weight,
-            WeightUnit = form.WeightUnit,
-            IsFeatured = form.IsFeatured,
-            IsNewArrival = form.IsNewArrival,
-            Sizes = form.Sizes,
-            Colors = form.Colors,
-            Status = form.Status,
-            ProductVariants = form.ProductVariants,
-            ImageRequests = images
-        };
-        return ProcessResponse(await createProductService.ExecuteAsync(request, cancellationToken));
-    }
-
+  
     [HttpPost("uploads")]
     [EnableRateLimiting(RateLimitPolicies.AdminUpload)]
     [Consumes("application/octet-stream", "image/jpeg", "image/png", "image/webp", "image/gif", "image/avif")]
@@ -194,7 +148,8 @@ public sealed class ProductsController(
     [RequestSizeLimit(5 * 1024 * 1024)]
     public async Task<IActionResult> UploadImage(CancellationToken cancellationToken)
     {
-        var fileName = Request.Headers["X-File-Name"].FirstOrDefault();
+        var fileName = Request.Headers["X-File-Name"].FirstOrDefault()
+            ?? Request.Query["fileName"].FirstOrDefault();
         if (string.IsNullOrWhiteSpace(fileName))
         {
             return ProcessResponse(new ResponseResult().Fail(
@@ -263,52 +218,6 @@ public sealed class ProductsController(
         return ProcessResponse(await createProductService.ExecuteAsync(createRequest, cancellationToken));
     }
 
-
-    [HttpPut("update")]
-    [EnableRateLimiting(RateLimitPolicies.AdminUpload)]
-    [Consumes("multipart/form-data")]
-    [Produces("application/json")]
-    [ProducesResponseType(typeof(ResponseResult<ProductResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ResponseResult<ProductResponse>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(typeof(ResponseResult<ProductResponse>), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ResponseResult<ProductResponse>), StatusCodes.Status409Conflict)]
-    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
-    [RequestSizeLimit(25 * 1024 * 1024)]
-    public async Task<IActionResult> Update([FromForm] UpdateProductForm form, CancellationToken cancellationToken)
-    {
-        var images = await ProductImageReader.ReadAsync(form.Images, cancellationToken);
-        var request = new UpdateProductRequest
-        {
-            ProductId = form.ProductId, 
-            CategoryId = form.CategoryId, 
-            BrandId = form.BrandId, 
-            Name = form.Name,
-            Slug = form.Slug, 
-            Description = form.Description, 
-            AdditionalInformation = form.AdditionalInformation,
-            ShortDescription = form.ShortDescription, 
-            OldPrice = form.OldPrice, 
-            NewPrice = form.NewPrice,
-            MinPrice = form.MinPrice,
-            MaxPrice = form.MaxPrice,
-            IsOldNewPrice = form.IsOldNewPrice,
-            IsMinMaxPrice = form.IsMinMaxPrice,
-            CurrencyCode = form.CurrencyCode, 
-            AvailabilityCount = form.AvailabilityCount, 
-            Weight = form.Weight,
-            WeightUnit = form.WeightUnit, 
-            IsFeatured = form.IsFeatured, 
-            IsNewArrival = form.IsNewArrival,
-            Sizes = form.Sizes,
-            Colors = form.Colors,
-            Status = form.Status, 
-            ProductVariants = form.ProductVariants,
-            ImageRequests = images
-        };
-        return ProcessResponse(await updateProductService.ExecuteAsync(request, cancellationToken));
-    }
 
     [HttpPut("update-json")]
     [EnableRateLimiting(RateLimitPolicies.AdminUpload)]
