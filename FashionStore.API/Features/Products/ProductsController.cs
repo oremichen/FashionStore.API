@@ -10,6 +10,8 @@ using FashionStore.API.Features.Products.GetProducts;
 using FashionStore.API.Features.Products.GetRelatedProducts;
 using FashionStore.API.Features.Products.GetStorefront;
 using FashionStore.API.Features.Products.UpdateProduct;
+using FashionStore.API.Features.Products.Shared;
+using FashionStore.API.Features.Products.UploadProductImage;
 
 namespace FashionStore.API.Features.Products;
 
@@ -29,6 +31,7 @@ public sealed class ProductsController(
     IGetProductImagesService getProductImagesService,
     IGetProductVarientService getProductVarientService,
     IDeleteProductImageService deleteProductImageService,
+    IProductUploadService productUploadService,
     ILogger<ProductsController> logger) : BaseApiController
 {
     #region User product calls
@@ -180,6 +183,86 @@ public sealed class ProductsController(
         return ProcessResponse(await createProductService.ExecuteAsync(request, cancellationToken));
     }
 
+    [HttpPost("uploads")]
+    [EnableRateLimiting(RateLimitPolicies.AdminUpload)]
+    [Consumes("application/octet-stream", "image/jpeg", "image/png", "image/webp", "image/gif", "image/avif")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(ResponseResult<ProductImageUploadResponse>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status403Forbidden)]
+    [RequestSizeLimit(5 * 1024 * 1024)]
+    public async Task<IActionResult> UploadImage(CancellationToken cancellationToken)
+    {
+        var fileName = Request.Headers["X-File-Name"].FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            return ProcessResponse(new ResponseResult().Fail(
+                "X-File-Name is required.",
+                ResponseCodes.INVALID_ACTION));
+        }
+
+        var contentType = Request.ContentType?.Split(';', 2)[0].Trim() ?? string.Empty;
+        var upload = await productUploadService.UploadAsync(
+            Request.Body,
+            contentType,
+            fileName,
+            Request.ContentLength,
+            cancellationToken);
+
+        return ProcessResponse(
+            new ResponseResult<ProductImageUploadResponse>()
+                .Success(upload, "Image uploaded successfully.")
+                .SetStatusCode(ResponseCodes.CREATED));
+    }
+
+    [HttpPost("create-json")]
+    [EnableRateLimiting(RateLimitPolicies.AdminUpload)]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(ResponseResult<ProductResponse>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ResponseResult<ProductResponse>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ResponseResult<ProductResponse>), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> CreateJson(
+        [FromBody] CreateProductJsonRequest request,
+        CancellationToken cancellationToken)
+    {
+        var images = await productUploadService.TakeImagesAsync(
+            request.ImageUploadIds,
+            cancellationToken);
+        var createRequest = new CreateProductRequest
+        {
+            CategoryId = request.CategoryId,
+            BrandId = request.BrandId,
+            Name = request.Name,
+            Slug = request.Slug,
+            Description = request.Description,
+            AdditionalInformation = request.AdditionalInformation,
+            ShortDescription = request.ShortDescription,
+            OldPrice = request.OldPrice,
+            NewPrice = request.NewPrice,
+            MinPrice = request.MinPrice,
+            MaxPrice = request.MaxPrice,
+            IsOldNewPrice = request.IsOldNewPrice,
+            IsMinMaxPrice = request.IsMinMaxPrice,
+            CurrencyCode = request.CurrencyCode,
+            AvailabilityCount = request.AvailabilityCount,
+            Weight = request.Weight,
+            WeightUnit = request.WeightUnit,
+            IsFeatured = request.IsFeatured,
+            IsNewArrival = request.IsNewArrival,
+            Sizes = request.Sizes,
+            Colors = request.Colors,
+            Status = request.Status,
+            ProductVariants = request.ProductVariants,
+            ImageRequests = images
+        };
+
+        return ProcessResponse(await createProductService.ExecuteAsync(createRequest, cancellationToken));
+    }
+
 
     [HttpPut("update")]
     [EnableRateLimiting(RateLimitPolicies.AdminUpload)]
@@ -225,6 +308,55 @@ public sealed class ProductsController(
             ImageRequests = images
         };
         return ProcessResponse(await updateProductService.ExecuteAsync(request, cancellationToken));
+    }
+
+    [HttpPut("update-json")]
+    [EnableRateLimiting(RateLimitPolicies.AdminUpload)]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(ResponseResult<ProductResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ResponseResult<ProductResponse>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ResponseResult<ProductResponse>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ResponseResult<ProductResponse>), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> UpdateJson(
+        [FromBody] UpdateProductJsonRequest request,
+        CancellationToken cancellationToken)
+    {
+        var images = await productUploadService.TakeImagesAsync(
+            request.ImageUploadIds,
+            cancellationToken);
+        var updateRequest = new UpdateProductRequest
+        {
+            ProductId = request.ProductId,
+            CategoryId = request.CategoryId,
+            BrandId = request.BrandId,
+            Name = request.Name,
+            Slug = request.Slug,
+            Description = request.Description,
+            AdditionalInformation = request.AdditionalInformation,
+            ShortDescription = request.ShortDescription,
+            OldPrice = request.OldPrice,
+            NewPrice = request.NewPrice,
+            MinPrice = request.MinPrice,
+            MaxPrice = request.MaxPrice,
+            IsOldNewPrice = request.IsOldNewPrice,
+            IsMinMaxPrice = request.IsMinMaxPrice,
+            CurrencyCode = request.CurrencyCode,
+            AvailabilityCount = request.AvailabilityCount,
+            Weight = request.Weight,
+            WeightUnit = request.WeightUnit,
+            IsFeatured = request.IsFeatured,
+            IsNewArrival = request.IsNewArrival,
+            Sizes = request.Sizes,
+            Colors = request.Colors,
+            Status = request.Status,
+            ProductVariants = request.ProductVariants,
+            ImageRequests = images
+        };
+
+        return ProcessResponse(await updateProductService.ExecuteAsync(updateRequest, cancellationToken));
     }
 
     [HttpDelete("{productId}")]
