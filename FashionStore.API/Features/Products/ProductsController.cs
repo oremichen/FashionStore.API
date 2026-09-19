@@ -10,6 +10,8 @@ using FashionStore.API.Features.Products.GetProducts;
 using FashionStore.API.Features.Products.GetRelatedProducts;
 using FashionStore.API.Features.Products.GetStorefront;
 using FashionStore.API.Features.Products.UpdateProduct;
+using FashionStore.API.Features.Products.Shared;
+using FashionStore.API.Features.Products.UploadProductImage;
 
 namespace FashionStore.API.Features.Products;
 
@@ -29,6 +31,7 @@ public sealed class ProductsController(
     IGetProductImagesService getProductImagesService,
     IGetProductVarientService getProductVarientService,
     IDeleteProductImageService deleteProductImageService,
+    IProductUploadService productUploadService,
     ILogger<ProductsController> logger) : BaseApiController
 {
     #region User product calls
@@ -133,57 +136,92 @@ public sealed class ProductsController(
     {
         return ProcessResponse(await getProductByIdService.ExecuteAsync(productId, cancellationToken));
     }
-
-    [HttpPost("create")]
+  
+    [HttpPost("uploads")]
     [EnableRateLimiting(RateLimitPolicies.AdminUpload)]
-    [Consumes("multipart/form-data")]
+    [Consumes("application/octet-stream", "image/jpeg", "image/png", "image/webp", "image/gif", "image/avif")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(ResponseResult<ProductImageUploadResponse>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status403Forbidden)]
+    [RequestSizeLimit(5 * 1024 * 1024)]
+    public async Task<IActionResult> UploadImage(CancellationToken cancellationToken)
+    {
+        var fileName = Request.Headers["X-File-Name"].FirstOrDefault()
+            ?? Request.Query["fileName"].FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            return ProcessResponse(new ResponseResult().Fail(
+                "X-File-Name is required.",
+                ResponseCodes.INVALID_ACTION));
+        }
+
+        var contentType = Request.ContentType?.Split(';', 2)[0].Trim() ?? string.Empty;
+        var upload = await productUploadService.UploadAsync(
+            Request.Body,
+            contentType,
+            fileName,
+            Request.ContentLength,
+            cancellationToken);
+
+        return ProcessResponse(
+            new ResponseResult<ProductImageUploadResponse>()
+                .Success(upload, "Image uploaded successfully.")
+                .SetStatusCode(ResponseCodes.CREATED));
+    }
+
+    [HttpPost("create-json")]
+    [EnableRateLimiting(RateLimitPolicies.AdminUpload)]
+    [Consumes("application/json")]
     [Produces("application/json")]
     [ProducesResponseType(typeof(ResponseResult<ProductResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ResponseResult<ProductResponse>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ResponseResult<ProductResponse>), StatusCodes.Status409Conflict)]
-    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
-    [RequestSizeLimit(25 * 1024 * 1024)]
-    public async Task<IActionResult> Create([FromForm] CreateProductForm form, CancellationToken cancellationToken)
+    public async Task<IActionResult> CreateJson(
+        [FromBody] CreateProductJsonRequest request,
+        CancellationToken cancellationToken)
     {
-        logger.LogInformation("Create product request received: {@ProductRequest}", form);
-
-        var images = await ProductImageReader.ReadAsync(form.Images, cancellationToken);
-        var request = new CreateProductRequest
+        var images = await productUploadService.TakeImagesAsync(
+            request.ImageUploadIds,
+            cancellationToken);
+        var createRequest = new CreateProductRequest
         {
-            CategoryId = form.CategoryId,
-            BrandId = form.BrandId,
-            Name = form.Name,
-            Slug = form.Slug,
-            Description = form.Description,
-            AdditionalInformation = form.AdditionalInformation,
-            ShortDescription = form.ShortDescription,
-            OldPrice = form.OldPrice,
-            NewPrice = form.NewPrice,
-            MinPrice = form.MinPrice,
-            MaxPrice = form.MaxPrice,
-            IsOldNewPrice = form.IsOldNewPrice,
-            IsMinMaxPrice = form.IsMinMaxPrice,
-            CurrencyCode = form.CurrencyCode,
-            AvailabilityCount = form.AvailabilityCount,
-            Weight = form.Weight,
-            WeightUnit = form.WeightUnit,
-            IsFeatured = form.IsFeatured,
-            IsNewArrival = form.IsNewArrival,
-            Sizes = form.Sizes,
-            Colors = form.Colors,
-            Status = form.Status,
-            ProductVariants = form.ProductVariants,
+            CategoryId = request.CategoryId,
+            BrandId = request.BrandId,
+            Name = request.Name,
+            Slug = request.Slug,
+            Description = request.Description,
+            AdditionalInformation = request.AdditionalInformation,
+            ShortDescription = request.ShortDescription,
+            OldPrice = request.OldPrice,
+            NewPrice = request.NewPrice,
+            MinPrice = request.MinPrice,
+            MaxPrice = request.MaxPrice,
+            IsOldNewPrice = request.IsOldNewPrice,
+            IsMinMaxPrice = request.IsMinMaxPrice,
+            CurrencyCode = request.CurrencyCode,
+            AvailabilityCount = request.AvailabilityCount,
+            Weight = request.Weight,
+            WeightUnit = request.WeightUnit,
+            IsFeatured = request.IsFeatured,
+            IsNewArrival = request.IsNewArrival,
+            Sizes = request.Sizes,
+            Colors = request.Colors,
+            Status = request.Status,
+            ProductVariants = request.ProductVariants,
             ImageRequests = images
         };
-        return ProcessResponse(await createProductService.ExecuteAsync(request, cancellationToken));
+
+        return ProcessResponse(await createProductService.ExecuteAsync(createRequest, cancellationToken));
     }
 
 
-    [HttpPut("update")]
+    [HttpPut("update-json")]
     [EnableRateLimiting(RateLimitPolicies.AdminUpload)]
-    [Consumes("multipart/form-data")]
+    [Consumes("application/json")]
     [Produces("application/json")]
     [ProducesResponseType(typeof(ResponseResult<ProductResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ResponseResult<ProductResponse>), StatusCodes.Status400BadRequest)]
@@ -191,40 +229,43 @@ public sealed class ProductsController(
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ResponseResult<ProductResponse>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ResponseResult<ProductResponse>), StatusCodes.Status409Conflict)]
-    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
-    [RequestSizeLimit(25 * 1024 * 1024)]
-    public async Task<IActionResult> Update([FromForm] UpdateProductForm form, CancellationToken cancellationToken)
+    public async Task<IActionResult> UpdateJson(
+        [FromBody] UpdateProductJsonRequest request,
+        CancellationToken cancellationToken)
     {
-        var images = await ProductImageReader.ReadAsync(form.Images, cancellationToken);
-        var request = new UpdateProductRequest
+        var images = await productUploadService.TakeImagesAsync(
+            request.ImageUploadIds,
+            cancellationToken);
+        var updateRequest = new UpdateProductRequest
         {
-            ProductId = form.ProductId, 
-            CategoryId = form.CategoryId, 
-            BrandId = form.BrandId, 
-            Name = form.Name,
-            Slug = form.Slug, 
-            Description = form.Description, 
-            AdditionalInformation = form.AdditionalInformation,
-            ShortDescription = form.ShortDescription, 
-            OldPrice = form.OldPrice, 
-            NewPrice = form.NewPrice,
-            MinPrice = form.MinPrice,
-            MaxPrice = form.MaxPrice,
-            IsOldNewPrice = form.IsOldNewPrice,
-            IsMinMaxPrice = form.IsMinMaxPrice,
-            CurrencyCode = form.CurrencyCode, 
-            AvailabilityCount = form.AvailabilityCount, 
-            Weight = form.Weight,
-            WeightUnit = form.WeightUnit, 
-            IsFeatured = form.IsFeatured, 
-            IsNewArrival = form.IsNewArrival,
-            Sizes = form.Sizes,
-            Colors = form.Colors,
-            Status = form.Status, 
-            ProductVariants = form.ProductVariants,
+            ProductId = request.ProductId,
+            CategoryId = request.CategoryId,
+            BrandId = request.BrandId,
+            Name = request.Name,
+            Slug = request.Slug,
+            Description = request.Description,
+            AdditionalInformation = request.AdditionalInformation,
+            ShortDescription = request.ShortDescription,
+            OldPrice = request.OldPrice,
+            NewPrice = request.NewPrice,
+            MinPrice = request.MinPrice,
+            MaxPrice = request.MaxPrice,
+            IsOldNewPrice = request.IsOldNewPrice,
+            IsMinMaxPrice = request.IsMinMaxPrice,
+            CurrencyCode = request.CurrencyCode,
+            AvailabilityCount = request.AvailabilityCount,
+            Weight = request.Weight,
+            WeightUnit = request.WeightUnit,
+            IsFeatured = request.IsFeatured,
+            IsNewArrival = request.IsNewArrival,
+            Sizes = request.Sizes,
+            Colors = request.Colors,
+            Status = request.Status,
+            ProductVariants = request.ProductVariants,
             ImageRequests = images
         };
-        return ProcessResponse(await updateProductService.ExecuteAsync(request, cancellationToken));
+
+        return ProcessResponse(await updateProductService.ExecuteAsync(updateRequest, cancellationToken));
     }
 
     [HttpDelete("{productId}")]
