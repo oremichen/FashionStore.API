@@ -188,7 +188,7 @@ public sealed class ProductsController(
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Create([FromForm] CreateProductForm form, CancellationToken cancellationToken)
     {
-        logger.LogInformation("Create product request received: {@ProductRequest}", form);
+        var images = await ProductImageReader.ReadAsync(form.Images, cancellationToken);
 
         return Ok();
     }
