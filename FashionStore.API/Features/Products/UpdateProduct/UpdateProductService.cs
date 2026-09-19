@@ -17,6 +17,13 @@ public class UpdateProductService(IProductRepository repository, IImageProcessor
     public async Task<ResponseResult<ProductResponse>> ExecuteAsync(UpdateProductRequest request, CancellationToken ct)
     {
         logger.LogInformation("Updating product {ProductId}.", request.ProductId);
+        var requiredFieldValidation = ValidateRequiredFields(request);
+        if (requiredFieldValidation is not null)
+        {
+            logger.LogError("Product update validation failed: {ValidationMessage}.", requiredFieldValidation);
+            return new ResponseResult<ProductResponse>().Fail(requiredFieldValidation, ResponseCodes.INVALID_ACTION);
+        }
+
         var product = await repository.GetByIdAsync(request.ProductId, true, ct);
         if (product is null)
         {
@@ -66,6 +73,31 @@ public class UpdateProductService(IProductRepository repository, IImageProcessor
             logger.LogError(ex, "Product {ProductId} update failed validation.", request.ProductId);
             return new ResponseResult<ProductResponse>().Fail("The product details are invalid.", ResponseCodes.INVALID_ACTION);
         }
+    }
+
+    private static string? ValidateRequiredFields(UpdateProductRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.ProductId))
+        {
+            return "ProductId is required.";
+        }
+
+        if (string.IsNullOrWhiteSpace(request.CategoryId))
+        {
+            return "CategoryId is required.";
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Name))
+        {
+            return "Name is required.";
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Slug))
+        {
+            return "Slug is required.";
+        }
+
+        return null;
     }
 
     private static string? ValidatePricing(ProductWriteRequest request)

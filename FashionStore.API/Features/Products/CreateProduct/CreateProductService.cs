@@ -17,6 +17,13 @@ public class CreateProductService(IProductRepository repository, IImageProcessor
     public async Task<ResponseResult<ProductResponse>> ExecuteAsync(CreateProductRequest request, CancellationToken ct)
     {
         logger.LogInformation("Creating product with slug {ProductSlug}.", request.Slug);
+        var requiredFieldValidation = ValidateRequiredFields(request);
+        if (requiredFieldValidation is not null)
+        {
+            logger.LogError("Product creation validation failed: {ValidationMessage}.", requiredFieldValidation);
+            return new ResponseResult<ProductResponse>().Fail(requiredFieldValidation, ResponseCodes.INVALID_ACTION);
+        }
+
         var validation = await ValidateReferencesAsync(request.CategoryId, request.BrandId, request.Slug, null, ct);
         if (validation is not null)
         {
@@ -60,6 +67,26 @@ public class CreateProductService(IProductRepository repository, IImageProcessor
             logger.LogError(ex, "Product creation failed validation for slug {ProductSlug}.", request.Slug);
             return new ResponseResult<ProductResponse>().Fail("The product details are invalid.", ResponseCodes.INVALID_ACTION);
         }
+    }
+
+    private static string? ValidateRequiredFields(ProductWriteRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.CategoryId))
+        {
+            return "CategoryId is required.";
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Name))
+        {
+            return "Name is required.";
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Slug))
+        {
+            return "Slug is required.";
+        }
+
+        return null;
     }
 
     private static string? ValidatePricing(ProductWriteRequest request)
