@@ -148,8 +148,12 @@ public sealed class ProductsController(
     [RequestSizeLimit(5 * 1024 * 1024)]
     public async Task<IActionResult> UploadImage(CancellationToken cancellationToken)
     {
+        logger.LogInformation("Uploading product image.");
         var fileName = Request.Headers["X-File-Name"].FirstOrDefault()
             ?? Request.Query["fileName"].FirstOrDefault();
+
+        logger.LogInformation("File name: {FileName}", fileName);
+
         if (string.IsNullOrWhiteSpace(fileName))
         {
             return ProcessResponse(new ResponseResult().Fail(
@@ -184,6 +188,7 @@ public sealed class ProductsController(
         [FromBody] CreateProductJsonRequest request,
         CancellationToken cancellationToken)
     {
+        logger.LogInformation("Creating product with name: {ProductName}", request.Name);
         var images = await productUploadService.TakeImagesAsync(
             request.ImageUploadIds,
             cancellationToken);
