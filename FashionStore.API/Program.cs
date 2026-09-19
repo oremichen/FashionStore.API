@@ -555,7 +555,6 @@ if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Docker"))
 }
 
 app.UseMiddleware<GlobalErrorMiddleware>(); 
-app.UseMiddleware<RequestPayloadLoggingMiddleware>();
 app.UseHttpsRedirection();                 
 app.UseCors(corsPolicyName);               
 app.UseAuthentication();                   
