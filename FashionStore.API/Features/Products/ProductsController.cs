@@ -215,6 +215,15 @@ public sealed class ProductsController(
         var images = await productUploadService.TakeImagesAsync(
             request.ImageUploadIds,
             cancellationToken);
+
+        if (images.Count == 0)
+        {
+            logger.LogWarning("No images provided for product creation. ProductName: {ProductName}", request.Name);
+            return ProcessResponse(new ResponseResult().Fail(
+                "At least one image is required to create a product.",
+                ResponseCodes.INVALID_ACTION));
+        }
+
         var createRequest = new CreateProductRequest
         {
             CategoryId = request.CategoryId,
