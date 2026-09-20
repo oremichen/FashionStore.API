@@ -274,14 +274,6 @@ public sealed class ProductsController(
             request.ImageUploadIds,
             cancellationToken);
 
-        if (images.Count == 0)
-        {
-            logger.LogWarning("No images provided for product update. ProductName: {ProductName}", request.Name);
-            return ProcessResponse(new ResponseResult().Fail(
-                "At least one image is required to update a product.",
-                ResponseCodes.INVALID_ACTION));
-        }
-
         var updateRequest = new UpdateProductRequest
         {
             ProductId = request.ProductId,
