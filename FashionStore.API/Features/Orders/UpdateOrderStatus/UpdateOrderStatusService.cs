@@ -80,6 +80,9 @@ public sealed class UpdateOrderStatusService(
         var deliveryAddress = strategy.ShowAddressInEmails
             ? deliveryClassifier.FormatDeliveryAddress(address)
             : HtmlEncoder.Default.Encode(string.Empty);
+        var itemsTotal = deliveryClassifier.FormatNaira(order.Subtotal);
+        var deliveryFee = deliveryClassifier.FormatNaira(order.DeliveryFee);
+        var orderTotal = deliveryClassifier.FormatNaira(order.Total);
 
         var tokens = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -90,7 +93,11 @@ public sealed class UpdateOrderStatusService(
             ["statusMessage"] = HtmlEncoder.Default.Encode(statusMessage ?? strategy.GetCustomerStatusMessage(order.Status)),
             ["deliveryAddress"] = deliveryAddress,
             ["phoneNumber"] = HtmlEncoder.Default.Encode(address?.PhoneNumber ?? order.User?.PhoneNumber ?? "Not provided"),
+            ["contactEmail"] = HtmlEncoder.Default.Encode(contactEmail ?? string.Empty),
             ["orderItemsHtml"] = BuildOrderItemsHtml(order.Items),
+            ["itemsTotal"] = itemsTotal,
+            ["deliveryFee"] = deliveryFee,
+            ["orderTotal"] = orderTotal,
             ["year"] = DateTime.UtcNow.Year.ToString()
         };
         var customerBody = await templateRenderer.RenderAsync(Domain.Enums.EmailNotificationTypeEnum.OrderStatusUpdate, tokens);
