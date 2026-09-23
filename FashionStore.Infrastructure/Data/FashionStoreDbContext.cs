@@ -13,6 +13,7 @@ namespace FashionStore.Infrastructure.Data
         public DbSet<QueueEmailNotification> QueueEmailNotifications { get; set; }
         public DbSet<Category> Categories { get; set; }
         public DbSet<Brand> Brands { get; set; }
+        public DbSet<FashionStore.Domain.Entities.Type> Types { get; set; }
         public DbSet<MainCarousel> MainCarousels { get; set; }
         public DbSet<PromotionBanner> PromotionBanners { get; set; }
         public DbSet<PromotionVideo> PromotionVideos { get; set; }
