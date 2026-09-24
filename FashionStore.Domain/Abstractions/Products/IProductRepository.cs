@@ -7,6 +7,7 @@ public class ProductFilter
     public string? Search { get; init; }
     public string? CategoryId { get; init; }
     public string? BrandId { get; init; }
+    public string? TypeId { get; init; }
     public string? Status { get; init; }
     public string? StockStatus { get; init; }
     public decimal? MinPrice { get; init; }
@@ -23,6 +24,7 @@ public class StorefrontProductFilter
     public string? CategorySlug { get; init; }
     public bool IncludeDescendants { get; init; }
     public string? BrandId { get; init; }
+    public string? TypeId { get; init; }
     public decimal? MinPrice { get; init; }
     public decimal? MaxPrice { get; init; }
     public string? PriceRanges { get; init; }
@@ -43,6 +45,7 @@ public interface IProductRepository
     Task<Product?> GetByIdAsync(string id, bool trackChanges, CancellationToken cancellationToken);
     Task<bool> CategoryExistsAsync(string id, CancellationToken cancellationToken);
     Task<bool> BrandExistsAsync(string id, CancellationToken cancellationToken);
+    Task<bool> TypeExistsAsync(string id, CancellationToken cancellationToken);
     Task<bool> SlugExistsAsync(string slug, string? excludingId, CancellationToken cancellationToken);
     Task<bool> SizeIdsExistAsync(IReadOnlyCollection<string> ids, CancellationToken cancellationToken);
     Task<bool> ColorIdsExistAsync(IReadOnlyCollection<string> ids, CancellationToken cancellationToken);

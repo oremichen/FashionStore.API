@@ -31,7 +31,7 @@ public class UpdateProductService(IProductRepository repository, IImageProcessor
             return new ResponseResult<ProductResponse>().Fail("Product was not found.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
         }
 
-        var validation = await ValidateReferencesAsync(request.CategoryId, request.BrandId, request.Slug, request.ProductId, ct);
+        var validation = await ValidateReferencesAsync(request.CategoryId, request.BrandId, request.TypeId, request.Slug, request.ProductId, ct);
         if (validation is not null)
         {
             logger.LogError("Product {ProductId} update validation failed: {ValidationMessage}.", request.ProductId, validation.Value.Message);
@@ -55,7 +55,7 @@ public class UpdateProductService(IProductRepository repository, IImageProcessor
             var minPrice = request.IsMinMaxPrice ? request.MinPrice : null;
             var maxPrice = request.IsMinMaxPrice ? request.MaxPrice : null;
 
-            product.Update(request.CategoryId, request.BrandId, request.Name, request.Slug, request.Description, request.AdditionalInformation, request.ShortDescription, oldPrice, newPrice, request.CurrencyCode, request.AvailabilityCount, request.Weight, request.WeightUnit, request.IsFeatured, request.IsNewArrival, request.IsMinMaxPrice, minPrice, maxPrice);
+            product.Update(request.CategoryId, request.BrandId, request.TypeId, request.Name, request.Slug, request.Description, request.AdditionalInformation, request.ShortDescription, oldPrice, newPrice, request.CurrencyCode, request.AvailabilityCount, request.Weight, request.WeightUnit, request.IsFeatured, request.IsNewArrival, request.IsMinMaxPrice, minPrice, maxPrice);
             product.SetStatus(request.Status);
             product.AddImages(await ProcessImagesAsync(request.ImageRequests, ct));
             await repository.SaveChangesAsync(ct);
@@ -112,12 +112,14 @@ public class UpdateProductService(IProductRepository repository, IImageProcessor
         return null;
     }
 
-    private async Task<(string Message, string Code)?> ValidateReferencesAsync(string categoryId, string? brandId, string slug, string? id, CancellationToken ct)
+    private async Task<(string Message, string Code)?> ValidateReferencesAsync(string categoryId, string? brandId, string? typeId, string slug, string? id, CancellationToken ct)
     {
         if (!await repository.CategoryExistsAsync(categoryId, ct))
             return ("The selected category does not exist.", ResponseCodes.INVALID_REFERENCE_PROVIDED);
         if (!string.IsNullOrWhiteSpace(brandId) && !await repository.BrandExistsAsync(brandId, ct))
             return ("The selected brand does not exist.", ResponseCodes.INVALID_REFERENCE_PROVIDED);
+        if (!string.IsNullOrWhiteSpace(typeId) && !await repository.TypeExistsAsync(typeId, ct))
+            return ("The selected type does not exist.", ResponseCodes.INVALID_REFERENCE_PROVIDED);
         if (await repository.SlugExistsAsync(slug, id, ct))
             return ("A product with this slug already exists.", ResponseCodes.DUPLICATE_RECORD);
         return null;
@@ -203,6 +205,7 @@ public class UpdateProductService(IProductRepository repository, IImageProcessor
             CategoryName = product.Category.Name,
             BrandId = product.BrandId,
             BrandName = product.Brand?.Name,
+            TypeId = product.TypeId,
             Name = product.Name,
             Slug = product.Slug,
             Description = product.Description,

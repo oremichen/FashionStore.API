@@ -6,7 +6,7 @@ namespace FashionStore.Infrastructure.Repository.TypeRepo;
 
 public sealed class TypeRepository(FashionStoreDbContext dbContext, ILogger<TypeRepository> logger) : ITypeRepository
 {
-    public async Task<IReadOnlyList<TypeEntity>> GetAllAsync(bool activeOnly, CancellationToken cancellationToken)
+    public async Task<(IReadOnlyList<TypeEntity> Items, int TotalCount)> GetAllAsync(int page, int pageSize, bool activeOnly, CancellationToken cancellationToken)
     {
         logger.LogDebug("Querying types. ActiveOnly: {ActiveOnly}.", activeOnly);
         var query = dbContext.Types.AsNoTracking();
@@ -15,9 +15,13 @@ public sealed class TypeRepository(FashionStoreDbContext dbContext, ILogger<Type
             query = query.Where(type => type.IsActive);
         }
 
-        return await query
+        var totalCount = await query.CountAsync(cancellationToken);
+        var items = await query
             .OrderBy(type => type.Name)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync(cancellationToken);
+        return (items, totalCount);
     }
 
     public Task<TypeEntity?> GetByIdAsync(string id, CancellationToken cancellationToken)

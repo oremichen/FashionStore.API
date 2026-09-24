@@ -13,6 +13,7 @@ public sealed class Product
     public Category Category { get; private set; } = null!;
     public string? BrandId { get; private set; }
     public Brand? Brand { get; private set; }
+    public string? TypeId { get; private set; }
     public string Name { get; private set; } = null!;
     public string Slug { get; private set; } = null!;
     public string? Description { get; private set; }
@@ -42,16 +43,16 @@ public sealed class Product
     public IReadOnlyCollection<ProductSize> ProductSizes { get { return _productSizes; } }
     public IReadOnlyCollection<ProductColor> ProductColors { get { return _productColors; } }
 
-    public static Product Create(string categoryId, string? brandId, string name, string slug, decimal newPrice, string currencyCode, int stock)
+    public static Product Create(string categoryId, string? brandId, string? typeId, string name, string slug, decimal newPrice, string currencyCode, int stock)
     {
         Rules.NonNegative(newPrice, nameof(newPrice));
         Rules.NonNegative(stock, nameof(stock));
         var currency = Rules.Required(currencyCode, 3, nameof(currencyCode)).ToUpperInvariant();
         if (currency.Length != 3) throw new ArgumentException("Currency code must contain exactly three letters.");
-        return new Product { CategoryId = Rules.Required(categoryId, 50, nameof(categoryId)), BrandId = string.IsNullOrWhiteSpace(brandId) ? null : brandId.Trim(), Name = Rules.Required(name, 250, nameof(name)), Slug = Rules.Slug(slug, 280), NewPrice = newPrice, CurrencyCode = currency, AvailabilityCount = stock };
+        return new Product { CategoryId = Rules.Required(categoryId, 50, nameof(categoryId)), BrandId = Rules.Optional(brandId, 50, nameof(brandId)), TypeId = Rules.Optional(typeId, 50, nameof(typeId)), Name = Rules.Required(name, 250, nameof(name)), Slug = Rules.Slug(slug, 280), NewPrice = newPrice, CurrencyCode = currency, AvailabilityCount = stock };
     }
 
-    public void Update(string categoryId, string? brandId, string name, string slug, string? description,
+    public void Update(string categoryId, string? brandId, string? typeId, string name, string slug, string? description,
         string? additionalInformation, string? shortDescription, decimal? oldPrice, decimal newPrice, string currencyCode, int stock,
         decimal? weight, string? weightUnit, bool isFeatured, bool isNewArrival, bool isMinMaxPrice = false,
         decimal? minPrice = null, decimal? maxPrice = null)
@@ -69,7 +70,8 @@ public sealed class Product
             newPrice = 0;
         }
         CategoryId = Rules.Required(categoryId, 50, nameof(categoryId));
-        BrandId = string.IsNullOrWhiteSpace(brandId) ? null : brandId.Trim();
+        BrandId = Rules.Optional(brandId, 50, nameof(brandId));
+        TypeId = Rules.Optional(typeId, 50, nameof(typeId));
         Name = Rules.Required(name, 250, nameof(name));
         Slug = Rules.Slug(slug, 280);
         Description = Rules.Optional(description, 10000, nameof(description));

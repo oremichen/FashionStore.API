@@ -17,12 +17,12 @@ public sealed class TypesController(
     [AllowAnonymous]
     [HttpGet]
     [Produces("application/json")]
-    [ProducesResponseType(typeof(ResponseResult<IReadOnlyList<TypeResponse>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ResponseResult<PagedResponse<TypeResponse>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 25, CancellationToken cancellationToken = default)
     {
-        logger.LogInformation("Received request to retrieve types.");
-        return ProcessResponse(await getTypesService.ExecuteAsync(cancellationToken));
+        logger.LogInformation("Received request to retrieve types. Page: {Page}, PageSize: {PageSize}.", page, pageSize);
+        return ProcessResponse(await getTypesService.ExecuteAsync(page, pageSize, cancellationToken));
     }
 
     [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}")]

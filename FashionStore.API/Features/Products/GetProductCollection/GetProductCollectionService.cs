@@ -66,6 +66,7 @@ public class GetProductCollectionService(IProductRepository repository, IImagePr
             CategoryName = product.Category.Name,
             BrandId = product.BrandId,
             BrandName = product.Brand?.Name,
+            TypeId = product.TypeId,
             Name = ProductNameFormatter.CapitalizeWords(product.Name),
             Slug = product.Slug,
             Description = product.Description,

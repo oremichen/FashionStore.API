@@ -22,8 +22,9 @@ public class GetRelatedProductsService(IProductRepository repository, IImageProc
             return new ResponseResult<PagedResponse<ProductResponse>>().Fail("Product was not found.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
         var query = new StorefrontProductQuery
         {
-            CategorySlug = product.CategoryId,
+            CategorySlug = product.Category.Slug,
             BrandId = product.BrandId,
+            TypeId = product.TypeId,
             Page = page,
             PageSize = pageSize
         };
@@ -71,6 +72,7 @@ public class GetRelatedProductsService(IProductRepository repository, IImageProc
             CategoryName = product.Category.Name,
             BrandId = product.BrandId,
             BrandName = product.Brand?.Name,
+            TypeId = product.TypeId,
             Name = ProductNameFormatter.CapitalizeWords(product.Name),
             Slug = product.Slug,
             Description = product.Description,
