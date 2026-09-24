@@ -14,6 +14,7 @@ public sealed class Product
     public string? BrandId { get; private set; }
     public Brand? Brand { get; private set; }
     public string? TypeId { get; private set; }
+    public global::FashionStore.Domain.Entities.Type? ProductType { get; private set; }
     public string Name { get; private set; } = null!;
     public string Slug { get; private set; } = null!;
     public string? Description { get; private set; }

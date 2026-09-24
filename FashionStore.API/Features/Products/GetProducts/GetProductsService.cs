@@ -76,6 +76,7 @@ public class GetProductsService(IProductRepository repository, IImageProcessor i
             BrandId = product.BrandId,
             BrandName = product.Brand?.Name,
             TypeId = product.TypeId,
+            TypeName = product.ProductType?.Name,
             Name = ProductNameFormatter.CapitalizeWords(product.Name),
             Slug = product.Slug,
             Description = product.Description,

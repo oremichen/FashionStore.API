@@ -28,7 +28,7 @@ public sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.HasIndex(product => product.Slug).IsUnique();
         builder.HasOne(product => product.Category).WithMany().HasForeignKey(product => product.CategoryId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(product => product.Brand).WithMany(brand => brand.Products).HasForeignKey(product => product.BrandId).OnDelete(DeleteBehavior.SetNull);
-        builder.HasOne<FashionStore.Domain.Entities.Type>().WithMany().HasForeignKey(product => product.TypeId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasOne(product => product.ProductType).WithMany().HasForeignKey(product => product.TypeId).OnDelete(DeleteBehavior.SetNull);
         builder.HasIndex(product => product.TypeId);
     }
 }

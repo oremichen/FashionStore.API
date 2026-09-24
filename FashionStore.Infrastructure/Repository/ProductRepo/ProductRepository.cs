@@ -9,7 +9,7 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
     private IQueryable<Product> StorefrontProducts()
     {
         return dbContext.Products.AsNoTracking()
-        .Include(x => x.Category).Include(x => x.Brand).Include(x => x.Images)
+        .Include(x => x.Category).Include(x => x.Brand).Include(x => x.ProductType).Include(x => x.Images)
         .Include(x => x.ProductColors).ThenInclude(x => x.Color)
         .Include(x => x.ProductSizes).ThenInclude(x => x.Size)
         .Where(x => !x.IsArchived && x.IsActive && x.PublishedAt != null);
@@ -100,6 +100,7 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
         var items = await orderedQuery
             .Include(x => x.Category)
             .Include(x => x.Brand)
+            .Include(x => x.ProductType)
             .Include(x => x.Images)
             .Include(x => x.ProductColors).ThenInclude(x => x.Color)
             .Include(x => x.ProductSizes).ThenInclude(x => x.Size)
@@ -158,6 +159,7 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
         var query = dbContext.Products.AsNoTracking()
             .Include(x => x.Category)
             .Include(x => x.Brand)
+            .Include(x => x.ProductType)
             .Include(x => x.Images)
             .Include(x => x.ProductColors).ThenInclude(x => x.Color)
             .Include(x => x.ProductSizes).ThenInclude(x => x.Size)
@@ -205,7 +207,7 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
 
     public Task<Product?> GetByIdAsync(string id, bool trackChanges, CancellationToken cancellationToken)
     {
-        var query = dbContext.Products.Include(x => x.Category).Include(x => x.Brand).Include(x => x.Images)
+        var query = dbContext.Products.Include(x => x.Category).Include(x => x.Brand).Include(x => x.ProductType).Include(x => x.Images)
             .Include(x => x.ProductSizes).ThenInclude(x => x.Size)
             .Include(x => x.ProductColors).ThenInclude(x => x.Color).AsQueryable();
         query = query.Include(x => x.Variants).ThenInclude(x => x.Size);
