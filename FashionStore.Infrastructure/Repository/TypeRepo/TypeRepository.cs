@@ -39,6 +39,12 @@ public sealed class TypeRepository(FashionStoreDbContext dbContext, ILogger<Type
             (type.Name.ToLower() == normalizedName || type.Slug.ToLower() == normalizedSlug), cancellationToken);
     }
 
+    public Task<bool> HasProductsAsync(string id, CancellationToken cancellationToken)
+    {
+        logger.LogDebug("Checking whether type {TypeId} is mapped to products.", id);
+        return dbContext.Products.AnyAsync(product => product.TypeId == id, cancellationToken);
+    }
+
     public async Task AddAsync(TypeEntity type, CancellationToken cancellationToken)
     {
         logger.LogInformation("Persisting type with slug {Slug}.", type.Slug);

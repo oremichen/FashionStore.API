@@ -21,6 +21,12 @@ public sealed class DeleteTypeService(ITypeRepository repository, ILogger<Delete
             return response.Fail("Type was not found.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
         }
 
+        if (await repository.HasProductsAsync(typeId, cancellationToken))
+        {
+            logger.LogWarning("Type {TypeId} cannot be deleted because it is mapped to products.", typeId);
+            return response.Fail("Type cannot be deleted because it is already mapped to a product.", ResponseCodes.INVALID_ACTION);
+        }
+
         await repository.DeleteAsync(type, cancellationToken);
         logger.LogInformation("Deleted type {TypeId}.", typeId);
         return response.Success("Type deleted successfully.");
