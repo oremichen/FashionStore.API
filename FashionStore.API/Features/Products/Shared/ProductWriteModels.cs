@@ -6,6 +6,7 @@ public abstract class ProductWriteRequest
 {
     public string CategoryId { get; init; } = string.Empty;
     public string? BrandId { get; init; }
+    [StringLength(50)] public string? TypeId { get; init; }
     [StringLength(250)] public string Name { get; init; } = string.Empty;
     [StringLength(280)] public string Slug { get; init; } = string.Empty;
     public string? Description { get; init; }

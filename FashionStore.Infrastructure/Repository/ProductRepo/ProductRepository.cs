@@ -9,7 +9,7 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
     private IQueryable<Product> StorefrontProducts()
     {
         return dbContext.Products.AsNoTracking()
-        .Include(x => x.Category).Include(x => x.Brand).Include(x => x.Images)
+        .Include(x => x.Category).Include(x => x.Brand).Include(x => x.ProductType).Include(x => x.Images)
         .Include(x => x.ProductColors).ThenInclude(x => x.Color)
         .Include(x => x.ProductSizes).ThenInclude(x => x.Size)
         .Where(x => !x.IsArchived && x.IsActive && x.PublishedAt != null);
@@ -54,6 +54,8 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
         var brandIds = Split(request.BrandId);
         if (brandIds.Length > 0 && collection != "related")
             query = query.Where(x => x.BrandId != null && brandIds.Contains(x.BrandId.ToLower()));
+        if (!string.IsNullOrWhiteSpace(request.TypeId) && collection != "related")
+            query = query.Where(x => x.TypeId == request.TypeId.Trim());
         if (request.MinPrice.HasValue) query = query.Where(x => (x.NewPrice == 0 && x.MinPrice.HasValue ? x.MinPrice.Value : x.NewPrice) >= request.MinPrice.Value);
         if (request.MaxPrice.HasValue) query = query.Where(x => (x.NewPrice == 0 && x.MaxPrice.HasValue ? x.MaxPrice.Value : x.NewPrice) <= request.MaxPrice.Value);
         if (PriceRangeParser.TryParse(request.PriceRanges, out var priceRanges) && priceRanges.Count > 0)
@@ -68,13 +70,18 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
         if (sizes.Length > 0) query = query.Where(x =>
             x.ProductSizes.Any(ps => sizes.Contains(ps.Size.Name.ToLower()) || sizes.Contains(ps.Size.DisplayName.ToLower())) ||
             x.Variants.Any(v => v.IsActive && v.Size != null && (sizes.Contains(v.Size.Name.ToLower()) || sizes.Contains(v.Size.DisplayName.ToLower()))));
+        var relatedCategorySlug = string.IsNullOrWhiteSpace(request.CategorySlug)
+            ? null
+            : request.CategorySlug.Trim().ToLowerInvariant();
         query = collection switch
         {
             "featured" => query.Where(x => x.IsFeatured),
             "new-arrivals" => query.Where(x => x.IsNewArrival),
             "on-sale" => query.Where(x => x.OldPrice.HasValue && x.OldPrice > x.NewPrice),
-            "related" => query.Where(x => x.CategoryId == request.CategorySlug ||
-                (x.BrandId != null && brandIds.Contains(x.BrandId.ToLower()))),
+            "related" => query.Where(x =>
+                (!string.IsNullOrWhiteSpace(request.TypeId) && x.TypeId == request.TypeId) ||
+                (x.BrandId != null && brandIds.Contains(x.BrandId.ToLower())) ||
+                (relatedCategorySlug != null && x.Category.Slug.ToLower() == relatedCategorySlug)),
             _ => query
         };
         // Count the complete filtered result before ordering, eager loading, or paging.
@@ -93,6 +100,7 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
         var items = await orderedQuery
             .Include(x => x.Category)
             .Include(x => x.Brand)
+            .Include(x => x.ProductType)
             .Include(x => x.Images)
             .Include(x => x.ProductColors).ThenInclude(x => x.Color)
             .Include(x => x.ProductSizes).ThenInclude(x => x.Size)
@@ -151,6 +159,7 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
         var query = dbContext.Products.AsNoTracking()
             .Include(x => x.Category)
             .Include(x => x.Brand)
+            .Include(x => x.ProductType)
             .Include(x => x.Images)
             .Include(x => x.ProductColors).ThenInclude(x => x.Color)
             .Include(x => x.ProductSizes).ThenInclude(x => x.Size)
@@ -162,6 +171,7 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
         }
         if (!string.IsNullOrWhiteSpace(request.CategoryId)) query = query.Where(x => x.CategoryId == request.CategoryId);
         if (!string.IsNullOrWhiteSpace(request.BrandId)) query = query.Where(x => x.BrandId == request.BrandId);
+        if (!string.IsNullOrWhiteSpace(request.TypeId)) query = query.Where(x => x.TypeId == request.TypeId);
         query = request.Status?.ToLowerInvariant() switch
         {
             "draft" => query.Where(x => !x.IsArchived && x.PublishedAt == null),
@@ -197,7 +207,7 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
 
     public Task<Product?> GetByIdAsync(string id, bool trackChanges, CancellationToken cancellationToken)
     {
-        var query = dbContext.Products.Include(x => x.Category).Include(x => x.Brand).Include(x => x.Images)
+        var query = dbContext.Products.Include(x => x.Category).Include(x => x.Brand).Include(x => x.ProductType).Include(x => x.Images)
             .Include(x => x.ProductSizes).ThenInclude(x => x.Size)
             .Include(x => x.ProductColors).ThenInclude(x => x.Color).AsQueryable();
         query = query.Include(x => x.Variants).ThenInclude(x => x.Size);
@@ -212,6 +222,11 @@ public sealed class ProductRepository(FashionStoreDbContext dbContext) : IProduc
     public Task<bool> BrandExistsAsync(string id, CancellationToken ct)
     {
         return dbContext.Brands.AnyAsync(x => x.Id == id, ct);
+    }
+
+    public Task<bool> TypeExistsAsync(string id, CancellationToken ct)
+    {
+        return dbContext.Types.AnyAsync(x => x.Id == id, ct);
     }
 
     public Task<bool> SlugExistsAsync(string slug, string? excludingId, CancellationToken ct)

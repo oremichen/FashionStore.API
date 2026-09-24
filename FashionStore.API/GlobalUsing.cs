@@ -6,6 +6,7 @@ global using FashionStore.API.Features.Products.Shared;
 global using FashionStore.API.Features.PromotionBanners.Shared;
 global using FashionStore.API.Features.PromotionVideos.Shared;
 global using FashionStore.API.Features.Users.Shared;
+global using FashionStore.API.Features.Types.Shared;
 global using FashionStore.API.Features.Auth.ConfirmEmail;
 global using FashionStore.API.Features.Auth.ForgotPassword;
 global using FashionStore.API.Features.Auth.Login;

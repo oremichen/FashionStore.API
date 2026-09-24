@@ -21,6 +21,8 @@ namespace FashionStore.Infrastructure
                 Repository.CategoryRepo.CategoryRepository>();
             services.AddScoped<FashionStore.Domain.Abstractions.Brands.IBrandRepository,
                 Repository.BrandRepo.BrandRepository>();
+            services.AddScoped<FashionStore.Domain.Abstractions.Types.ITypeRepository,
+                Repository.TypeRepo.TypeRepository>();
             services.AddScoped<FashionStore.Domain.Abstractions.MainCarousels.IMainCarouselRepository,
                 Repository.MainCarouselRepo.MainCarouselRepository>();
             services.AddScoped<FashionStore.Domain.Abstractions.Products.IProductRepository,

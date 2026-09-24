@@ -12,6 +12,7 @@ public sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(product => product.Id).HasMaxLength(50).HasDefaultValueSql("gen_random_uuid()::text");
         builder.Property(product => product.CategoryId).HasMaxLength(50);
         builder.Property(product => product.BrandId).HasMaxLength(50);
+        builder.Property(product => product.TypeId).HasMaxLength(50);
         builder.Property(product => product.Name).HasMaxLength(250).IsRequired();
         builder.Property(product => product.Slug).HasMaxLength(280).IsRequired();
         builder.Property(product => product.ShortDescription).HasMaxLength(500);
@@ -27,5 +28,7 @@ public sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.HasIndex(product => product.Slug).IsUnique();
         builder.HasOne(product => product.Category).WithMany().HasForeignKey(product => product.CategoryId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(product => product.Brand).WithMany(brand => brand.Products).HasForeignKey(product => product.BrandId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasOne(product => product.ProductType).WithMany().HasForeignKey(product => product.TypeId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasIndex(product => product.TypeId);
     }
 }

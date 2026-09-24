@@ -228,6 +228,7 @@ public sealed class ProductsController(
         {
             CategoryId = request.CategoryId,
             BrandId = request.BrandId,
+            TypeId = request.TypeId,
             Name = request.Name,
             Slug = request.Slug,
             Description = request.Description,
@@ -279,6 +280,7 @@ public sealed class ProductsController(
             ProductId = request.ProductId,
             CategoryId = request.CategoryId,
             BrandId = request.BrandId,
+            TypeId = request.TypeId,
             Name = request.Name,
             Slug = request.Slug,
             Description = request.Description,

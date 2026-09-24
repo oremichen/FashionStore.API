@@ -24,7 +24,7 @@ public class CreateProductService(IProductRepository repository, IImageProcessor
             return new ResponseResult<ProductResponse>().Fail(requiredFieldValidation, ResponseCodes.INVALID_ACTION);
         }
 
-        var validation = await ValidateReferencesAsync(request.CategoryId, request.BrandId, request.Slug, null, ct);
+        var validation = await ValidateReferencesAsync(request.CategoryId, request.BrandId, request.TypeId, request.Slug, null, ct);
         if (validation is not null)
         {
             logger.LogError("Product creation validation failed for slug {ProductSlug}: {ValidationMessage}.", request.Slug, validation.Value.Message);
@@ -48,8 +48,8 @@ public class CreateProductService(IProductRepository repository, IImageProcessor
             var minPrice = request.IsMinMaxPrice ? request.MinPrice : null;
             var maxPrice = request.IsMinMaxPrice ? request.MaxPrice : null;
 
-            var product = Product.Create(request.CategoryId, request.BrandId, request.Name, request.Slug, newPrice, request.CurrencyCode, request.AvailabilityCount);
-            product.Update(request.CategoryId, request.BrandId, request.Name, request.Slug, request.Description, request.AdditionalInformation, request.ShortDescription, oldPrice, newPrice, request.CurrencyCode, request.AvailabilityCount, request.Weight, request.WeightUnit, request.IsFeatured, request.IsNewArrival, request.IsMinMaxPrice, minPrice, maxPrice);
+            var product = Product.Create(request.CategoryId, request.BrandId, request.TypeId, request.Name, request.Slug, newPrice, request.CurrencyCode, request.AvailabilityCount);
+            product.Update(request.CategoryId, request.BrandId, request.TypeId, request.Name, request.Slug, request.Description, request.AdditionalInformation, request.ShortDescription, oldPrice, newPrice, request.CurrencyCode, request.AvailabilityCount, request.Weight, request.WeightUnit, request.IsFeatured, request.IsNewArrival, request.IsMinMaxPrice, minPrice, maxPrice);
             product.SetStatus(request.Status);
             product.AddImages(await ProcessImagesAsync(request.ImageRequests, ct));
             await repository.AddAsync(product, ct);
@@ -101,12 +101,14 @@ public class CreateProductService(IProductRepository repository, IImageProcessor
         return null;
     }
 
-    private async Task<(string Message, string Code)?> ValidateReferencesAsync(string categoryId, string? brandId, string slug, string? id, CancellationToken ct)
+    private async Task<(string Message, string Code)?> ValidateReferencesAsync(string categoryId, string? brandId, string? typeId, string slug, string? id, CancellationToken ct)
     {
         if (!await repository.CategoryExistsAsync(categoryId, ct))
             return ("The selected category does not exist.", ResponseCodes.INVALID_REFERENCE_PROVIDED);
         if (!string.IsNullOrWhiteSpace(brandId) && !await repository.BrandExistsAsync(brandId, ct))
             return ("The selected brand does not exist.", ResponseCodes.INVALID_REFERENCE_PROVIDED);
+        if (!string.IsNullOrWhiteSpace(typeId) && !await repository.TypeExistsAsync(typeId, ct))
+            return ("The selected type does not exist.", ResponseCodes.INVALID_REFERENCE_PROVIDED);
         if (await repository.SlugExistsAsync(slug, id, ct))
             return ("A product with this slug already exists.", ResponseCodes.DUPLICATE_RECORD);
         return null;
@@ -192,6 +194,8 @@ public class CreateProductService(IProductRepository repository, IImageProcessor
             CategoryName = product.Category.Name,
             BrandId = product.BrandId,
             BrandName = product.Brand?.Name,
+            TypeId = product.TypeId,
+            TypeName = product.ProductType?.Name,
             Name = product.Name,
             Slug = product.Slug,
             Description = product.Description,

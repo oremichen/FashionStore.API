@@ -45,6 +45,8 @@ public class ProductResponse
     public required string CategoryName { get; init; }
     public string? BrandId { get; init; }
     public string? BrandName { get; init; }
+    public string? TypeId { get; init; }
+    public string? TypeName { get; init; }
     public required string Name { get; init; }
     public required string Slug { get; init; }
     public string? Description { get; init; }
