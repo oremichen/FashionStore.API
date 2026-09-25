@@ -15,7 +15,10 @@ public sealed class GetTypesService(ITypeRepository repository, ILogger<GetTypes
         }
 
         var result = await repository.GetAllAsync(page, pageSize, true, cancellationToken);
-        var responses = result.Items.Select(TypeResponseMapper.Map).ToList();
+        var productCounts = await repository.GetProductCountsAsync(cancellationToken);
+        var responses = result.Items
+            .Select(type => TypeResponseMapper.Map(type, productCounts.GetValueOrDefault(type.Id)))
+            .ToList();
         logger.LogInformation("Retrieved {TypeCount} active types from {TotalCount} matching types.", responses.Count, result.TotalCount);
         return response.Success(new PagedResponse<TypeResponse>
         {
