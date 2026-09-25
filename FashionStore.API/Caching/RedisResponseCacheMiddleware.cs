@@ -20,6 +20,7 @@ public sealed class RedisResponseCacheMiddleware(
             ["/api/brands"] = "catalog",
             ["/api/colors"] = "catalog",
             ["/api/sizes"] = "catalog",
+            ["/api/types"] = "catalog",
             ["/api/promotion-banners"] = "promotions",
             ["/api/promotion-videos"] = "promotions"
         };
@@ -44,10 +45,16 @@ public sealed class RedisResponseCacheMiddleware(
         {
             await TryInvalidateAsync(tag);
 
-            // Product responses embed catalog data, so catalog writes also invalidate products.
+            // Product responses embed catalog data, and the public catalog only contains
+            // entries that have available products. Keep both views consistent after either
+            // a catalog or product write.
             if (tag == "catalog")
             {
                 await TryInvalidateAsync("products");
+            }
+            else if (tag == "products")
+            {
+                await TryInvalidateAsync("catalog");
             }
         }
     }
@@ -108,6 +115,7 @@ public sealed class RedisResponseCacheMiddleware(
         try
         {
             await cache.InvalidateTagAsync(tag);
+            logger.LogInformation("Invalidated Redis response cache tag {CacheTag}.", tag);
         }
         catch (Exception exception)
         {
@@ -115,15 +123,20 @@ public sealed class RedisResponseCacheMiddleware(
         }
     }
 
-    private static string? FindTag(PathString path) => CacheableRoutes
-        .Where(route => path.StartsWithSegments(route.Key))
-        .OrderByDescending(route => route.Key.Length)
-        .Select(route => route.Value)
-        .FirstOrDefault();
+    private static string? FindTag(PathString path)
+    {
+        return CacheableRoutes
+            .Where(route => path.StartsWithSegments(route.Key))
+            .OrderByDescending(route => route.Key.Length)
+            .Select(route => route.Value)
+            .FirstOrDefault();
+    }
 
-    private static bool IsMutation(string method) =>
-        HttpMethods.IsPost(method) || HttpMethods.IsPut(method) ||
-        HttpMethods.IsPatch(method) || HttpMethods.IsDelete(method);
+    private static bool IsMutation(string method)
+    {
+        return HttpMethods.IsPost(method) || HttpMethods.IsPut(method) ||
+               HttpMethods.IsPatch(method) || HttpMethods.IsDelete(method);
+    }
 
     private static string BuildKey(HttpContext context)
     {
