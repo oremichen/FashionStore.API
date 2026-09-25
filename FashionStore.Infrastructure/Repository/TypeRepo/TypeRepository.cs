@@ -6,6 +6,15 @@ namespace FashionStore.Infrastructure.Repository.TypeRepo;
 
 public sealed class TypeRepository(FashionStoreDbContext dbContext, ILogger<TypeRepository> logger) : ITypeRepository
 {
+    public async Task<IReadOnlyDictionary<string, int>> GetProductCountsAsync(CancellationToken cancellationToken)
+    {
+        logger.LogDebug("Querying storefront product counts by type.");
+        return await dbContext.Products.AsNoTracking()
+            .Where(product => product.TypeId != null && !product.IsArchived && product.IsActive && product.PublishedAt != null)
+            .GroupBy(product => product.TypeId!)
+            .ToDictionaryAsync(group => group.Key, group => group.Count(), cancellationToken);
+    }
+
     public async Task<(IReadOnlyList<TypeEntity> Items, int TotalCount)> GetAllAsync(int page, int pageSize, bool activeOnly, CancellationToken cancellationToken)
     {
         logger.LogDebug("Querying types. ActiveOnly: {ActiveOnly}.", activeOnly);

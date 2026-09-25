@@ -105,6 +105,8 @@ public class GetProductByIdService(IProductRepository repository, IImageProcesso
             CategoryName = response.CategoryName,
             BrandId = response.BrandId,
             BrandName = response.BrandName,
+            TypeId = response.TypeId,
+            TypeName = response.TypeName,
             Name = response.Name,
             Slug = response.Slug,
             Description = response.Description,

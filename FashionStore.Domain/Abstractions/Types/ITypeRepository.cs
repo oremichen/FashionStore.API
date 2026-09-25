@@ -5,6 +5,7 @@ namespace FashionStore.Domain.Abstractions.Types;
 public interface ITypeRepository
 {
     Task<(IReadOnlyList<TypeEntity> Items, int TotalCount)> GetAllAsync(int page, int pageSize, bool activeOnly, CancellationToken cancellationToken);
+    Task<IReadOnlyDictionary<string, int>> GetProductCountsAsync(CancellationToken cancellationToken);
     Task<TypeEntity?> GetByIdAsync(string id, CancellationToken cancellationToken);
     Task<bool> NameOrSlugExistsAsync(string name, string slug, CancellationToken cancellationToken, string? excludedId = null);
     Task<bool> HasProductsAsync(string id, CancellationToken cancellationToken);
