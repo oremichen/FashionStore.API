@@ -169,7 +169,7 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
 
         _logger.LogInformation("Payment reference {Reference} for order {OrderId} ({TrackOrderId}) verified with status {Status}.",
             reference, order.Id, order.TrackOrderId, order.PaymentStatus);
-        return response.Success(new PaymentVerificationResponse(reference, order.Id, order.PaymentStatus), "Payment verification completed.");
+        return response.Success(new PaymentVerificationResponse(reference, order.TrackOrderId, order.PaymentStatus), "Payment verification completed.");
     }
 
     private async Task SendOrderEmailsAsync(Order order, Address? address, ApplicationUser? user, CancellationToken cancellationToken)
