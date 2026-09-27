@@ -90,23 +90,17 @@ public sealed class OrderRepository : IOrderRepository
 
     public Task CreateWithInventoryReservationsAsync(Order order, DateTimeOffset expiresAt, CancellationToken cancellationToken)
     {
-        var reservationJson = JsonSerializer.Serialize(order.Items
-            .GroupBy(item => item.ProductId)
-            .Select(group => new { productId = group.Key, quantity = group.Sum(item => item.Quantity) }));
+        if (_dbContext.Database.CurrentTransaction is not null)
+        {
+            return CreateWithInventoryReservationsInCurrentTransactionAsync(order, expiresAt, cancellationToken);
+        }
 
         return _dbContext.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
         {
             await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
             try
             {
-                _dbContext.Orders.Add(order);
-                await _dbContext.SaveChangesAsync(cancellationToken);
-                await _dbContext.Database.ExecuteSqlInterpolatedAsync($"""
-                    SELECT reserve_order_inventory(
-                        {order.Id},
-                        CAST({reservationJson} AS jsonb),
-                        {expiresAt});
-                    """, cancellationToken);
+                await CreateWithInventoryReservationsInCurrentTransactionAsync(order, expiresAt, cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
             }
             catch
@@ -116,6 +110,22 @@ public sealed class OrderRepository : IOrderRepository
                 throw;
             }
         });
+    }
+
+    private async Task CreateWithInventoryReservationsInCurrentTransactionAsync(Order order, DateTimeOffset expiresAt, CancellationToken cancellationToken)
+    {
+        var reservationJson = JsonSerializer.Serialize(order.Items
+            .GroupBy(item => item.ProductId)
+            .Select(group => new { productId = group.Key, quantity = group.Sum(item => item.Quantity) }));
+
+        _dbContext.Orders.Add(order);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        await _dbContext.Database.ExecuteSqlInterpolatedAsync($"""
+            SELECT reserve_order_inventory(
+                {order.Id},
+                CAST({reservationJson} AS jsonb),
+                {expiresAt});
+            """, cancellationToken);
     }
 
     public async Task<bool> ReleaseInventoryReservationAsync(string reservationId, string status, CancellationToken cancellationToken)

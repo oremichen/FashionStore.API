@@ -1,5 +1,3 @@
-using FashionStore.API.Features.Payments.Shared;
-
 namespace FashionStore.API.Features.Payments.InitializePaystack;
 
 public class InitializePaystackRequest
@@ -8,5 +6,5 @@ public class InitializePaystackRequest
     public string Email { get; set; } = string.Empty;
     public string AddressId { get; set; } = string.Empty;
     public string DeliveryId { get; set; } = string.Empty;
-    public IReadOnlyList<CheckoutItemRequest> Items { get; set; } = [];
+    public string CartId { get; set; } = string.Empty;
 }

@@ -1,4 +1,5 @@
 using FashionStore.Domain.Abstractions.CatalogOptions;
+using FashionStore.Domain.Abstractions.Carts;
 using FashionStore.Domain.Abstractions.Contacts;
 
 namespace FashionStore.API.Features.Payments.InitializePayOnDelivery;
@@ -7,7 +8,6 @@ public sealed class InitializePayOnDeliveryService : IInitializePayOnDeliverySer
 {
     private const int PayOnDeliveryReservationExpiryDays = 30;
 
-    private readonly IProductRepository _productRepository;
     private readonly IOrderRepository _orderRepository;
     private readonly IDeliveryRepository _deliveryRepository;
     private readonly IConfiguration _configuration;
@@ -18,11 +18,11 @@ public sealed class InitializePayOnDeliveryService : IInitializePayOnDeliverySer
     private readonly IEmailTemplateRenderer _templateRenderer;
     private readonly IContactUsConfigurationRepository _contactConfigRepository;
     private readonly IOrderItemHtmlRendererService _orderItemHtmlRenderer;
-    private readonly ICatalogOptionRepository _catalogOptionRepository;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly ICartRepository _cartRepository;
+    private readonly ICheckoutOrderItemService _checkoutOrderItemService;
 
     public InitializePayOnDeliveryService(
-        IProductRepository productRepository,
         IOrderRepository orderRepository,
         IConfiguration configuration,
         IDeliveryRepository deliveryRepository,
@@ -33,10 +33,10 @@ public sealed class InitializePayOnDeliveryService : IInitializePayOnDeliverySer
         IEmailTemplateRenderer templateRenderer,
         IContactUsConfigurationRepository contactConfigRepository,
         IOrderItemHtmlRendererService orderItemHtmlRenderer,
-        ICatalogOptionRepository catalogOptionRepository,
-        UserManager<ApplicationUser> userManager)
+        UserManager<ApplicationUser> userManager,
+        ICartRepository cartRepository,
+        ICheckoutOrderItemService checkoutOrderItemService)
     {
-        _productRepository = productRepository;
         _orderRepository = orderRepository;
         _configuration = configuration;
         _deliveryRepository = deliveryRepository;
@@ -47,8 +47,9 @@ public sealed class InitializePayOnDeliveryService : IInitializePayOnDeliverySer
         _templateRenderer = templateRenderer;
         _contactConfigRepository = contactConfigRepository;
         _orderItemHtmlRenderer = orderItemHtmlRenderer;
-        _catalogOptionRepository = catalogOptionRepository;
         _userManager = userManager;
+        _cartRepository = cartRepository;
+        _checkoutOrderItemService = checkoutOrderItemService;
     }
 
     public async Task<ResponseResult<PayOnDeliveryInitializationResponse>> ExecuteAsync(
@@ -57,21 +58,21 @@ public sealed class InitializePayOnDeliveryService : IInitializePayOnDeliverySer
         CancellationToken cancellationToken)
     {
         var response = new ResponseResult<PayOnDeliveryInitializationResponse>();
-        _logger.LogInformation("PayOnDelivery checkout initialization started for user {UserId} with {ItemCount} items.", userId, request.Items.Count);
+        _logger.LogInformation("PayOnDelivery checkout initialization started for user {UserId}, cart {CartId}.", userId, request.CartId);
 
         if (string.IsNullOrWhiteSpace(request.IdempotencyKey) ||
             string.IsNullOrWhiteSpace(request.Email) ||
             string.IsNullOrWhiteSpace(request.AddressId) ||
-            request.Items.Count == 0)
+            string.IsNullOrWhiteSpace(request.CartId))
         {
             _logger.LogError("PayOnDelivery validation failed for user {UserId}: required fields missing (idempotency={HasIdempotency}, email={HasEmail}, address={HasAddress}, items={ItemCount}).",
                 userId,
                 !string.IsNullOrWhiteSpace(request.IdempotencyKey),
                 !string.IsNullOrWhiteSpace(request.Email),
                 !string.IsNullOrWhiteSpace(request.AddressId),
-                request.Items.Count);
+                0);
             return response.Fail(
-                "Idempotency key, email, address and at least one order item are required.",
+                "Idempotency key, email, address and cart are required.",
                 ResponseCodes.INVALID_ACTION);
         }
 
@@ -142,43 +143,53 @@ public sealed class InitializePayOnDeliveryService : IInitializePayOnDeliverySer
             return response.Fail("The selected address was not found.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
         }
 
-        _logger.LogInformation("Building order items ({ItemCount} requested) for user {UserId}, key {IdempotencyKey}.",
-            request.Items.Count, userId, idempotencyKey);
-        var orderItems = await BuildOrderItemsAsync(request.Items, userId, cancellationToken);
-        if (orderItems is null)
-        {
-            _logger.LogError("Failed to build order items for user {UserId}, key {IdempotencyKey}: one or more products unavailable/invalid.", userId, idempotencyKey);
-            return response.Fail("One or more products are unavailable.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
-        }
-
-        var subtotal = orderItems.Sum(item => item.LineTotal);
-        var reference = "FS-COD-" + Guid.NewGuid().ToString("N").ToUpperInvariant();
-        _logger.LogInformation("Creating PayOnDelivery order reference {Reference} for user {UserId}, key {IdempotencyKey}, subtotal={Subtotal} NGN, delivery={DeliveryFee} NGN, method={Method}.",
-            reference, userId, idempotencyKey, subtotal, deliveryResolution.DeliveryFee, deliveryResolution.DeliveryMethodName);
-
-        var order = Order.Create(
-            userId,
-            idempotencyKey,
-            request.AddressId,
-            request.Email,
-            deliveryResolution.DeliveryMethodName,
-            deliveryResolution.DeliveryRateId,
-            deliveryResolution.EstimatedDaysMin,
-            deliveryResolution.EstimatedDaysMax,
-            subtotal,
-            deliveryResolution.DeliveryFee,
-            reference,
-            orderItems,
-            paymentProvider: PaymentProviderKeys.PayOnDelivery);
-
-        var reservationExpiresAt = DateTimeOffset.UtcNow
-            .AddDays(PayOnDeliveryReservationExpiryDays);
-
-        _logger.LogInformation("Persisting PayOnDelivery order and inventory reservations for user {UserId}, key {IdempotencyKey}, reservation expires {ExpiresAt}.",
-            userId, idempotencyKey, reservationExpiresAt);
+        Order? order = null;
+        var reference = string.Empty;
+        var reservationExpiresAt = DateTimeOffset.UtcNow.AddDays(PayOnDeliveryReservationExpiryDays);
         try
         {
-            await _orderRepository.CreateWithInventoryReservationsAsync(order, reservationExpiresAt, cancellationToken);
+            var checkoutResult = await _orderRepository.ExecuteInRetriableTransactionAsync(async (transaction, ct) =>
+            {
+                var cart = await _cartRepository.GetForCheckoutAsync(request.CartId, userId, ct);
+                if (cart is null || cart.Items.Count == 0)
+                {
+                    await transaction.RollbackAsync(ct);
+                    return (Order: (Order?)null, Error: "The cart is empty or unavailable.");
+                }
+
+                var checkoutItems = cart.Items.Select(item => new CheckoutItemRequest
+                {
+                    ProductId = item.ProductId,
+                    VariantId = item.VariantId,
+                    ColorId = item.ColorId,
+                    Quantity = item.Quantity
+                });
+                var orderItems = await _checkoutOrderItemService.BuildAsync(checkoutItems, userId, ct);
+                if (orderItems is null)
+                {
+                    await transaction.RollbackAsync(ct);
+                    return (Order: (Order?)null, Error: "One or more products are unavailable.");
+                }
+
+                reference = "FS-COD-" + Guid.NewGuid().ToString("N").ToUpperInvariant();
+                var createdOrder = Order.Create(userId, idempotencyKey, request.AddressId, request.Email,
+                    deliveryResolution.DeliveryMethodName, deliveryResolution.DeliveryRateId,
+                    deliveryResolution.EstimatedDaysMin, deliveryResolution.EstimatedDaysMax,
+                    orderItems.Sum(item => item.LineTotal), deliveryResolution.DeliveryFee, reference, orderItems,
+                    paymentProvider: PaymentProviderKeys.PayOnDelivery);
+                await _orderRepository.CreateWithInventoryReservationsAsync(createdOrder, reservationExpiresAt, ct);
+                cart.ClearItems();
+                await _cartRepository.SaveChangesAsync(ct);
+                await transaction.CommitAsync(ct);
+                return (Order: createdOrder, Error: (string?)null);
+            }, cancellationToken);
+
+            if (checkoutResult.Order is null)
+            {
+                return response.Fail(checkoutResult.Error!, ResponseCodes.INVALID_ACTION);
+            }
+
+            order = checkoutResult.Order;
         }
         catch (PostgresException exception) when (exception.SqlState == "P0001")
         {
@@ -190,7 +201,7 @@ public sealed class InitializePayOnDeliveryService : IInitializePayOnDeliverySer
             order.Id, order.TrackOrderId);
         try
         {
-            var user = await _userManager.FindByIdAsync(order.UserId);
+            var user = await _userManager.FindByIdAsync(order!.UserId);
             await SendOrderEmailsAsync(order, address, user, cancellationToken);
         }
         catch (Exception ex)
@@ -391,71 +402,7 @@ public sealed class InitializePayOnDeliveryService : IInitializePayOnDeliverySer
         string userId,
         CancellationToken cancellationToken)
     {
-        var orderItems = new List<OrderItem>();
-        foreach (var requestedItem in requestedItems)
-        {
-            if (requestedItem.Quantity <= 0)
-                return null;
-
-            var product = await _productRepository.GetByIdAsync(requestedItem.ProductId, false, cancellationToken);
-            if (product is null || !product.IsActive || product.IsArchived)
-                return null;
-
-            string? colorName = null;
-            string? sizeName = null;
-            decimal unitPrice;
-
-            if (!string.IsNullOrWhiteSpace(requestedItem.VariantId))
-            {
-                var variant = product.Variants.FirstOrDefault(item => item.Id == requestedItem.VariantId && item.IsActive);
-                if (variant is null || product.AvailabilityCount < requestedItem.Quantity)
-                    return null;
-                unitPrice = variant.NewPrice;
-
-                if (!string.IsNullOrWhiteSpace(variant.SizeId))
-                {
-                    var size = await _catalogOptionRepository.GetSizeByIdAsync(variant.SizeId, cancellationToken);
-                    sizeName = size?.DisplayName ?? size?.Name;
-                }
-
-                if (!string.IsNullOrWhiteSpace(variant.ColorId))
-                {
-                    var color = await _catalogOptionRepository.GetColorByIdAsync(variant.ColorId, cancellationToken);
-                    colorName = color?.Name;
-                }
-            }
-            else
-            {
-                if (product.Variants.Count > 0 || product.AvailabilityCount < requestedItem.Quantity)
-                    return null;
-                unitPrice = product.NewPrice;
-            }
-
-            if (!string.IsNullOrWhiteSpace(requestedItem.ColorId))
-            {
-                var color = await _catalogOptionRepository.GetColorByIdAsync(requestedItem.ColorId, cancellationToken);
-                if (color is null)
-                {
-                    _logger.LogError("User {UserId} selected invalid color {ColorId} for product {ProductId}.",
-                        userId, requestedItem.ColorId, product.Id);
-                    return null;
-                }
-                colorName = color.Name;
-            }
-
-            if (!string.Equals(product.CurrencyCode, "NGN", StringComparison.OrdinalIgnoreCase))
-                return null;
-            orderItems.Add(OrderItem.Create(
-                product.Id,
-                requestedItem.VariantId,
-                requestedItem.ColorId,
-                colorName,
-                sizeName,
-                product.Name,
-                unitPrice,
-                requestedItem.Quantity));
-        }
-        return orderItems;
+        return await _checkoutOrderItemService.BuildAsync(requestedItems, userId, cancellationToken);
     }
 
     private static bool IsActiveContact(ContactUsConfiguration contact)
