@@ -30,4 +30,8 @@
     <ProjectReference Include="..\FashionStore.Infrastructure\FashionStore.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Serilogs\" />
+  </ItemGroup>
+
 </Project>

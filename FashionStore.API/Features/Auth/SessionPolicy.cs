@@ -9,7 +9,7 @@ public static class SessionPolicy
     public static readonly TimeSpan CustomerRollingLifetime = TimeSpan.FromDays(30);
     public static readonly TimeSpan CustomerAbsoluteLifetime = TimeSpan.FromDays(90);
     public static readonly TimeSpan AdminAccessLifetime = TimeSpan.FromMinutes(7);
-    public static readonly TimeSpan AdminIdleLifetime = TimeSpan.FromMinutes(20);
+    public static readonly TimeSpan AdminIdleLifetime = TimeSpan.FromHours(1);
     public static readonly TimeSpan AdminAbsoluteLifetime = TimeSpan.FromHours(3);
 
     public static bool IsAdminRole(string role) =>

@@ -247,6 +247,7 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
+        ClockSkew = TimeSpan.Zero,
         ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
         ValidAudience = builder.Configuration["JwtSettings:Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(
@@ -255,6 +256,18 @@ builder.Services.AddAuthentication(options =>
 
     options.Events = new JwtBearerEvents
     {
+        OnMessageReceived = context =>
+        {
+            var request = context.HttpContext.Request;
+            if (HttpMethods.IsPost(request.Method) &&
+                string.Equals(request.Path.Value, "/api/auth/refresh", StringComparison.OrdinalIgnoreCase))
+            {
+                // Refresh validates the expired bearer token explicitly with the refresh token session.
+                context.NoResult();
+            }
+
+            return Task.CompletedTask;
+        },
         OnTokenValidated = async context =>
         {
             var userManager = context.HttpContext.RequestServices
