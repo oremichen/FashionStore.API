@@ -46,6 +46,7 @@ namespace FashionStore.API.Features.Auth
             return ProcessResponse(await _adminForgotPasswordService.ExecuteAsync(actorId, userId, request));
         }
 
+        [AllowAnonymous]
         [HttpPost("refresh")]
         [EnableRateLimiting(RateLimitPolicies.Authentication)]
         public async Task<IActionResult> Refresh([FromBody] RefreshRequest request)
