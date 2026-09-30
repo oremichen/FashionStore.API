@@ -198,7 +198,7 @@ public sealed class ProductsController(
                 .SetStatusCode(ResponseCodes.CREATED));
     }
 
-    [HttpPost("create-json")]
+    [HttpPost("create-product")]
     [EnableRateLimiting(RateLimitPolicies.AdminUpload)]
     [Consumes("application/json")]
     [Produces("application/json")]
@@ -207,11 +207,11 @@ public sealed class ProductsController(
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ResponseResult<ProductResponse>), StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> CreateJson(
+    public async Task<IActionResult> CreateProduct(
         [FromBody] CreateProductJsonRequest request,
         CancellationToken cancellationToken)
     {
-        logger.LogInformation("Creating product with name: {ProductName}", request.Name);
+        logger.LogInformation("Creating product with request: {@Request}", request);
         var images = await productUploadService.TakeImagesAsync(
             request.ImageUploadIds,
             cancellationToken);
@@ -257,7 +257,7 @@ public sealed class ProductsController(
     }
 
 
-    [HttpPut("update-json")]
+    [HttpPut("update-product")]
     [EnableRateLimiting(RateLimitPolicies.AdminUpload)]
     [Consumes("application/json")]
     [Produces("application/json")]
@@ -267,7 +267,7 @@ public sealed class ProductsController(
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ResponseResult<ProductResponse>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ResponseResult<ProductResponse>), StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> UpdateJson(
+    public async Task<IActionResult> UpdateProduct(
         [FromBody] UpdateProductJsonRequest request,
         CancellationToken cancellationToken)
     {

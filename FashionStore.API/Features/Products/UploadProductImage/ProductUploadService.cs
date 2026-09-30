@@ -43,7 +43,7 @@ public sealed class ProductUploadService(
 
         if (contentLength is > MaximumFileSize)
         {
-            logger.LogWarning(
+            logger.LogError(
                 "Product upload rejected before reading body because declared length exceeds limit. FileName: {FileName}, DeclaredLength: {ContentLength}, MaximumLength: {MaximumLength}",
                 fileName,
                 contentLength,
@@ -109,14 +109,14 @@ public sealed class ProductUploadService(
             logger.LogInformation("Taking product image upload started. UploadId: {UploadId}", uploadId);
             if (string.IsNullOrWhiteSpace(uploadId) || uploadId.Length > 64)
             {
-                logger.LogWarning("Product image upload ID rejected. UploadId: {UploadId}", uploadId);
+                logger.LogError("Product image upload ID rejected. UploadId: {UploadId}", uploadId);
                 throw new ArgumentException("One or more image upload IDs are invalid.", nameof(uploadIds));
             }
 
             var upload = await TakeAsync(uploadId, cancellationToken);
             if (upload is null)
             {
-                logger.LogWarning("Product image upload not found or expired. UploadId: {UploadId}", uploadId);
+                logger.LogError("Product image upload not found or expired. UploadId: {UploadId}", uploadId);
                 throw new KeyNotFoundException($"Image upload '{uploadId}' was not found or has expired.");
             }
 
@@ -173,7 +173,7 @@ public sealed class ProductUploadService(
         var dataValue = await database.StringGetAsync(DataKey(uploadId));
         if (!metadataValue.HasValue || !dataValue.HasValue)
         {
-            logger.LogInformation(
+            logger.LogError(
                 "Product image upload Redis entry missing. UploadId: {UploadId}, MetadataFound: {MetadataFound}, DataFound: {DataFound}",
                 uploadId,
                 metadataValue.HasValue,
@@ -186,7 +186,7 @@ public sealed class ProductUploadService(
             JsonOptions);
         if (metadata is null)
         {
-            logger.LogWarning("Product image upload metadata could not be deserialized. UploadId: {UploadId}", uploadId);
+            logger.LogError("Product image upload metadata could not be deserialized. UploadId: {UploadId}", uploadId);
             return null;
         }
 
