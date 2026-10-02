@@ -145,7 +145,7 @@ public sealed class ProductsController(
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status403Forbidden)]
-    [RequestSizeLimit(5 * 1024 * 1024)]
+    [RequestSizeLimit(20 * 1024 * 1024)]
     public async Task<IActionResult> UploadImage(CancellationToken cancellationToken)
     {
         logger.LogInformation(
