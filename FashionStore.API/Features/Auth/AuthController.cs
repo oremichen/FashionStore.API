@@ -7,6 +7,7 @@ using FashionStore.API.Features.Auth.ResendConfirmationLink;
 using FashionStore.API.Features.Auth.ResetPassword;
 using FashionStore.API.Features.Auth.Refresh;
 using FashionStore.API.Features.Auth.AdminForgotPassword;
+using FashionStore.API.Features.Auth.Google;
 
 namespace FashionStore.API.Features.Auth
 {
@@ -23,8 +24,9 @@ namespace FashionStore.API.Features.Auth
         private readonly IResendConfirmationLinkService _resendConfirmationLinkService;
         private readonly IRefreshService _refreshService;
         private readonly IAdminForgotPasswordService _adminForgotPasswordService;
+        private readonly IGoogleLoginService _googleLoginService;
 
-        public AuthController(ILoginService loginService, ILogoutService logoutService, IForgotPasswordService forgotPasswordService, IResetPasswordService resetPasswordService, IRegisterService registerService, IConfirmEmailService confirmEmailService, IResendConfirmationLinkService resendConfirmationLinkService, IRefreshService refreshService, IAdminForgotPasswordService adminForgotPasswordService)
+        public AuthController(ILoginService loginService, ILogoutService logoutService, IForgotPasswordService forgotPasswordService, IResetPasswordService resetPasswordService, IRegisterService registerService, IConfirmEmailService confirmEmailService, IResendConfirmationLinkService resendConfirmationLinkService, IRefreshService refreshService, IAdminForgotPasswordService adminForgotPasswordService, IGoogleLoginService googleLoginService)
         {
             _loginService = loginService;
             _logoutService = logoutService;
@@ -35,6 +37,7 @@ namespace FashionStore.API.Features.Auth
             _resendConfirmationLinkService = resendConfirmationLinkService;
             _refreshService = refreshService;
             _adminForgotPasswordService = adminForgotPasswordService;
+            _googleLoginService = googleLoginService;
         }
 
         [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}")]
@@ -66,6 +69,21 @@ namespace FashionStore.API.Features.Auth
         public async Task<IActionResult> Login([FromBody] LoginRequest login)
         {
             var response = await _loginService.ExecuteAsync(login);
+            return ProcessResponse(response);
+        }
+
+        [AllowAnonymous]
+        [HttpPost("google")]
+        [EnableRateLimiting(RateLimitPolicies.Authentication)]
+        [Produces("application/json")]
+        [ProducesResponseType(typeof(ResponseResult<LoginResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ResponseResult<LoginResponse>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ResponseResult<LoginResponse>), StatusCodes.Status409Conflict)]
+        [ProducesResponseType(typeof(ResponseResult<LoginResponse>), StatusCodes.Status500InternalServerError)]
+        [EndpointSummary("Authenticate user with Google")]
+        public async Task<IActionResult> Google([FromBody] GoogleLoginRequest request)
+        {
+            var response = await _googleLoginService.ExecuteAsync(request, HttpContext.RequestAborted);
             return ProcessResponse(response);
         }
 
