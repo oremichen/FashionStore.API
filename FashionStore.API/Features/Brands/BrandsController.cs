@@ -33,7 +33,7 @@ public sealed class BrandsController(IGetBrandsService getBrandsService, ICreate
     [EnableRateLimiting(RateLimitPolicies.AdminUpload)]
     [Consumes("multipart/form-data")]
     [Produces("application/json")]
-    [RequestSizeLimit(5 * 1024 * 1024)]
+    [RequestSizeLimit(20 * 1024 * 1024)]
     [ProducesResponseType(typeof(ResponseResult<BrandResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ResponseResult<BrandResponse>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]

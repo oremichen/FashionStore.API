@@ -130,7 +130,7 @@ builder.Services.AddRateLimiter(options =>
     options.AddPolicy(RateLimitPolicies.ProductListing, context => FixedWindow(context, RateLimitPolicies.ProductListing, 100));
     options.AddPolicy(RateLimitPolicies.Cart, context => FixedWindow(context, RateLimitPolicies.Cart, 45));
     options.AddPolicy(RateLimitPolicies.Checkout, context => FixedWindow(context, RateLimitPolicies.Checkout, 8));
-    options.AddPolicy(RateLimitPolicies.AdminUpload, context => FixedWindow(context, RateLimitPolicies.AdminUpload, 8));
+    options.AddPolicy(RateLimitPolicies.AdminUpload, context => FixedWindow(context, RateLimitPolicies.AdminUpload, 15));
 
     // Webhooks get an isolated, higher-throughput policy. Signature validation and
     // idempotency must remain the primary protections when a webhook is introduced.
