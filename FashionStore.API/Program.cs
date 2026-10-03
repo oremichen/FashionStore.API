@@ -129,6 +129,7 @@ builder.Services.AddRateLimiter(options =>
     options.AddPolicy(RateLimitPolicies.Submissions, context => FixedWindow(context, RateLimitPolicies.Submissions, 8));
     options.AddPolicy(RateLimitPolicies.ProductListing, context => FixedWindow(context, RateLimitPolicies.ProductListing, 100));
     options.AddPolicy(RateLimitPolicies.Cart, context => FixedWindow(context, RateLimitPolicies.Cart, 45));
+    options.AddPolicy(RateLimitPolicies.Wishlist, context => FixedWindow(context, RateLimitPolicies.Wishlist, 45));
     options.AddPolicy(RateLimitPolicies.Checkout, context => FixedWindow(context, RateLimitPolicies.Checkout, 8));
     options.AddPolicy(RateLimitPolicies.AdminUpload, context => FixedWindow(context, RateLimitPolicies.AdminUpload, 15));
 

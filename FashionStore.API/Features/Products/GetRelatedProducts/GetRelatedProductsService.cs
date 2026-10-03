@@ -1,19 +1,20 @@
 using FashionStore.Domain.Abstractions.Products;
 using FashionStore.Domain.Abstractions.Images;
+using FashionStore.Domain.Abstractions.Wishlists;
 using FashionStore.API.Features.Products.CreateProduct;
 using FashionStore.API.Features.Products.GetProducts;
 using FashionStore.API.Features.Products.GetStorefront;
 using FashionStore.API.Features.Products.UpdateProduct;
 
 namespace FashionStore.API.Features.Products.GetRelatedProducts;
-public class GetRelatedProductsService(IProductRepository repository, IImageProcessor imageProcessor, ICloudinaryImageService cloudinary, ILogger<GetRelatedProductsService> logger) : IGetRelatedProductsService
+public class GetRelatedProductsService(IProductRepository repository, IWishlistRepository wishlistRepository, IImageProcessor imageProcessor, ICloudinaryImageService cloudinary, ILogger<GetRelatedProductsService> logger) : IGetRelatedProductsService
 {
     private static readonly (int Width, int Height)[] ProductImageSizes = [(240, 300), (600, 750), (1200, 1500)];
     private static readonly string[] Statuses = ["draft", "active", "inactive", "archived"];
     private static readonly string[] StockStatuses = ["in-stock", "low-stock", "out-of-stock"];
     private static readonly string[] Sorts = ["newest", "oldest", "name-asc", "name-desc", "price-asc", "price-desc", "stock-asc", "stock-desc"];
     private static readonly string[] StorefrontSorts = ["newest", "popular", "rating", "price-asc", "price-desc"];
-    public async Task<ResponseResult<PagedResponse<ProductResponse>>> ExecuteAsync(string productId, int page, int pageSize, CancellationToken ct)
+    public async Task<ResponseResult<PagedResponse<ProductResponse>>> ExecuteAsync(string productId, int page, int pageSize, string? userId, CancellationToken ct)
     {
         if (page < 1 || pageSize is < 1 or > 100)
             return new ResponseResult<PagedResponse<ProductResponse>>().Fail("Page and pageSize are invalid.", ResponseCodes.INVALID_ACTION);
@@ -28,13 +29,14 @@ public class GetRelatedProductsService(IProductRepository repository, IImageProc
             Page = page,
             PageSize = pageSize
         };
-        return await GetStorefrontPageAsync(query, "related", product.Id, ct);
+        return await GetStorefrontPageAsync(query, "related", product.Id, userId, ct);
     }
 
-    private async Task<ResponseResult<PagedResponse<ProductResponse>>> GetStorefrontPageAsync(StorefrontProductQuery query, string? collection, string? excludingProductId, CancellationToken ct)
+    private async Task<ResponseResult<PagedResponse<ProductResponse>>> GetStorefrontPageAsync(StorefrontProductQuery query, string? collection, string? excludingProductId, string? userId, CancellationToken ct)
     {
         var(items, total) = await repository.GetStorefrontAsync(query, collection, excludingProductId, ct);
-        var mapped = items.Select(x => Map(x, 5)).ToList();
+        var wishlistProductIds = await wishlistRepository.GetProductIdsAsync(userId, items.Select(item => item.Id).ToList(), ct);
+        var mapped = items.Select(x => Map(x, 5, wishlistProductIds.Contains(x.Id))).ToList();
         return new ResponseResult<PagedResponse<ProductResponse>>().Success(new PagedResponse<ProductResponse> { Items = mapped, Page = query.Page, PageSize = query.PageSize, TotalCount = total, TotalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)query.PageSize) }, "Products retrieved successfully.");
     }
 
@@ -63,11 +65,12 @@ public class GetRelatedProductsService(IProductRepository repository, IImageProc
         };
     }
 
-    private static ProductResponse Map(Product product, int threshold)
+    private static ProductResponse Map(Product product, int threshold, bool isWishlistItem)
     {
         return new ProductResponse
         {
             Id = product.Id,
+            IsWishlistItem = isWishlistItem,
             CategoryId = product.CategoryId,
             CategoryName = product.Category.Name,
             BrandId = product.BrandId,

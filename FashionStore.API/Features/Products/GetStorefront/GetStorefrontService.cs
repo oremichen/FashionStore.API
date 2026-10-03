@@ -1,30 +1,32 @@
 using FashionStore.Domain.Abstractions.Products;
 using FashionStore.Domain.Abstractions.Images;
+using FashionStore.Domain.Abstractions.Wishlists;
 using FashionStore.API.Features.Products.CreateProduct;
 using FashionStore.API.Features.Products.GetProducts;
 using FashionStore.API.Features.Products.GetStorefront;
 using FashionStore.API.Features.Products.UpdateProduct;
 
 namespace FashionStore.API.Features.Products.GetStorefront;
-public class GetStorefrontService(IProductRepository repository, IImageProcessor imageProcessor, ICloudinaryImageService cloudinary, ILogger<GetStorefrontService> logger) : IGetStorefrontService
+public class GetStorefrontService(IProductRepository repository, IWishlistRepository wishlistRepository, IImageProcessor imageProcessor, ICloudinaryImageService cloudinary, ILogger<GetStorefrontService> logger) : IGetStorefrontService
 {
     private static readonly (int Width, int Height)[] ProductImageSizes = [(240, 300), (600, 750), (1200, 1500)];
     private static readonly string[] Statuses = ["draft", "active", "inactive", "archived"];
     private static readonly string[] StockStatuses = ["in-stock", "low-stock", "out-of-stock"];
     private static readonly string[] Sorts = ["newest", "oldest", "name-asc", "name-desc", "price-asc", "price-desc", "stock-asc", "stock-desc"];
     private static readonly string[] StorefrontSorts = ["newest", "popular", "rating", "price-asc", "price-desc"];
-    public async Task<ResponseResult<PagedResponse<ProductResponse>>> ExecuteAsync(StorefrontProductQuery query, CancellationToken ct)
+    public async Task<ResponseResult<PagedResponse<ProductResponse>>> ExecuteAsync(StorefrontProductQuery query, string? userId, CancellationToken ct)
     {
         var validation = ValidateStorefrontQuery(query);
         if (validation is not null)
             return new ResponseResult<PagedResponse<ProductResponse>>().Fail(validation, ResponseCodes.INVALID_ACTION);
-        return await GetStorefrontPageAsync(query, null, null, ct);
+        return await GetStorefrontPageAsync(query, null, null, userId, ct);
     }
 
-    private async Task<ResponseResult<PagedResponse<ProductResponse>>> GetStorefrontPageAsync(StorefrontProductQuery query, string? collection, string? excludingProductId, CancellationToken ct)
+    private async Task<ResponseResult<PagedResponse<ProductResponse>>> GetStorefrontPageAsync(StorefrontProductQuery query, string? collection, string? excludingProductId, string? userId, CancellationToken ct)
     {
         var(items, total) = await repository.GetStorefrontAsync(query, collection, excludingProductId, ct);
-        var mapped = items.Select(x => Map(x, 5)).ToList();
+        var wishlistProductIds = await wishlistRepository.GetProductIdsAsync(userId, items.Select(item => item.Id).ToList(), ct);
+        var mapped = items.Select(x => Map(x, 5, wishlistProductIds.Contains(x.Id))).ToList();
         return new ResponseResult<PagedResponse<ProductResponse>>().Success(new PagedResponse<ProductResponse> { Items = mapped, Page = query.Page, PageSize = query.PageSize, TotalCount = total, TotalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)query.PageSize) }, "Products retrieved successfully.");
     }
 
@@ -64,11 +66,12 @@ public class GetStorefrontService(IProductRepository repository, IImageProcessor
         };
     }
 
-    private static ProductResponse Map(Product product, int threshold)
+    private static ProductResponse Map(Product product, int threshold, bool isWishlistItem)
     {
         return new ProductResponse
         {
             Id = product.Id,
+            IsWishlistItem = isWishlistItem,
             CategoryId = product.CategoryId,
             CategoryName = product.Category.Name,
             BrandId = product.BrandId,

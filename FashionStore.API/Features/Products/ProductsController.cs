@@ -43,7 +43,7 @@ public sealed class ProductsController(
     [ProducesResponseType(typeof(ResponseResult<PagedResponse<ProductResponse>>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetStorefront([FromQuery] StorefrontProductQuery query, CancellationToken cancellationToken)
     {
-        return ProcessResponse(await getStorefrontService.ExecuteAsync(query, cancellationToken));
+        return ProcessResponse(await getStorefrontService.ExecuteAsync(query, User.FindFirstValue(ClaimTypes.NameIdentifier), cancellationToken));
     }
 
     [AllowAnonymous]
@@ -53,7 +53,7 @@ public sealed class ProductsController(
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetFeatured([FromQuery] int page = 1, [FromQuery] int pageSize = 12, CancellationToken cancellationToken = default)
     {
-        return ProcessResponse(await getProductCollectionService.ExecuteAsync("featured", page, pageSize, cancellationToken));
+        return ProcessResponse(await getProductCollectionService.ExecuteAsync("featured", page, pageSize, User.FindFirstValue(ClaimTypes.NameIdentifier), cancellationToken));
     }
 
     [AllowAnonymous]
@@ -63,7 +63,7 @@ public sealed class ProductsController(
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetNewArrivals([FromQuery] int page = 1, [FromQuery] int pageSize = 12, CancellationToken cancellationToken = default)
     {
-        return ProcessResponse(await getProductCollectionService.ExecuteAsync("new-arrivals", page, pageSize, cancellationToken));
+        return ProcessResponse(await getProductCollectionService.ExecuteAsync("new-arrivals", page, pageSize, User.FindFirstValue(ClaimTypes.NameIdentifier), cancellationToken));
     }
 
     [AllowAnonymous]
@@ -73,7 +73,7 @@ public sealed class ProductsController(
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetOnSale([FromQuery] int page = 1, [FromQuery] int pageSize = 12, CancellationToken cancellationToken = default)
     {
-        return ProcessResponse(await getProductCollectionService.ExecuteAsync("on-sale", page, pageSize, cancellationToken));
+        return ProcessResponse(await getProductCollectionService.ExecuteAsync("on-sale", page, pageSize, User.FindFirstValue(ClaimTypes.NameIdentifier), cancellationToken));
     }
 
     [AllowAnonymous]
@@ -84,7 +84,7 @@ public sealed class ProductsController(
     [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetRelated(string productId, [FromQuery] int page = 1, [FromQuery] int pageSize = 12, CancellationToken cancellationToken = default)
     {
-        return ProcessResponse(await getRelatedProductsService.ExecuteAsync(productId, page, pageSize, cancellationToken));
+        return ProcessResponse(await getRelatedProductsService.ExecuteAsync(productId, page, pageSize, User.FindFirstValue(ClaimTypes.NameIdentifier), cancellationToken));
     }
 
     [AllowAnonymous]
@@ -93,7 +93,7 @@ public sealed class ProductsController(
     [ProducesResponseType(typeof(ResponseResult<ProductResponse>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetBySlug(string productSlug, CancellationToken cancellationToken)
     {
-        return ProcessResponse(await getProductBySlugService.ExecuteAsync(productSlug, cancellationToken));
+        return ProcessResponse(await getProductBySlugService.ExecuteAsync(productSlug, User.FindFirstValue(ClaimTypes.NameIdentifier), cancellationToken));
     }
 
     [AllowAnonymous]

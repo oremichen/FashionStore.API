@@ -41,6 +41,7 @@ public sealed class ColorResponse
 public class ProductResponse
 {
     public required string Id { get; init; }
+    public bool IsWishlistItem { get; init; }
     public required string CategoryId { get; init; }
     public required string CategoryName { get; init; }
     public string? BrandId { get; init; }

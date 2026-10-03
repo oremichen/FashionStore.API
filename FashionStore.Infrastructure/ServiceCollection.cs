@@ -43,6 +43,8 @@ namespace FashionStore.Infrastructure
                 Repository.OrderRepo.OrderRepository>();
             services.AddScoped<FashionStore.Domain.Abstractions.Carts.ICartRepository,
                 Repository.CartRepo.CartRepository>();
+            services.AddScoped<FashionStore.Domain.Abstractions.Wishlists.IWishlistRepository,
+                Repository.WishlistRepo.WishlistRepository>();
             services.AddScoped<FashionStore.Domain.Abstractions.Delivery.IDeliveryRepository,
                 Repository.DeliveryRepo.DeliveryRepository>();
             services.AddScoped<FashionStore.Domain.Abstractions.Auth.IAuthSessionRepository,

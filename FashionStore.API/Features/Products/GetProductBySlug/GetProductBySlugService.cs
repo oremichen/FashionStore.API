@@ -1,22 +1,29 @@
 using FashionStore.Domain.Abstractions.Products;
 using FashionStore.Domain.Abstractions.Images;
+using FashionStore.Domain.Abstractions.Wishlists;
 using FashionStore.API.Features.Products.CreateProduct;
 using FashionStore.API.Features.Products.GetProducts;
 using FashionStore.API.Features.Products.GetStorefront;
 using FashionStore.API.Features.Products.UpdateProduct;
 
 namespace FashionStore.API.Features.Products.GetProductBySlug;
-public class GetProductBySlugService(IProductRepository repository, IImageProcessor imageProcessor, ICloudinaryImageService cloudinary, ILogger<GetProductBySlugService> logger) : IGetProductBySlugService
+public class GetProductBySlugService(IProductRepository repository, IWishlistRepository wishlistRepository, IImageProcessor imageProcessor, ICloudinaryImageService cloudinary, ILogger<GetProductBySlugService> logger) : IGetProductBySlugService
 {
     private static readonly (int Width, int Height)[] ProductImageSizes = [(240, 300), (600, 750), (1200, 1500)];
     private static readonly string[] Statuses = ["draft", "active", "inactive", "archived"];
     private static readonly string[] StockStatuses = ["in-stock", "low-stock", "out-of-stock"];
     private static readonly string[] Sorts = ["newest", "oldest", "name-asc", "name-desc", "price-asc", "price-desc", "stock-asc", "stock-desc"];
     private static readonly string[] StorefrontSorts = ["newest", "popular", "rating", "price-asc", "price-desc"];
-    public async Task<ResponseResult<ProductDetailResponse>> ExecuteAsync(string slug, CancellationToken ct)
+    public async Task<ResponseResult<ProductDetailResponse>> ExecuteAsync(string slug, string? userId, CancellationToken ct)
     {
         var product = await repository.GetBySlugAsync(slug, ct);
-        return product is null ? new ResponseResult<ProductDetailResponse>().Fail("Product was not found.", ResponseCodes.UNABLE_TO_LOCATE_RECORD) : new ResponseResult<ProductDetailResponse>().Success(MapDetail(product, 5), "Product retrieved successfully.");
+        if (product is null)
+        {
+            return new ResponseResult<ProductDetailResponse>().Fail("Product was not found.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
+        }
+
+        var wishlistProductIds = await wishlistRepository.GetProductIdsAsync(userId, [product.Id], ct);
+        return new ResponseResult<ProductDetailResponse>().Success(MapDetail(product, 5, wishlistProductIds.Contains(product.Id)), "Product retrieved successfully.");
     }
 
     private static string Status(Product product)
@@ -44,11 +51,12 @@ public class GetProductBySlugService(IProductRepository repository, IImageProces
         };
     }
 
-    private static ProductResponse Map(Product product, int threshold)
+    private static ProductResponse Map(Product product, int threshold, bool isWishlistItem)
     {
         return new ProductResponse
         {
             Id = product.Id,
+            IsWishlistItem = isWishlistItem,
             CategoryId = product.CategoryId,
             CategoryName = product.Category.Name,
             BrandId = product.BrandId,
@@ -86,12 +94,13 @@ public class GetProductBySlugService(IProductRepository repository, IImageProces
         };
     }
 
-    private static ProductDetailResponse MapDetail(Product product, int threshold)
+    private static ProductDetailResponse MapDetail(Product product, int threshold, bool isWishlistItem)
     {
-        var response = Map(product, threshold);
+        var response = Map(product, threshold, isWishlistItem);
         return new ProductDetailResponse
         {
             Id = response.Id,
+            IsWishlistItem = response.IsWishlistItem,
             CategoryId = response.CategoryId,
             CategoryName = response.CategoryName,
             BrandId = response.BrandId,
