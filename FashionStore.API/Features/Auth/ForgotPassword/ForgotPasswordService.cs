@@ -1,14 +1,12 @@
 using FashionStore.Domain.Abstractions.Auth;
 using System.Security.Cryptography;
-using System.Text;
-using Microsoft.AspNetCore.WebUtilities;
 
 namespace FashionStore.API.Features.Auth.ForgotPassword
 {
     public class ForgotPasswordService : IForgotPasswordService
     {
-        private static readonly TimeSpan ConfirmationResendCooldown = TimeSpan.FromMinutes(1);
         private const int TemporaryPasswordLength = 12;
+        private const string ForgotPasswordResponseMessage = "If an eligible account exists for this email, password reset instructions will be sent shortly.";
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ITokenService _tokenService;
         private readonly IEmailNotificationService _emailNotificationService;
@@ -34,21 +32,26 @@ namespace FashionStore.API.Features.Auth.ForgotPassword
             var user = await _userManager.FindByEmailAsync(request.Email);
             if (user == null)
             {
-                _logger.LogError("Forgot password failed for email {Email}: user was not found.", request.Email);
-                return response.Fail("No user was found for the supplied email address.", ResponseCodes.UNABLE_TO_LOCATE_RECORD);
+                _logger.LogInformation("Forgot password request ignored because no account exists for email {Email}.", request.Email);
+                return response.Success(ForgotPasswordResponseMessage);
             }
 
             if (user.IsDeleted || user.IsDeactivated)
             {
-                _logger.LogError("Forgot password blocked for user {UserId} with email {Email}: account is inactive. Deleted: {IsDeleted}, Deactivated: {IsDeactivated}.", user.Id, user.Email, user.IsDeleted, user.IsDeactivated);
-                return response.Fail("This account is not active.", ResponseCodes.ACTION_NOT_PERMITTED);
+                _logger.LogInformation("Forgot password request ignored for inactive user {UserId}. Deleted: {IsDeleted}, Deactivated: {IsDeactivated}.", user.Id, user.IsDeleted, user.IsDeactivated);
+                return response.Success(ForgotPasswordResponseMessage);
             }
 
             if (!user.EmailConfirmed)
             {
-                await SendConfirmationMail(user);
-                _logger.LogError("Forgot password blocked for user {UserId} with email {Email}: email not confirmed.", user.Id, user.Email);
-                return response.Fail("Email address has not been confirmed. A confirmation link has been sent to your email.", ResponseCodes.ACTION_NOT_PERMITTED);
+                _logger.LogInformation("Forgot password request ignored for user {UserId} because email is not confirmed.", user.Id);
+                return response.Success(ForgotPasswordResponseMessage);
+            }
+
+            if (!await _userManager.HasPasswordAsync(user))
+            {
+                _logger.LogInformation("Forgot password request ignored for passwordless user {UserId}.", user.Id);
+                return response.Success(ForgotPasswordResponseMessage);
             }
 
             var temporaryPassword = GenerateTemporaryPassword();
@@ -58,7 +61,7 @@ namespace FashionStore.API.Features.Auth.ForgotPassword
             {
                 var errors = resetResult.Errors.Select(error => error.Description).ToArray();
                 _logger.LogError("Forgot password reset failed for user {UserId} with email {Email}. Errors: {Errors}.", user.Id, user.Email, string.Join(" | ", errors));
-                return response.Fail("A temporary password could not be generated. Please try again.", ResponseCodes.ACTION_FAILED, errors);
+                return response.Success(ForgotPasswordResponseMessage);
             }
 
             user.IsPasswordChanged = false;
@@ -69,7 +72,6 @@ namespace FashionStore.API.Features.Auth.ForgotPassword
             {
                 var errors = updateResult.Errors.Select(error => error.Description).ToArray();
                 _logger.LogError("Forgot password succeeded for user {UserId}, but profile update failed. Errors: {Errors}.", user.Id, string.Join(" | ", errors));
-                return response.Fail("Temporary password was generated, but the account could not be fully updated.", ResponseCodes.ACTION_FAILED, errors);
             }
 
             await _userManager.ResetAccessFailedCountAsync(user);
@@ -78,25 +80,7 @@ namespace FashionStore.API.Features.Auth.ForgotPassword
             await _authSessionRepository.RevokeAllSessionsForUserAsync(user.Id, now, CancellationToken.None);
             await SendForgotPasswordMail(user, temporaryPassword);
             _logger.LogInformation("Temporary password generated successfully for user {UserId} with email {Email}.", user.Id, user.Email);
-            return response.Success("A temporary password has been sent to your email.");
-        }
-
-        private async Task SendConfirmationMail(ApplicationUser user)
-        {
-            var appName = GetAppName();
-            var confirmationBaseUrl = _configuration["Frontend:ConfirmationPageUrl"] ?? throw new InvalidOperationException("No confirmation page link");
-            var confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-            var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(confirmationToken));
-            var confirmationUrl = QueryHelpers.AddQueryString(confirmationBaseUrl, new Dictionary<string, string?> { ["email"] = user.Email, ["token"] = encodedToken });
-            var emailBody = await _emailTemplateRenderer.RenderAsync(EmailNotificationTypeEnum.Registration, new Dictionary<string, string> { ["appName"] = appName, ["username"] = $"{user.FirstName} {user.LastName}".Trim(), ["confirmUrl"] = confirmationUrl, ["year"] = DateTime.UtcNow.Year.ToString() });
-            await _emailNotificationService.QueueEmailAsync(new EmailNotification { To = new List<string> { user.Email! }, Subject = $"Welcome to {appName}", Body = emailBody });
-            user.InviteResendDateTime = DateTimeOffset.UtcNow;
-            user.UpdatedAt = DateTimeOffset.UtcNow;
-            var updateResult = await _userManager.UpdateAsync(user);
-            if (!updateResult.Succeeded)
-            {
-                _logger.LogError("Confirmation email was queued for user {UserId}, but resend tracking could not be updated. Errors: {Errors}.", user.Id, string.Join(" | ", updateResult.Errors.Select(error => error.Description)));
-            }
+            return response.Success(ForgotPasswordResponseMessage);
         }
 
         private async Task SendForgotPasswordMail(ApplicationUser user, string temporaryPassword)
