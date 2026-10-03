@@ -58,6 +58,7 @@ public class GetProductByIdService(IProductRepository repository, IImageProcesso
         return new ProductResponse
         {
             Id = product.Id,
+            IsWishlistItem = false,
             CategoryId = product.CategoryId,
             CategoryName = product.Category.Name,
             BrandId = product.BrandId,
@@ -101,6 +102,7 @@ public class GetProductByIdService(IProductRepository repository, IImageProcesso
         return new ProductDetailResponse
         {
             Id = response.Id,
+            IsWishlistItem = response.IsWishlistItem,
             CategoryId = response.CategoryId,
             CategoryName = response.CategoryName,
             BrandId = response.BrandId,

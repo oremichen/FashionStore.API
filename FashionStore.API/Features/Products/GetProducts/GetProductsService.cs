@@ -71,6 +71,7 @@ public class GetProductsService(IProductRepository repository, IImageProcessor i
         return new ProductResponse
         {
             Id = product.Id,
+            IsWishlistItem = false,
             CategoryId = product.CategoryId,
             CategoryName = product.Category.Name,
             BrandId = product.BrandId,

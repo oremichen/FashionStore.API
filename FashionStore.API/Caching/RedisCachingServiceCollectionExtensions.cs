@@ -24,6 +24,7 @@ public static class RedisCachingServiceCollectionExtensions
         services.AddSingleton<IConnectionMultiplexer>(_ =>
             ConnectionMultiplexer.Connect(ParseConnectionString(connectionString)));
         services.AddSingleton<IRedisCacheService, RedisCacheService>();
+        services.AddScoped<IWishlistProductCacheInvalidator, WishlistProductCacheInvalidator>();
         return services;
     }
 

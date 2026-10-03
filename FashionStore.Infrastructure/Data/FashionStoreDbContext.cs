@@ -35,6 +35,8 @@ namespace FashionStore.Infrastructure.Data
         public DbSet<OrderItem> OrderItems { get; set; }
         public DbSet<Cart> Carts { get; set; }
         public DbSet<CartItem> CartItems { get; set; }
+        public DbSet<Wishlist> Wishlists { get; set; }
+        public DbSet<WishlistItem> WishlistItems { get; set; }
         public DbSet<InventoryReservation> InventoryReservations { get; set; }
         public DbSet<UserSession> UserSessions { get; set; }
         public DbSet<DeliveryZone> DeliveryZones { get; set; }
