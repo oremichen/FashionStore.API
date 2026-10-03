@@ -1,4 +1,5 @@
 using FashionStore.API.Features.Categories.CreateCategory;
+using FashionStore.API.Features.Categories.GetAllCategories;
 using FashionStore.API.Features.Categories.GetCategories;
 using FashionStore.API.Features.Categories.GetCategoriesWithParent;
 using FashionStore.API.Features.Categories.GetCategoryById;
@@ -10,6 +11,7 @@ namespace FashionStore.API.Features.Categories;
 [ApiController]
 public sealed class CategoriesController(
     IGetCategoriesService getCategoriesService,
+    IGetAllCategoriesService getAllCategoriesService,
     IGetCategoryByIdService getCategoryByIdService,
     IGetCategoriesWithParentService getCategoriesWithParentService,
     ICreateCategoryService createCategoryService,
@@ -25,6 +27,19 @@ public sealed class CategoriesController(
     {
         logger.LogInformation("Retrieving public categories.");
         return ProcessResponse(await getCategoriesService.ExecuteAsync(cancellationToken));
+    }
+
+    [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}")]
+    [HttpGet("all")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(ResponseResult<IReadOnlyList<CategoryResponse>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> GetAllCategories(CancellationToken cancellationToken)
+    {
+        logger.LogInformation("Retrieving all categories for administration.");
+        return ProcessResponse(await getAllCategoriesService.ExecuteAsync(cancellationToken));
     }
 
     [Authorize(Roles = $"{RoleConstants.SuperAdmin},{RoleConstants.BusinessAdmin}")]

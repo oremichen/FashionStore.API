@@ -7,6 +7,7 @@ public sealed record CategoryListItem(string Id, string Name, string Slug, strin
 public interface ICategoryRepository
 {
     Task<IReadOnlyList<CategoryListItem>> GetPublicCategoriesAsync(CancellationToken cancellationToken);
+    Task<IReadOnlyList<CategoryListItem>> GetAllCategoriesAsync(CancellationToken cancellationToken);
     Task<IReadOnlyList<CategoryListItem>> GetCategoriesWithParentAsync(CancellationToken cancellationToken);
     Task<Category?> GetByIdAsync(string id, CancellationToken cancellationToken);
     Task<bool> SlugExistsAsync(string slug, CancellationToken cancellationToken, string? excludedId = null);
