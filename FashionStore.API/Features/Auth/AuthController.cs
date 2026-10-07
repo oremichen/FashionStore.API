@@ -87,7 +87,6 @@ namespace FashionStore.API.Features.Auth
             return ProcessResponse(response);
         }
 
-        [Authorize]
         [HttpPost("logout")]
         [Produces("application/json")]
         [ProducesResponseType(typeof(ResponseResult), StatusCodes.Status200OK)]
@@ -97,12 +96,7 @@ namespace FashionStore.API.Features.Auth
         [EndpointSummary("Logout user")]
         public async Task<IActionResult> Logout()
         {
-            var username = User.FindFirst(ClaimTypes.Name)?.Value
-                ?? User.FindFirst(ClaimTypes.Email)?.Value
-                ?? string.Empty;
-            var tokenId = User.FindFirst("sid")?.Value ?? string.Empty;
-
-            var response = await _logoutService.ExecuteAsync(username, tokenId);
+            var response = await _logoutService.ExecuteAsync(HttpContext.RequestAborted);
             return ProcessResponse(response);
         }
 
