@@ -540,6 +540,11 @@ app.Lifetime.ApplicationStopped.Register(Log.CloseAndFlush);
 app.UseSerilogRequestLogging();
 
 var startupLogger = app.Services.GetRequiredService<ILogger<Program>>();
+var redisCacheOptions = app.Services.GetRequiredService<RedisCacheOptions>();
+if (redisCacheOptions.BypassRedis)
+{
+    startupLogger.LogInformation("Redis is bypassed. In-process fallbacks are active for local development.");
+}
 if (isVercel)
 {
     startupLogger.LogInformation("Skipping database migration and seed initialization on Vercel.");
@@ -575,7 +580,10 @@ app.UseCors(corsPolicyName);
 app.UseAuthentication();                   
 app.UseAuthorization();                    
 app.UseRateLimiter();
-app.UseMiddleware<RedisResponseCacheMiddleware>();
+if (!redisCacheOptions.BypassRedis)
+{
+    app.UseMiddleware<RedisResponseCacheMiddleware>();
+}
 app.MapControllers();
 app.MapGet("/", () => Results.Ok(new
 {
