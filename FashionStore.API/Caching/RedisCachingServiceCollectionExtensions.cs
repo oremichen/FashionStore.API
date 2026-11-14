@@ -1,4 +1,5 @@
 using StackExchange.Redis;
+using FashionStore.API.Features.Products.UploadProductImage;
 
 namespace FashionStore.API.Caching;
 
@@ -8,10 +9,6 @@ public static class RedisCachingServiceCollectionExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("Redis")
-            ?? throw new InvalidOperationException(
-                "Redis is not configured. Set the ConnectionStrings__Redis environment variable.");
-
         var options = configuration.GetSection(RedisCacheOptions.SectionName).Get<RedisCacheOptions>()
             ?? new RedisCacheOptions();
 
@@ -21,9 +18,24 @@ public static class RedisCachingServiceCollectionExtensions
         }
 
         services.AddSingleton(options);
+        services.AddMemoryCache();
+
+        if (options.BypassRedis)
+        {
+            services.AddSingleton<IRedisCacheService, BypassedRedisCacheService>();
+            services.AddSingleton<IProductImageUploadStore, MemoryProductImageUploadStore>();
+            services.AddScoped<IWishlistProductCacheInvalidator, WishlistProductCacheInvalidator>();
+            return services;
+        }
+
+        var connectionString = configuration.GetConnectionString("Redis")
+            ?? throw new InvalidOperationException(
+                "Redis is not configured. Set the ConnectionStrings__Redis environment variable.");
+
         services.AddSingleton<IConnectionMultiplexer>(_ =>
             ConnectionMultiplexer.Connect(ParseConnectionString(connectionString)));
         services.AddSingleton<IRedisCacheService, RedisCacheService>();
+        services.AddSingleton<IProductImageUploadStore, RedisProductImageUploadStore>();
         services.AddScoped<IWishlistProductCacheInvalidator, WishlistProductCacheInvalidator>();
         return services;
     }

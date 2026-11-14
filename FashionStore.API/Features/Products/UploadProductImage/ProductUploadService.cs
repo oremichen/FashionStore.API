@@ -1,12 +1,10 @@
-using System.Text.Json;
 using FashionStore.API.Features.Products.Shared;
 using FashionStore.Domain.Entities;
-using StackExchange.Redis;
 
 namespace FashionStore.API.Features.Products.UploadProductImage;
 
 public sealed class ProductUploadService(
-    IConnectionMultiplexer connection,
+    IProductImageUploadStore uploadStore,
     ILogger<ProductUploadService> logger) : IProductUploadService
 {
     private static readonly HashSet<string> AllowedContentTypes =
@@ -20,9 +18,6 @@ public sealed class ProductUploadService(
 
     private static readonly TimeSpan UploadExpiration = TimeSpan.FromMinutes(30);
     private const long MaximumFileSize = ImageRules.MaximumFileSize;
-    private const string KeyPrefix = "fashion-store:product-upload:";
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-    private readonly IDatabase database = connection.GetDatabase();
 
     public async Task<ProductImageUploadResponse> UploadAsync(
         Stream body,
@@ -141,26 +136,24 @@ public sealed class ProductUploadService(
     {
         cancellationToken.ThrowIfCancellationRequested();
         logger.LogInformation(
-            "Writing product image upload to Redis. UploadId: {UploadId}, FileName: {FileName}, ContentType: {ContentType}, FileSize: {FileSize}, ExpirationSeconds: {ExpirationSeconds}",
+            "Writing product image upload to temporary storage. UploadId: {UploadId}, FileName: {FileName}, ContentType: {ContentType}, FileSize: {FileSize}, ExpirationSeconds: {ExpirationSeconds}",
             uploadId,
             upload.FileName,
             upload.ContentType,
             upload.Data.Length,
             expiration.TotalSeconds);
 
-        var metadata = JsonSerializer.SerializeToUtf8Bytes(
-            new ProductUploadMetadata(upload.ContentType, upload.FileName),
-            JsonOptions);
-        var transaction = database.CreateTransaction();
-        _ = transaction.StringSetAsync(MetadataKey(uploadId), metadata, expiration);
-        _ = transaction.StringSetAsync(DataKey(uploadId), upload.Data, expiration);
-        if (!await transaction.ExecuteAsync())
+        try
         {
-            logger.LogError("Redis transaction failed while storing product image upload. UploadId: {UploadId}", uploadId);
-            throw new InvalidOperationException("The product image upload could not be stored.");
+            await uploadStore.StoreAsync(uploadId, upload, expiration, cancellationToken);
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "Temporary product image upload storage failed. UploadId: {UploadId}", uploadId);
+            throw;
         }
 
-        logger.LogInformation("Product image upload stored in Redis successfully. UploadId: {UploadId}", uploadId);
+        logger.LogInformation("Product image upload stored successfully. UploadId: {UploadId}", uploadId);
     }
 
     private async Task<StoredProductImageUpload?> TakeAsync(
@@ -168,39 +161,23 @@ public sealed class ProductUploadService(
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        logger.LogInformation("Reading product image upload from Redis. UploadId: {UploadId}", uploadId);
-        var metadataValue = await database.StringGetAsync(MetadataKey(uploadId));
-        var dataValue = await database.StringGetAsync(DataKey(uploadId));
-        if (!metadataValue.HasValue || !dataValue.HasValue)
+        logger.LogInformation("Reading product image upload from temporary storage. UploadId: {UploadId}", uploadId);
+        var upload = await uploadStore.TakeAsync(uploadId, cancellationToken);
+        if (upload is null)
         {
             logger.LogError(
-                "Product image upload Redis entry missing. UploadId: {UploadId}, MetadataFound: {MetadataFound}, DataFound: {DataFound}",
-                uploadId,
-                metadataValue.HasValue,
-                dataValue.HasValue);
+                "Product image upload entry missing from temporary storage. UploadId: {UploadId}",
+                uploadId);
             return null;
         }
 
-        var metadata = JsonSerializer.Deserialize<ProductUploadMetadata>(
-            (byte[])metadataValue!,
-            JsonOptions);
-        if (metadata is null)
-        {
-            logger.LogError("Product image upload metadata could not be deserialized. UploadId: {UploadId}", uploadId);
-            return null;
-        }
-
-        await database.KeyDeleteAsync([MetadataKey(uploadId), DataKey(uploadId)]);
         logger.LogInformation(
-            "Product image upload read and removed from Redis successfully. UploadId: {UploadId}, FileName: {FileName}, ContentType: {ContentType}, FileSize: {FileSize}",
+            "Product image upload read and removed from temporary storage successfully. UploadId: {UploadId}, FileName: {FileName}, ContentType: {ContentType}, FileSize: {FileSize}",
             uploadId,
-            metadata.FileName,
-            metadata.ContentType,
-            dataValue!.Length());
-        return new StoredProductImageUpload(
-            (byte[])dataValue!,
-            metadata.ContentType,
-            metadata.FileName);
+            upload.FileName,
+            upload.ContentType,
+            upload.Data.Length);
+        return upload;
     }
 
     private static async Task<byte[]> ReadBodyAsync(Stream body, CancellationToken cancellationToken)
@@ -209,16 +186,6 @@ public sealed class ProductUploadService(
         await using var memory = new MemoryStream();
         await limited.CopyToAsync(memory, cancellationToken);
         return memory.ToArray();
-    }
-
-    private static RedisKey MetadataKey(string uploadId)
-    {
-        return $"{KeyPrefix}{uploadId}:metadata";
-    }
-
-    private static RedisKey DataKey(string uploadId)
-    {
-        return $"{KeyPrefix}{uploadId}:data";
     }
 
 }
