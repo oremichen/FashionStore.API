@@ -142,6 +142,36 @@ public sealed class VerifyPaystackService : IVerifyPaystackService
                 return (Success: false, ConflictMessage: reservationConflictMessage);
             }
 
+            if (paymentSucceeded)
+            {
+                var successfulPayment = Transaction.CreateSuccessfulPayment(
+                    order.Id,
+                    order.UserId,
+                    order.PaymentReference,
+                    PaymentProviderKeys.Paystack,
+                    transaction.ProviderReference,
+                    order.Total,
+                    order.Currency,
+                    paidAt);
+                var paymentTransactionRecorded = await _orderRepository.TryRecordSuccessfulPaymentAsync(successfulPayment, ct);
+
+                if (paymentTransactionRecorded)
+                {
+                    _logger.LogInformation(
+                        "Recorded successful Paystack transaction {TransactionId} for order {OrderId} and reference {Reference}.",
+                        successfulPayment.Id,
+                        order.Id,
+                        order.PaymentReference);
+                }
+                else
+                {
+                    _logger.LogInformation(
+                        "A successful payment transaction already exists for order {OrderId} and reference {Reference}.",
+                        order.Id,
+                        order.PaymentReference);
+                }
+            }
+
             await _orderRepository.SaveChangesAsync(ct);
             await orderTransaction.CommitAsync(ct);
             return (Success: true, ConflictMessage: (string?)null);

@@ -2,21 +2,21 @@ using FashionStore.Domain.Constants;
 
 namespace FashionStore.Domain.Entities;
 
-internal static class TransactionRules
+public static class TransactionRules
 {
-    internal const int IdMaximumLength = 50;
-    internal const int OrderIdMaximumLength = 50;
-    internal const int UserIdMaximumLength = 450;
-    internal const int ReferenceMaximumLength = 150;
-    internal const int TransactionTypeMaximumLength = 30;
-    internal const int StatusMaximumLength = 30;
-    internal const int ProviderMaximumLength = 50;
-    internal const int ProviderTransactionIdMaximumLength = 100;
-    internal const int CurrencyLength = 3;
-    internal const int ChannelMaximumLength = 50;
-    internal const int GatewayResponseCodeMaximumLength = 50;
-    internal const int GatewayResponseMessageMaximumLength = 500;
-    internal const int FailureReasonMaximumLength = 500;
+    public const int IdMaximumLength = 50;
+    public const int OrderIdMaximumLength = 50;
+    public const int UserIdMaximumLength = 450;
+    public const int ReferenceMaximumLength = 150;
+    public const int TransactionTypeMaximumLength = 30;
+    public const int StatusMaximumLength = 30;
+    public const int ProviderMaximumLength = 50;
+    public const int ProviderTransactionIdMaximumLength = 100;
+    public const int CurrencyLength = 3;
+    public const int ChannelMaximumLength = 50;
+    public const int GatewayResponseCodeMaximumLength = 50;
+    public const int GatewayResponseMessageMaximumLength = 500;
+    public const int FailureReasonMaximumLength = 500;
 
     internal static bool IsSupportedTransactionType(string value)
     {

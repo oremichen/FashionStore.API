@@ -31,9 +31,20 @@ public sealed class OrderRepository : IOrderRepository
             _transaction = transaction;
         }
 
-        public Task CommitAsync(CancellationToken cancellationToken) => _transaction.CommitAsync(cancellationToken);
-        public Task RollbackAsync(CancellationToken cancellationToken) => _transaction.RollbackAsync(cancellationToken);
-        public ValueTask DisposeAsync() => _transaction.DisposeAsync();
+        public Task CommitAsync(CancellationToken cancellationToken)
+        {
+            return _transaction.CommitAsync(cancellationToken);
+        }
+
+        public Task RollbackAsync(CancellationToken cancellationToken)
+        {
+            return _transaction.RollbackAsync(cancellationToken);
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            return _transaction.DisposeAsync();
+        }
     }
 
     public Task<bool> AddressBelongsToUserAsync(string addressId, string userId, CancellationToken cancellationToken)
@@ -169,6 +180,23 @@ public sealed class OrderRepository : IOrderRepository
 
         var result = await command.ExecuteScalarAsync(cancellationToken);
         return result is bool boolResult && boolResult;
+    }
+
+    public async Task<bool> TryRecordSuccessfulPaymentAsync(Transaction transaction, CancellationToken cancellationToken)
+    {
+        var affectedRows = await _dbContext.Database.ExecuteSqlInterpolatedAsync($"""
+            INSERT INTO \"Transactions\" (
+                \"Id\", \"OrderId\", \"UserId\", \"Reference\", \"TransactionType\", \"Status\", \"Provider\",
+                \"ProviderTransactionId\", \"Amount\", \"Currency\", \"Channel\", \"GatewayResponseCode\",
+                \"GatewayResponseMessage\", \"GatewayResponse\", \"FailureReason\", \"ProcessedAt\", \"CreatedAt\", \"UpdatedAt\")
+            VALUES (
+                {transaction.Id}, {transaction.OrderId}, {transaction.UserId}, {transaction.Reference}, {transaction.TransactionType}, {transaction.Status}, {transaction.Provider},
+                {transaction.ProviderTransactionId}, {transaction.Amount}, {transaction.Currency}, {transaction.Channel}, {transaction.GatewayResponseCode},
+                {transaction.GatewayResponseMessage}, {transaction.GatewayResponse}, {transaction.FailureReason}, {transaction.ProcessedAt}, {transaction.CreatedAt}, {transaction.UpdatedAt})
+            ON CONFLICT (\"OrderId\", \"TransactionType\") DO NOTHING;
+            """, cancellationToken);
+
+        return affectedRows == 1;
     }
 
     public Task SaveChangesAsync(CancellationToken cancellationToken)

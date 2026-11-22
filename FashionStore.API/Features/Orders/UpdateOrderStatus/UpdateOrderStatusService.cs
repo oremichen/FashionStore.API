@@ -31,16 +31,70 @@ public sealed class UpdateOrderStatusService(
         }
         catch (ArgumentException exception)
         {
-            logger.LogWarning(exception, "Order status update validation failed for {OrderId}.", id);
+            logger.LogError(exception, "Order status update validation failed for {OrderId}.", id);
             return new ResponseResult<OrderResponse>().Fail("The order status update is invalid.", ResponseCodes.INVALID_ACTION);
         }
 
-        await orderRepository.SaveChangesAsync(cancellationToken);
+        var isDeliveredPayOnDeliveryOrder =
+            string.Equals(order.Status, Domain.Constants.OrderStatuses.Delivered, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(order.PaymentProvider, Domain.Constants.PaymentProviderKeys.PayOnDelivery, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(order.PaymentStatus, Domain.Constants.PaymentStatuses.Success, StringComparison.OrdinalIgnoreCase);
+
+        if (isDeliveredPayOnDeliveryOrder)
+        {
+            try
+            {
+                var paymentTransactionRecorded = await orderRepository.ExecuteInRetriableTransactionAsync(async (orderTransaction, ct) =>
+                {
+                    var successfulPayment = Transaction.CreateSuccessfulPayment(
+                        order.Id,
+                        order.UserId,
+                        order.PaymentReference,
+                        Domain.Constants.PaymentProviderKeys.PayOnDelivery,
+                        providerTransactionId: null,
+                        amount: order.Total,
+                        currency: order.Currency,
+                        processedAt: order.PaidAt ?? DateTimeOffset.UtcNow);
+                    var recorded = await orderRepository.TryRecordSuccessfulPaymentAsync(successfulPayment, ct);
+                    await orderRepository.SaveChangesAsync(ct);
+                    await orderTransaction.CommitAsync(ct);
+                    return recorded;
+                }, cancellationToken);
+
+                if (paymentTransactionRecorded)
+                {
+                    logger.LogInformation(
+                        "Recorded successful Pay On Delivery transaction for order {OrderId} and reference {Reference} after delivery confirmation.",
+                        order.Id,
+                        order.PaymentReference);
+                }
+                else
+                {
+                    logger.LogInformation(
+                        "A payment transaction already exists for delivered Pay On Delivery order {OrderId} and reference {Reference}.",
+                        order.Id,
+                        order.PaymentReference);
+                }
+            }
+            catch (Exception exception)
+            {
+                logger.LogError(
+                    exception,
+                    "Failed to persist delivery confirmation and payment transaction for Pay On Delivery order {OrderId}.",
+                    order.Id);
+                throw;
+            }
+        }
+        else
+        {
+            await orderRepository.SaveChangesAsync(cancellationToken);
+        }
+
         var address = await orderRepository.GetAddressByIdAsync(order.AddressId, cancellationToken);
-        if (request.Status.Equals(Domain.Constants.OrderStatuses.Shipped, StringComparison.OrdinalIgnoreCase) ||
-            request.Status.Equals(Domain.Constants.OrderStatuses.Delivered, StringComparison.OrdinalIgnoreCase) ||
-            request.Status.Equals(Domain.Constants.OrderStatuses.Cancelled, StringComparison.OrdinalIgnoreCase) ||
-            request.Status.Equals(Domain.Constants.OrderStatuses.Returned, StringComparison.OrdinalIgnoreCase))
+        if (order.Status.Equals(Domain.Constants.OrderStatuses.Shipped, StringComparison.OrdinalIgnoreCase) ||
+            order.Status.Equals(Domain.Constants.OrderStatuses.Delivered, StringComparison.OrdinalIgnoreCase) ||
+            order.Status.Equals(Domain.Constants.OrderStatuses.Cancelled, StringComparison.OrdinalIgnoreCase) ||
+            order.Status.Equals(Domain.Constants.OrderStatuses.Returned, StringComparison.OrdinalIgnoreCase))
         {
             try
             {
