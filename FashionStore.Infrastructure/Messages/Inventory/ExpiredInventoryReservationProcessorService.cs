@@ -2,13 +2,17 @@ using FashionStore.Domain.Abstractions.Orders;
 using FashionStore.Domain.Abstractions.Payments;
 using FashionStore.Domain.Constants;
 using FashionStore.Domain.Entities;
+using FashionStore.Infrastructure.Data;
+using FashionStore.Infrastructure.Repository.OrderRepo;
 using FashionStore.Shared.Constants;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace FashionStore.Infrastructure.Messages.Inventory;
 
 public sealed class ExpiredInventoryReservationProcessorService(
     IServiceScopeFactory scopeFactory,
+    IDbContextFactory<FashionStoreDbContext> dbContextFactory,
     ILogger<ExpiredInventoryReservationProcessorService> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -19,8 +23,9 @@ public sealed class ExpiredInventoryReservationProcessorService(
             try
             {
                 using var scope = scopeFactory.CreateScope();
-                var orderRepository = scope.ServiceProvider.GetRequiredService<IOrderRepository>();
                 var paymentGatewayFactory = scope.ServiceProvider.GetRequiredService<IPaymentGatewayFactory>();
+                await using var dbContext = await dbContextFactory.CreateDbContextAsync(stoppingToken);
+                var orderRepository = new OrderRepository(dbContext);
 
                 var expired = await orderRepository.GetExpiredReservationsAsync(DateTimeOffset.UtcNow, stoppingToken);
                 if (expired.Count == 0) continue;
@@ -50,24 +55,24 @@ public sealed class ExpiredInventoryReservationProcessorService(
                     }
 
                     var providerKey = order.PaymentProvider ?? PaymentProviderKeys.Paystack;
-                    var verificationOutcome = await VerifyPaymentOutcomeAsync(
+                    var paymentCheck = await VerifyPaymentOutcomeAsync(
                         order, providerKey, paymentGatewayFactory, stoppingToken);
 
-                    if (verificationOutcome == PaymentCheckOutcome.Deferred)
+                    if (paymentCheck.Outcome == PaymentCheckOutcome.Deferred)
                     {
                         ordersDeferred++;
                         continue;
                     }
 
-                    if (verificationOutcome == PaymentCheckOutcome.Paid)
+                    if (paymentCheck.Outcome == PaymentCheckOutcome.Paid)
                     {
-                        logger.LogWarning(
+                        logger.LogInformation(
                             "Expiry worker detected paid-but-not-marked order {TrackOrderId} ({PaymentReference}, provider: {Provider}). " +
                             "Attempting rescue (mark paid, consume reservations).",
                             order.TrackOrderId, order.PaymentReference, providerKey);
 
                         var rescueSucceeded = await TryRescuePaidOrderInlineAsync(
-                            orderRepository, order, stoppingToken);
+                            orderRepository, order, providerKey, paymentCheck.Verification!, stoppingToken);
 
                         if (rescueSucceeded)
                         {
@@ -79,7 +84,7 @@ public sealed class ExpiredInventoryReservationProcessorService(
                         }
                         else
                         {
-                            logger.LogWarning(
+                            logger.LogError(
                                 "Expiry worker rescue attempt for order {TrackOrderId} ({PaymentReference}) did not confirm success. " +
                                 "Deferring reservation release until next run.",
                                 order.TrackOrderId, order.PaymentReference);
@@ -153,7 +158,9 @@ public sealed class ExpiredInventoryReservationProcessorService(
         Deferred
     }
 
-    private async Task<PaymentCheckOutcome> VerifyPaymentOutcomeAsync(
+    private sealed record PaymentCheckResult(PaymentCheckOutcome Outcome, PaymentVerificationResult? Verification);
+
+    private async Task<PaymentCheckResult> VerifyPaymentOutcomeAsync(
         Order order,
         string providerKey,
         IPaymentGatewayFactory paymentGatewayFactory,
@@ -161,7 +168,7 @@ public sealed class ExpiredInventoryReservationProcessorService(
     {
         if (string.Equals(providerKey, PaymentProviderKeys.PayOnDelivery, StringComparison.OrdinalIgnoreCase))
         {
-            return PaymentCheckOutcome.NotPaid;
+            return new PaymentCheckResult(PaymentCheckOutcome.NotPaid, null);
         }
 
         IPaymentGateway gateway;
@@ -171,11 +178,11 @@ public sealed class ExpiredInventoryReservationProcessorService(
         }
         catch (ArgumentException gatewayEx)
         {
-            logger.LogWarning(gatewayEx,
+            logger.LogError(gatewayEx,
                 "Expiry worker could not resolve payment gateway for order {TrackOrderId} ({PaymentReference}, provider: {Provider}). " +
                 "Deferring reservation release until next run.",
                 order.TrackOrderId, order.PaymentReference, providerKey);
-            return PaymentCheckOutcome.Deferred;
+            return new PaymentCheckResult(PaymentCheckOutcome.Deferred, null);
         }
 
         PaymentVerificationResult verification;
@@ -185,11 +192,11 @@ public sealed class ExpiredInventoryReservationProcessorService(
         }
         catch (HttpRequestException httpEx)
         {
-            logger.LogWarning(httpEx,
+            logger.LogError(httpEx,
                 "Expiry worker could not reach payment provider {Provider} for order {TrackOrderId} ({PaymentReference}). " +
                 "Deferring reservation release until next run.",
                 providerKey, order.TrackOrderId, order.PaymentReference);
-            return PaymentCheckOutcome.Deferred;
+            return new PaymentCheckResult(PaymentCheckOutcome.Deferred, null);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -201,12 +208,12 @@ public sealed class ExpiredInventoryReservationProcessorService(
                 "Expiry worker got unexpected error verifying order {TrackOrderId} ({PaymentReference}, provider: {Provider}). " +
                 "Deferring reservation release until next run.",
                 order.TrackOrderId, order.PaymentReference, providerKey);
-            return PaymentCheckOutcome.Deferred;
+            return new PaymentCheckResult(PaymentCheckOutcome.Deferred, null);
         }
 
         if (!verification.IsSuccess)
         {
-            return PaymentCheckOutcome.NotPaid;
+            return new PaymentCheckResult(PaymentCheckOutcome.NotPaid, null);
         }
 
         var expectedAmount = checked(decimal.ToInt64(order.Total * 100m));
@@ -223,21 +230,23 @@ public sealed class ExpiredInventoryReservationProcessorService(
                 "Releasing reservations.",
                 order.TrackOrderId, order.PaymentReference, providerKey,
                 expectedAmount, order.Currency, verification.AmountKobo, verification.Currency);
-            return PaymentCheckOutcome.NotPaid;
+            return new PaymentCheckResult(PaymentCheckOutcome.NotPaid, null);
         }
 
-        return PaymentCheckOutcome.Paid;
+        return new PaymentCheckResult(PaymentCheckOutcome.Paid, verification);
     }
 
     private async Task<bool> TryRescuePaidOrderInlineAsync(
         IOrderRepository orderRepository,
         Order order,
+        string providerKey,
+        PaymentVerificationResult verification,
         CancellationToken cancellationToken)
     {
-        var paidAt = DateTimeOffset.UtcNow;
+        var paidAt = verification.PaidAt ?? DateTimeOffset.UtcNow;
         try
         {
-            var (commitSucceeded, _) = await orderRepository.ExecuteInRetriableTransactionAsync(async (tx, ct) =>
+            var rescueResult = await orderRepository.ExecuteInRetriableTransactionAsync(async (tx, ct) =>
             {
                 string? conflictMessage = null;
                 order.MarkPaid(paidAt);
@@ -256,18 +265,43 @@ public sealed class ExpiredInventoryReservationProcessorService(
 
                 if (conflictMessage is not null)
                 {
-                    logger.LogWarning("{Message} Rolling back rescue for order {OrderId}.",
+                    logger.LogError("{Message} Rolling back rescue for order {OrderId}.",
                         conflictMessage, order.Id);
                     await tx.RollbackAsync(ct);
-                    return (Success: false, ConflictMessage: conflictMessage);
+                    return (Success: false, PaymentTransactionRecorded: false);
                 }
 
+                var successfulPayment = Transaction.CreateSuccessfulPayment(
+                    order.Id,
+                    order.UserId,
+                    order.PaymentReference,
+                    providerKey,
+                    verification.ProviderReference,
+                    order.Total,
+                    order.Currency,
+                    paidAt);
+                var paymentTransactionRecorded = await orderRepository.TryRecordSuccessfulPaymentAsync(successfulPayment, ct);
                 await orderRepository.SaveChangesAsync(ct);
                 await tx.CommitAsync(ct);
-                return (Success: true, ConflictMessage: (string?)null);
+                return (Success: true, PaymentTransactionRecorded: paymentTransactionRecorded);
             }, cancellationToken);
 
-            return commitSucceeded;
+            if (rescueResult.Success && rescueResult.PaymentTransactionRecorded)
+            {
+                logger.LogInformation(
+                    "Recorded successful recovered payment transaction for order {OrderId} and reference {Reference}.",
+                    order.Id,
+                    order.PaymentReference);
+            }
+            else if (rescueResult.Success)
+            {
+                logger.LogInformation(
+                    "A payment transaction already exists for recovered order {OrderId} and reference {Reference}.",
+                    order.Id,
+                    order.PaymentReference);
+            }
+
+            return rescueResult.Success;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {

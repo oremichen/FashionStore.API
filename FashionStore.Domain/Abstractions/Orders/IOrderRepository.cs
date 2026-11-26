@@ -12,6 +12,7 @@ public interface IOrderRepository
     Task CreateWithInventoryReservationsAsync(Order order, DateTimeOffset expiresAt, CancellationToken cancellationToken);
     Task<bool> ReleaseInventoryReservationAsync(string reservationId, string status, CancellationToken cancellationToken);
     Task<bool> ConsumeInventoryReservationAsync(string reservationId, CancellationToken cancellationToken);
+    Task<bool> TryRecordSuccessfulPaymentAsync(Transaction transaction, CancellationToken cancellationToken);
     Task AddAsync(Order order, CancellationToken cancellationToken);
     Task SaveChangesAsync(CancellationToken cancellationToken);
 

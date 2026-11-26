@@ -206,7 +206,7 @@ builder.Services.AddSwaggerGen(options =>
 #endregion
 
 #region Identity & EF Core
-builder.Services.AddDbContext<FashionStoreDbContext>(options =>
+builder.Services.AddDbContextFactory<FashionStoreDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
         options => options.EnableRetryOnFailure(
             maxRetryCount: 3,
