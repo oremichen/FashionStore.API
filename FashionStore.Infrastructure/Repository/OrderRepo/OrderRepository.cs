@@ -185,15 +185,15 @@ public sealed class OrderRepository : IOrderRepository
     public async Task<bool> TryRecordSuccessfulPaymentAsync(Transaction transaction, CancellationToken cancellationToken)
     {
         var affectedRows = await _dbContext.Database.ExecuteSqlInterpolatedAsync($"""
-            INSERT INTO \"Transactions\" (
-                \"Id\", \"OrderId\", \"UserId\", \"Reference\", \"TransactionType\", \"Status\", \"Provider\",
-                \"ProviderTransactionId\", \"Amount\", \"Currency\", \"Channel\", \"GatewayResponseCode\",
-                \"GatewayResponseMessage\", \"GatewayResponse\", \"FailureReason\", \"ProcessedAt\", \"CreatedAt\", \"UpdatedAt\")
+            INSERT INTO "Transactions" (
+                "Id", "OrderId", "UserId", "Reference", "TransactionType", "Status", "Provider",
+                "ProviderTransactionId", "Amount", "Currency", "Channel", "GatewayResponseCode",
+                "GatewayResponseMessage", "GatewayResponse", "FailureReason", "ProcessedAt", "CreatedAt", "UpdatedAt")
             VALUES (
                 {transaction.Id}, {transaction.OrderId}, {transaction.UserId}, {transaction.Reference}, {transaction.TransactionType}, {transaction.Status}, {transaction.Provider},
                 {transaction.ProviderTransactionId}, {transaction.Amount}, {transaction.Currency}, {transaction.Channel}, {transaction.GatewayResponseCode},
                 {transaction.GatewayResponseMessage}, {transaction.GatewayResponse}, {transaction.FailureReason}, {transaction.ProcessedAt}, {transaction.CreatedAt}, {transaction.UpdatedAt})
-            ON CONFLICT (\"OrderId\", \"TransactionType\") DO NOTHING;
+            ON CONFLICT ("OrderId", "TransactionType") DO NOTHING;
             """, cancellationToken);
 
         return affectedRows == 1;
