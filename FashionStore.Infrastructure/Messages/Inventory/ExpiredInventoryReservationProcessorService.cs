@@ -2,13 +2,17 @@ using FashionStore.Domain.Abstractions.Orders;
 using FashionStore.Domain.Abstractions.Payments;
 using FashionStore.Domain.Constants;
 using FashionStore.Domain.Entities;
+using FashionStore.Infrastructure.Data;
+using FashionStore.Infrastructure.Repository.OrderRepo;
 using FashionStore.Shared.Constants;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace FashionStore.Infrastructure.Messages.Inventory;
 
 public sealed class ExpiredInventoryReservationProcessorService(
     IServiceScopeFactory scopeFactory,
+    IDbContextFactory<FashionStoreDbContext> dbContextFactory,
     ILogger<ExpiredInventoryReservationProcessorService> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -19,8 +23,9 @@ public sealed class ExpiredInventoryReservationProcessorService(
             try
             {
                 using var scope = scopeFactory.CreateScope();
-                var orderRepository = scope.ServiceProvider.GetRequiredService<IOrderRepository>();
                 var paymentGatewayFactory = scope.ServiceProvider.GetRequiredService<IPaymentGatewayFactory>();
+                await using var dbContext = await dbContextFactory.CreateDbContextAsync(stoppingToken);
+                var orderRepository = new OrderRepository(dbContext);
 
                 var expired = await orderRepository.GetExpiredReservationsAsync(DateTimeOffset.UtcNow, stoppingToken);
                 if (expired.Count == 0) continue;

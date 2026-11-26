@@ -1,19 +1,24 @@
 using System.Text.Json;
+using FashionStore.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace FashionStore.Infrastructure.Messages.NotificationQueue
 {
     public class PendingEmailNotificationProcessorService : BackgroundService
     {
         private readonly IServiceScopeFactory _scopeFactory;
+        private readonly IDbContextFactory<FashionStoreDbContext> _dbContextFactory;
         private readonly ILogger<PendingEmailNotificationProcessorService> _logger;
         private readonly IConfiguration _configuration;
 
         public PendingEmailNotificationProcessorService(
             IServiceScopeFactory scopeFactory,
+            IDbContextFactory<FashionStoreDbContext> dbContextFactory,
             ILogger<PendingEmailNotificationProcessorService> logger,
             IConfiguration configuration)
         {
             _scopeFactory = scopeFactory;
+            _dbContextFactory = dbContextFactory;
             _logger = logger;
             _configuration = configuration;
         }
@@ -74,12 +79,21 @@ namespace FashionStore.Infrastructure.Messages.NotificationQueue
             CancellationToken cancellationToken)
         {
             using var scope = _scopeFactory.CreateScope();
-            var repository = scope.ServiceProvider.GetRequiredService<INotificationRepository>();
             var notificationService = scope.ServiceProvider.GetRequiredService<IEmailNotificationService>();
-            var pendingNotifications = await repository.GetRecoverableAsync(
-                maxRetryCount,
-                DateTimeOffset.UtcNow.Subtract(processingRecoveryDelay),
-                cancellationToken);
+            await using var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+            var staleProcessingBefore = DateTimeOffset.UtcNow.Subtract(processingRecoveryDelay);
+            _logger.LogDebug(
+                "Loading recoverable email notifications with maximum retry count {MaxRetryCount}.",
+                maxRetryCount);
+            var pendingNotifications = await dbContext.QueueEmailNotifications
+                .Where(item => (item.Status == NotificationStatus.Pending ||
+                                (item.Status == NotificationStatus.Processing &&
+                                 item.CreatedAt <= staleProcessingBefore)) &&
+                               item.RetryCount < maxRetryCount)
+                .OrderBy(item => item.CreatedAt)
+                .Take(100)
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
 
             foreach (var queuedNotification in pendingNotifications)
             {
@@ -88,7 +102,8 @@ namespace FashionStore.Infrastructure.Messages.NotificationQueue
 
                 try
                 {
-                    await repository.UpdateStatusAsync(
+                    await UpdateStatusAsync(
+                        dbContext,
                         queuedNotification.Id,
                         NotificationStatus.Processing,
                         queuedNotification.LastError,
@@ -107,7 +122,8 @@ namespace FashionStore.Infrastructure.Messages.NotificationQueue
                         queuedNotification.Id);
                 }
 
-                await repository.RecordRetryResultAsync(
+                await RecordRetryResultAsync(
+                    dbContext,
                     queuedNotification.Id,
                     delivered,
                     lastError,
@@ -121,6 +137,53 @@ namespace FashionStore.Infrastructure.Messages.NotificationQueue
                     queuedNotification.Id,
                     delivered);
             }
+        }
+
+        private static async Task UpdateStatusAsync(
+            FashionStoreDbContext dbContext,
+            Guid notificationId,
+            string status,
+            string? lastError,
+            CancellationToken cancellationToken)
+        {
+            var queuedNotification = await dbContext.QueueEmailNotifications
+                .SingleAsync(item => item.Id == notificationId, cancellationToken);
+
+            queuedNotification.Status = status;
+            queuedNotification.LastError = lastError;
+            if (status == NotificationStatus.Failed)
+            {
+                queuedNotification.FailedAt = DateTimeOffset.UtcNow;
+            }
+
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        private static async Task RecordRetryResultAsync(
+            FashionStoreDbContext dbContext,
+            Guid notificationId,
+            bool delivered,
+            string? lastError,
+            int maxRetryCount,
+            CancellationToken cancellationToken)
+        {
+            var queuedNotification = await dbContext.QueueEmailNotifications
+                .SingleAsync(item => item.Id == notificationId, cancellationToken);
+
+            queuedNotification.RetryCount++;
+            queuedNotification.LastError = delivered ? null : lastError;
+            queuedNotification.Status = delivered
+                ? NotificationStatus.Completed
+                : queuedNotification.RetryCount >= maxRetryCount
+                    ? NotificationStatus.Failed
+                    : NotificationStatus.Pending;
+
+            if (queuedNotification.Status == NotificationStatus.Failed)
+            {
+                queuedNotification.FailedAt = DateTimeOffset.UtcNow;
+            }
+
+            await dbContext.SaveChangesAsync(cancellationToken);
         }
 
         private static EmailNotification ToEmailNotification(QueueEmailNotification queuedNotification)
